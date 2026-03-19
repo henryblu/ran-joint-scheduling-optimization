@@ -1,6 +1,6 @@
 import numpy as np
 
-from .model_types import Candidate, RRCParams, SchedulerVars, SearchSpace
+from radio_core.model_types import Candidate, RRCParams, SchedulerVars, SearchSpace
 
 
 class ResourceGridModel:

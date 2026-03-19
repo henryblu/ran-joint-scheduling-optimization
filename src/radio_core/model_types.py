@@ -114,4 +114,3 @@ class Candidate:
     layers: int
     n_active_tx: int
     mcs: int
-

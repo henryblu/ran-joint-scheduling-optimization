@@ -3,9 +3,10 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
+from radio_core.model_types import DeploymentParams, ModelOptions, Problem
+from radio_core.pa_models import average_pa_power, build_pa_catalog
+
 from .mcs_requirements import McsRequirementModel
-from .model_types import DeploymentParams, ModelOptions, Problem
-from .pa_models import average_pa_power, build_pa_catalog
 from .path_loss_models import PathLossModel
 from .resource_grid import ResourceGridModel
 from .sinr_chain import SinrChainModel
