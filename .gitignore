@@ -1,0 +1,28 @@
+# Python cache and notebook artifacts
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.jupyter_runtime/
+
+# Local scratch files
+tmp.py
+tmp/
+_tmp_cells/
+tests/
+
+# Archived or generated project content
+old/
+data/
+graphs/
+csvs/
+
+# Ignore all PA model source material except the 3.5 GHz CSVs used by the models
+PA models/**
+!PA models/3.5Ghz_pas/
+!PA models/3.5Ghz_pas/*.csv
+
+# Office temporary lock files
+~$*
+
+# particulars to this project
+PA models/3.5Ghz_pas/4W_8W_NR_combined_old.csv
