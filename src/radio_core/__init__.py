@@ -1,5 +1,6 @@
 from .config_builders import (
     build_model_inputs,
+    build_single_user_deployment,
     build_multi_user_runtime_cfg,
     build_multi_user_system_cfg,
 )
@@ -32,6 +33,7 @@ from .model_types import (
     SchedulerVars,
     SearchSpace,
 )
+from .path_loss_models import PathLossModel
 from .pa_models import (
     PAState,
     PASwitchPolicy,
@@ -44,6 +46,7 @@ from .pa_models import (
 
 __all__ = [
     "build_model_inputs",
+    "build_single_user_deployment",
     "build_multi_user_runtime_cfg",
     "build_multi_user_system_cfg",
     "COMMON_LINK_CONSTANTS",
@@ -62,6 +65,7 @@ __all__ = [
     "PAParams",
     "PAState",
     "PASwitchPolicy",
+    "PathLossModel",
     "PhyConstantsConfig",
     "Problem",
     "RRCParams",
