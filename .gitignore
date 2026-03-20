@@ -16,6 +16,10 @@ data/
 graphs/
 csvs/
 
+# temporary ignore docs as they need to be pruned before being added to the repo
+img/
+docs/
+
 # Ignore all PA model source material except the 3.5 GHz CSVs used by the models
 PA models/**
 !PA models/3.5Ghz_pas/
@@ -26,3 +30,4 @@ PA models/**
 
 # particulars to this project
 PA models/3.5Ghz_pas/4W_8W_NR_combined_old.csv
+
