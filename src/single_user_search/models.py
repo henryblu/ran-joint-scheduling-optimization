@@ -1,11 +1,11 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-import pandas as pd
+from radio_core import Candidate
 
 
 @dataclass(frozen=True)
 class SingleUserRequest:
-    """One single-user search request."""
+    """One single-user scheduler request."""
 
     distance_m: float
     required_rate_bps: float
@@ -14,31 +14,47 @@ class SingleUserRequest:
 
 @dataclass(frozen=True)
 class SingleUserSearchOptions:
-    """Execution options that shape one single-user search run."""
+    """Execution options that shape one single-user candidate-space run."""
 
     fast_mode: bool = False
     prb_step: int | None = None
     bandwidth_space_hz: tuple[float, ...] | None = None
     n_slots_on_space: tuple[int, ...] | None = None
-    include_infeasible: bool = False
     parallel: bool = False
     max_workers: int | None = None
     use_cache: bool = True
 
 
 @dataclass
-class SingleUserProblem:
-    """Built single-user problem with the request and resolved search inputs."""
+class PreparedSingleUserContext:
+    """Reusable single-user radio/search context for active-candidate evaluation."""
 
-    request: SingleUserRequest
     model_inputs: dict
-    problem: object
+    deployment: object
+    built_problem: object
+    pa_catalog: list
+    mcs_table: dict
+    rrc_lookup: dict
     options: SingleUserSearchOptions
 
 
-@dataclass
-class SingleUserSearchResult:
-    """Canonical single-user candidate ledger returned by the search module."""
+@dataclass(frozen=True)
+class StaticCandidateSpec:
+    """Scenario-invariant candidate metadata reused across user evaluations."""
 
-    request: SingleUserRequest
-    candidate_table: pd.DataFrame = field(default_factory=pd.DataFrame)
+    candidate_ordinal: int
+    candidate: Candidate
+    pa_name: str
+    bandwidth_hz: float
+    alpha_f: float
+    alpha_t: float
+    rate_ach_bps: float
+    gamma_req_lin: float
+    gamma_req_db: float
+
+
+@dataclass(frozen=True)
+class SingleUserStaticCandidateCatalog:
+    """Cached static candidate catalog for one search-space shape."""
+
+    candidates: tuple[StaticCandidateSpec, ...] = ()

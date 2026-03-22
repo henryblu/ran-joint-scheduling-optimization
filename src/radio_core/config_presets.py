@@ -39,15 +39,7 @@ class MultiUserPreset:
     runtime: MultiUserRuntimeConfig
 
 
-SINGLE_USER_RESOURCE_MODEL_PRESET = ModelPreset(
-    link=COMMON_LINK_CONSTANTS,
-    phy=replace(COMMON_PHY_CONSTANTS, n_slots_win=7),
-    scheduler=COMMON_SCHEDULER_SPACE,
-    mcs_table=DEFAULT_NR_MCS_TABLE,
-    pa_data_csv=DEFAULT_PA_DATA_CSV,
-)
-
-SINGLE_USER_POWER_OPTIMIZATION_PRESET = ModelPreset(
+SINGLE_USER_SEARCH_PRESET = ModelPreset(
     link=COMMON_LINK_CONSTANTS,
     phy=replace(COMMON_PHY_CONSTANTS, n_slots_win=20),
     scheduler=COMMON_SCHEDULER_SPACE,
@@ -79,7 +71,6 @@ __all__ = [
     "MultiUserPreset",
     "MultiUserRuntimeConfig",
     "MULTI_USER_TDMA_PRESET",
-    "SINGLE_USER_POWER_OPTIMIZATION_PRESET",
-    "SINGLE_USER_RESOURCE_MODEL_PRESET",
+    "SINGLE_USER_SEARCH_PRESET",
     "TddPatternConfig",
 ]

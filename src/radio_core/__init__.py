@@ -6,8 +6,7 @@ from .config_builders import (
 )
 from .config_presets import (
     MULTI_USER_TDMA_PRESET,
-    SINGLE_USER_POWER_OPTIMIZATION_PRESET,
-    SINGLE_USER_RESOURCE_MODEL_PRESET,
+    SINGLE_USER_SEARCH_PRESET,
     ModelPreset,
     MultiUserPreset,
     MultiUserRuntimeConfig,
@@ -72,8 +71,7 @@ __all__ = [
     "SchedulerSpaceConfig",
     "SchedulerVars",
     "SearchSpace",
-    "SINGLE_USER_POWER_OPTIMIZATION_PRESET",
-    "SINGLE_USER_RESOURCE_MODEL_PRESET",
+    "SINGLE_USER_SEARCH_PRESET",
     "TddPatternConfig",
     "average_pa_power",
     "build_pa_catalog",

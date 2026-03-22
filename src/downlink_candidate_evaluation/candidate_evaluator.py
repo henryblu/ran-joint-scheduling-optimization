@@ -1,18 +1,21 @@
-import numpy as np
-
+from radio_core import Candidate
 from radio_core.pa_models import average_pa_power
 
 from .mcs_requirements import McsRequirementModel
+from .models import DynamicCandidateEvaluation
 from .resource_grid import ResourceGridModel
 from .sinr_chain import SinrChainModel
 
 
 class DownlinkCandidateEvaluator:
-    """Evaluate one downlink candidate against a fully-built problem.
+    """Solve the dynamic feasibility and power state for one static candidate.
 
-    The class is organized around two public entry points:
-    - `evaluate_candidate` runs the full end-to-end evaluation pipeline.
-    - `evaluate_feasibility` exposes the staged feasibility checks used inside that pipeline.
+    The evaluator assumes the candidate's static metrics were computed upstream.
+    It only owns:
+    1. discrete feasibility checks against the built deployment problem,
+    2. the source-power solve for an explicit SINR target,
+    3. PA and PSD validation,
+    4. dynamic RF/DC term assembly for result consumers.
     """
 
     def __init__(self, mcs_table):
@@ -21,115 +24,59 @@ class DownlinkCandidateEvaluator:
         self.mcs_model = McsRequirementModel(self.mcs_table)
         self.sinr_model = SinrChainModel(self.grid_model, self.mcs_model)
 
-    def evaluate_candidate(self, problem, candidate, include_infeasible=False):
-        """Run the full candidate-evaluation pipeline and return one result row.
-
-        Steps:
-        1. Resolve the candidate's RRC envelope and reject structurally invalid choices.
-        2. Build scheduler variables and compute the rate implied by the candidate.
-        3. Solve the minimum required source power for the requested MCS.
-        4. Validate the solved powers against PA and PSD limits.
-        5. Assemble the compact row consumed by the search and reporting layers.
-        """
-        deployment = problem.deployment
+    def evaluate_static_candidate(self, problem, static_candidate):
+        """Evaluate one static candidate against a concrete deployment problem."""
+        candidate = self._build_candidate(static_candidate)
         rrc = self._find_rrc(problem, candidate)
-        ok, reason = self.evaluate_feasibility(problem, candidate, rrc=rrc, stage="pre_solve")
+        ok, reason = self._evaluate_pre_solve_feasibility(problem, candidate, rrc)
         if not ok:
-            return self._maybe_return_infeasible(
-                include_infeasible,
-                candidate,
-                reason,
-                problem=problem,
-                rrc=rrc,
-            )
+            return self._build_infeasible_result(static_candidate, problem, reason)
 
         sched = self.grid_model.build_scheduler_vars(candidate)
         pa = problem.pa_catalog[candidate.pa_id]
-        rate_ach_bps = self.grid_model.compute_rate(deployment, rrc, sched)
-
-        ps_solution = self.sinr_model.solve_required_source_power(deployment, rrc, sched, pa)
+        ps_solution = self.sinr_model.solve_required_source_power_for_target(
+            float(static_candidate.gamma_req_lin),
+            problem.deployment,
+            rrc,
+            sched,
+            pa,
+        )
         if ps_solution is None:
-            return self._maybe_return_infeasible(
-                include_infeasible,
-                candidate,
-                "sinr_infeasible",
-                problem=problem,
-                rrc=rrc,
-                pa=pa,
-                rate_ach_bps=rate_ach_bps,
-            )
+            return self._build_infeasible_result(static_candidate, problem, "sinr_infeasible")
 
         rf_terms = self._compute_rf_terms(pa, sched, ps_solution)
         psd_w_per_hz = rf_terms["p_out_total_w"] / max(ps_solution["b_occ"], 1e-30)
-        ok, reason = self.evaluate_feasibility(
+        ok, reason = self._evaluate_post_solve_feasibility(
             problem,
-            candidate,
-            rrc=rrc,
             sched=sched,
             pa=pa,
             ps_solution=ps_solution,
             p_out_ant=rf_terms["p_out_ant_w"],
             p_out_total=rf_terms["p_out_total_w"],
             psd=psd_w_per_hz,
-            stage="post_solve",
         )
         if not ok:
-            return self._maybe_return_infeasible(
-                include_infeasible,
-                candidate,
-                reason,
-                problem=problem,
-                rrc=rrc,
-                pa=pa,
-                rate_ach_bps=rate_ach_bps,
-            )
+            return self._build_infeasible_result(static_candidate, problem, reason)
 
         dc_terms = self._compute_dc_terms(problem, pa, sched, rf_terms["p_out_ant_w"])
-        row = self._assemble_candidate_result(
-            problem,
-            candidate,
-            rrc,
-            sched,
-            pa,
-            ps_solution,
-            rf_terms,
-            dc_terms,
-            rate_ach_bps,
+        return DynamicCandidateEvaluation(
+            candidate_ordinal=int(static_candidate.candidate_ordinal),
+            is_feasible=True,
+            infeasibility_reason="ok",
+            distance_m=float(problem.deployment.distance_m),
+            path_loss_db=float(problem.deployment.path_loss_db),
+            p_dc_avg_total_w=float(dc_terms["p_dc_avg_total_w"]),
+            p_rf_out_active_w=float(rf_terms["p_out_total_w"]),
+            p_out_total_w=float(rf_terms["p_out_total_w"]),
+            p_sig_out_active_w=float(rf_terms["p_sig_out_total_w"]),
+            p_sig_out_total_w=float(rf_terms["p_sig_out_total_w"]),
+            ps_total_w=float(rf_terms["ps_total_w"]),
+            gamma_achieved=float(ps_solution["rho_achieved_linear"]),
+            rho_ach_raw_linear=float(ps_solution["rho_ach_raw_linear"]),
+            n_streams=int(ps_solution["n_streams"]),
+            g_bf_linear=float(ps_solution["g_bf_linear"]),
+            sigma_e2=float(ps_solution["sigma_e2"]),
         )
-        return self._mark_feasible_row(row, include_infeasible)
-
-    @staticmethod
-    def evaluate_feasibility(
-        problem,
-        candidate,
-        rrc=None,
-        sched=None,
-        pa=None,
-        ps_solution=None,
-        p_out_ant=None,
-        p_out_total=None,
-        psd=None,
-        stage="pre_solve",
-    ):
-        """Evaluate feasibility at a named stage of the pipeline.
-
-        `pre_solve` only checks discrete candidate validity against the search envelope.
-        `post_solve` assumes the source-power solve has run and checks physical limits.
-        """
-        if stage == "pre_solve":
-            return DownlinkCandidateEvaluator._evaluate_pre_solve_feasibility(problem, candidate, rrc)
-        if stage == "post_solve":
-            return DownlinkCandidateEvaluator._evaluate_post_solve_feasibility(
-                problem,
-                candidate,
-                sched=sched,
-                pa=pa,
-                ps_solution=ps_solution,
-                p_out_ant=p_out_ant,
-                p_out_total=p_out_total,
-                psd=psd,
-            )
-        raise ValueError(f"Unknown feasibility stage: {stage}")
 
     @staticmethod
     def _evaluate_pre_solve_feasibility(problem, candidate, rrc):
@@ -152,7 +99,7 @@ class DownlinkCandidateEvaluator:
     @staticmethod
     def _evaluate_post_solve_feasibility(
         problem,
-        _candidate,
+        *,
         sched=None,
         pa=None,
         ps_solution=None,
@@ -181,68 +128,34 @@ class DownlinkCandidateEvaluator:
     @staticmethod
     def _find_rrc(problem, candidate):
         """Return the RRC envelope referenced by a candidate, if it exists."""
-        return next(
-            (
-                rrc
-                for rrc in problem.rrc_catalog
-                if rrc.active_pa_id == candidate.pa_id and rrc.bwp_index == candidate.bwp_idx
-            ),
-            None,
+        return problem.rrc_lookup.get((int(candidate.pa_id), int(candidate.bwp_idx)))
+
+    @staticmethod
+    def _build_candidate(static_candidate):
+        """Build a scheduler candidate from the static candidate specification."""
+        candidate = getattr(static_candidate, "candidate", None)
+        if candidate is not None:
+            return candidate
+        return Candidate(
+            pa_id=int(static_candidate.pa_id),
+            bwp_idx=int(static_candidate.bwp_idx),
+            n_prb=int(static_candidate.n_prb),
+            n_slots_on=int(static_candidate.n_slots_on),
+            layers=int(static_candidate.layers),
+            n_active_tx=int(static_candidate.n_active_tx),
+            mcs=int(static_candidate.mcs),
         )
 
     @staticmethod
-    def _maybe_return_infeasible(include_infeasible, candidate, reason, **context):
-        """Return a populated infeasible row when requested, otherwise suppress it."""
-        if not include_infeasible:
-            return None
-        return DownlinkCandidateEvaluator._build_infeasible_row(candidate, reason, **context)
-
-    @staticmethod
-    def _mark_feasible_row(row, include_infeasible):
-        """Attach feasibility bookkeeping only when the caller requested a full ledger."""
-        if include_infeasible:
-            row["is_feasible"] = True
-            row["infeasibility_reason"] = "ok"
-        return row
-
-    @staticmethod
-    def _build_infeasible_row(candidate, reason, problem=None, rrc=None, pa=None, rate_ach_bps=None):
-        """Build the standardized placeholder row for rejected candidates."""
-        alpha_f = np.nan
-        bandwidth_hz = np.nan
-        if rrc is not None:
-            alpha_f = float(candidate.n_prb / max(rrc.prb_max_bwp, 1))
-            bandwidth_hz = float(rrc.bwp_bw_hz)
-        return {
-            "distance_m": float(problem.deployment.distance_m) if problem is not None else np.nan,
-            "path_loss_db": float(problem.deployment.path_loss_db) if problem is not None else np.nan,
-            "is_feasible": False,
-            "infeasibility_reason": reason,
-            "pa_id": int(candidate.pa_id),
-            "pa_name": getattr(pa, "pa_name", ""),
-            "bwp_idx": int(candidate.bwp_idx),
-            "bandwidth_hz": bandwidth_hz,
-            "n_prb": int(candidate.n_prb),
-            "n_slots_on": int(candidate.n_slots_on),
-            "layers": int(candidate.layers),
-            "n_active_tx": int(candidate.n_active_tx),
-            "mcs": int(candidate.mcs),
-            "alpha_f": alpha_f,
-            "alpha_t": np.nan,
-            "p_dc_avg_total_w": np.nan,
-            "p_rf_out_active_w": np.nan,
-            "p_out_total_w": np.nan,
-            "p_sig_out_active_w": np.nan,
-            "p_sig_out_total_w": np.nan,
-            "ps_total_w": np.nan,
-            "gamma_req_lin": np.nan,
-            "gamma_achieved": np.nan,
-            "rho_ach_raw_linear": np.nan,
-            "n_streams": np.nan,
-            "g_bf_linear": np.nan,
-            "sigma_e2": np.nan,
-            "rate_ach_bps": np.nan if rate_ach_bps is None else float(rate_ach_bps),
-        }
+    def _build_infeasible_result(static_candidate, problem, reason):
+        """Build the standardized infeasible dynamic result."""
+        return DynamicCandidateEvaluation(
+            candidate_ordinal=int(static_candidate.candidate_ordinal),
+            is_feasible=False,
+            infeasibility_reason=str(reason),
+            distance_m=float(problem.deployment.distance_m),
+            path_loss_db=float(problem.deployment.path_loss_db),
+        )
 
     def _compute_rf_terms(self, pa, sched, ps_solution):
         """Translate the solved source-power point into RF output powers."""
@@ -273,36 +186,3 @@ class DownlinkCandidateEvaluator:
             + (problem.deployment.n_tx_chains - sched.n_active_tx) * pa.p_idle_w
         )
         return {"alpha_t": alpha_t, "p_dc_avg_total_w": p_dc_avg_total_w}
-
-    @staticmethod
-    def _assemble_candidate_result(problem, candidate, rrc, sched, pa, ps_solution, rf_terms, dc_terms, rate_ach_bps):
-        """Assemble the compact row used by optimization and explanation tables."""
-        alpha_f = sched.n_prb / max(rrc.prb_max_bwp, 1)
-        return {
-            "distance_m": float(problem.deployment.distance_m),
-            "path_loss_db": float(problem.deployment.path_loss_db),
-            "pa_id": int(candidate.pa_id),
-            "pa_name": pa.pa_name,
-            "bwp_idx": int(candidate.bwp_idx),
-            "rate_ach_bps": float(rate_ach_bps),
-            "p_dc_avg_total_w": float(dc_terms["p_dc_avg_total_w"]),
-            "layers": int(sched.layers),
-            "mcs": int(sched.mcs),
-            "n_prb": int(sched.n_prb),
-            "n_slots_on": int(sched.n_slots_on),
-            "alpha_f": float(alpha_f),
-            "alpha_t": float(dc_terms["alpha_t"]),
-            "bandwidth_hz": float(rrc.bwp_bw_hz),
-            "n_active_tx": int(sched.n_active_tx),
-            "p_rf_out_active_w": float(rf_terms["p_out_total_w"]),
-            "p_out_total_w": float(rf_terms["p_out_total_w"]),
-            "p_sig_out_active_w": float(rf_terms["p_sig_out_total_w"]),
-            "p_sig_out_total_w": float(rf_terms["p_sig_out_total_w"]),
-            "ps_total_w": float(rf_terms["ps_total_w"]),
-            "gamma_req_lin": float(ps_solution["rho_req_linear"]),
-            "gamma_achieved": float(ps_solution["rho_achieved_linear"]),
-            "rho_ach_raw_linear": float(ps_solution["rho_ach_raw_linear"]),
-            "n_streams": int(ps_solution["n_streams"]),
-            "g_bf_linear": float(ps_solution["g_bf_linear"]),
-            "sigma_e2": float(ps_solution["sigma_e2"]),
-        }

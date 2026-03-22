@@ -23,6 +23,10 @@ class SinrChainModel:
         4. If that lower bound is insufficient, bracket the solution and refine it by bisection.
         """
         rho_req = self.mcs_model.get_required_sinr(deployment, sched)
+        return self.solve_required_source_power_for_target(rho_req, deployment, rrc, sched, pa)
+
+    def solve_required_source_power_for_target(self, rho_req, deployment, rrc, sched, pa):
+        """Solve the minimum PA input power for an explicit required SINR target."""
         comps = self.build_sinr_terms(deployment, rrc, sched, pa)
         denom_coeff = comps["a_num"] - rho_req * comps["b_dist"]
         if denom_coeff <= 0.0:

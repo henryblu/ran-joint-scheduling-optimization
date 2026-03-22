@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -90,6 +90,7 @@ class Problem:
     rrc_catalog: list
     search_space: SearchSpace
     options: ModelOptions
+    rrc_lookup: dict = field(default_factory=dict, repr=False, compare=False)
 
 
 @dataclass
