@@ -1,9 +1,10 @@
-from .candidate_evaluator import DownlinkCandidateEvaluator
-from .models import DynamicCandidateEvaluation
-from .problem_space import DownlinkProblemSpace
+from .candidate_power import CandidatePowerModel
+from .candidate_rate import CandidateRateModel
+from .models import CandidatePowerResult, CandidateRateResult
 
 __all__ = [
-    "DownlinkCandidateEvaluator",
-    "DynamicCandidateEvaluation",
-    "DownlinkProblemSpace",
+    "CandidatePowerModel",
+    "CandidatePowerResult",
+    "CandidateRateModel",
+    "CandidateRateResult",
 ]

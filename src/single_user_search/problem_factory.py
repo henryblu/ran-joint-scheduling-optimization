@@ -5,9 +5,9 @@ from pathlib import Path
 
 import numpy as np
 
-from downlink_candidate_evaluation import DownlinkProblemSpace
 from radio_core import build_model_inputs, build_pa_catalog, build_single_user_deployment
 
+from .candidate_space import build_discrete_problem
 from .models import PreparedSingleUserContext, SingleUserSearchOptions
 
 
@@ -49,11 +49,18 @@ def prepare_single_user_problem_from_deployment(
 
     resolved_options = _resolve_options(options)
     resolved_model_inputs = resolve_model_inputs(preset) if model_inputs is None else model_inputs
+    bandwidth_space, n_slots_on_space, prb_step = resolve_discrete_search_inputs(
+        resolved_model_inputs,
+        resolved_options,
+    )
     built_problem = build_discrete_problem(
         deployment,
-        model_inputs=resolved_model_inputs,
         pa_catalog=resolve_pa_catalog(resolved_model_inputs, pa_catalog),
-        options=resolved_options,
+        scheduler_sweep=resolved_model_inputs["scheduler_sweep"],
+        delta_f_hz_default=resolved_model_inputs["phy_constants"]["delta_f_hz"],
+        bandwidth_space=bandwidth_space,
+        n_slots_on_space=n_slots_on_space,
+        prb_step=prb_step,
     )
     return PreparedSingleUserContext(
         model_inputs=resolved_model_inputs,
@@ -76,20 +83,22 @@ def build_deployment_for_request(request, model_inputs):
         path_loss_db=request.path_loss_db,
     )
 
+def resolve_discrete_search_inputs(model_inputs, options):
+    """Resolve the discrete search-shaping inputs without leaking option objects downstream."""
 
-def build_discrete_problem(deployment, *, model_inputs, pa_catalog, options):
-    """Build the discrete downlink problem from deployment and resolved resources."""
-
-    candidate_space = DownlinkProblemSpace(model_inputs["mcs_table"])
-    return candidate_space.build_problem(
-        deployment=deployment,
-        pa_catalog=pa_catalog,
-        scheduler_sweep=model_inputs["scheduler_sweep"],
-        delta_f_hz_default=model_inputs["phy_constants"]["delta_f_hz"],
-        prb_step=options.prb_step,
-        bandwidth_space=options.bandwidth_space_hz,
-        n_slots_on_space=options.n_slots_on_space,
+    scheduler_sweep = model_inputs["scheduler_sweep"]
+    bandwidth_space = (
+        [float(v) for v in options.bandwidth_space_hz]
+        if options.bandwidth_space_hz is not None
+        else [float(v) for v in scheduler_sweep["bandwidth_space_hz"]]
     )
+    n_slots_on_space = (
+        [int(v) for v in options.n_slots_on_space]
+        if options.n_slots_on_space is not None
+        else None
+    )
+    prb_step = int(options.prb_step) if options.prb_step is not None else int(scheduler_sweep["prb_step"])
+    return bandwidth_space, n_slots_on_space, prb_step
 
 
 def resolve_model_inputs(preset):

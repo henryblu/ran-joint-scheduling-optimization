@@ -47,7 +47,6 @@ class StaticCandidateSpec:
     pa_name: str
     bandwidth_hz: float
     alpha_f: float
-    alpha_t: float
     rate_ach_bps: float
     gamma_req_lin: float
     gamma_req_db: float

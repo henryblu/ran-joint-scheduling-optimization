@@ -7,9 +7,10 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 
-from downlink_candidate_evaluation import DownlinkCandidateEvaluator, DownlinkProblemSpace
+from downlink_candidate_evaluation import CandidatePowerModel, CandidatePowerResult, CandidateRateModel
 from downlink_candidate_evaluation.mcs_requirements import McsRequirementModel
 
+from .candidate_space import build_scheduler_vars, iter_candidates, resolve_candidate_context
 from .models import SingleUserSearchOptions, SingleUserStaticCandidateCatalog, StaticCandidateSpec
 from .problem_factory import clear_problem_factory_cache
 
@@ -27,7 +28,6 @@ ACTIVE_RESULT_COLUMNS = [
     "n_active_tx",
     "mcs",
     "alpha_f",
-    "alpha_t",
     "p_dc_avg_total_w",
     "p_rf_out_active_w",
     "p_out_total_w",
@@ -48,20 +48,12 @@ ACTIVE_RESULT_COLUMNS = [
 _ACTIVE_TABLE_CACHE = {}
 _STATIC_CANDIDATE_CATALOG_CACHE = {}
 _CANDIDATE_BATCH_SIZE = 2048
-_WORKER_EVALUATOR = None
+_WORKER_POWER_MODEL = None
 _WORKER_PROBLEM = None
 
 
 def enumerate_active_candidates_from_context(context, *, options=None):
-    """Build the full feasible active candidate table for one prepared deployment.
-
-    Steps:
-    1. Resolve execution overrides on top of the prepared context options.
-    2. Reuse a cached active table when the deployment and search space already match.
-    3. Build or fetch the static single-user candidate catalog for that search space.
-    4. Evaluate every catalog candidate against the concrete deployment.
-    5. Assemble only feasible rows into the canonical flat active-candidate table.
-    """
+    """Build the full feasible active candidate table for one prepared deployment."""
 
     resolved_options = _resolve_run_options(context.options, options)
     cache_key = _build_active_table_cache_key_if_enabled(context, resolved_options)
@@ -71,13 +63,12 @@ def enumerate_active_candidates_from_context(context, *, options=None):
             return cached_active_table
 
     static_catalog = _build_static_candidate_catalog(context)
-    dynamic_results = _evaluate_dynamic_candidate_slice(
+    active_table = _build_active_candidate_table(
         context,
         static_catalog.candidates,
         parallel=resolved_options.parallel,
         max_workers=resolved_options.max_workers,
     )
-    active_table = _assemble_active_candidate_table(static_catalog.candidates, dynamic_results)
     if cache_key is not None:
         _store_cached_active_table(cache_key, active_table)
     return active_table
@@ -86,10 +77,17 @@ def enumerate_active_candidates_from_context(context, *, options=None):
 def search_candidates_from_context(context, required_rate_bps, *, options=None):
     """Filter a prepared deployment's active table down to one user's target-rate space."""
 
-    active_table = enumerate_active_candidates_from_context(context, options=options)
-    return filter_rate_feasible_candidates(
-        active_table,
+    resolved_options = _resolve_run_options(context.options, options)
+    static_catalog = _build_static_candidate_catalog(context)
+    filtered_candidates = _filter_static_candidates_by_rate(
+        static_catalog.candidates,
         required_rate_bps=float(required_rate_bps),
+    )
+    return _build_active_candidate_table(
+        context,
+        filtered_candidates,
+        parallel=resolved_options.parallel,
+        max_workers=resolved_options.max_workers,
     )
 
 
@@ -119,18 +117,17 @@ def _build_static_candidate_catalog(context):
 def _build_static_candidate_specs(context):
     """Enumerate and sort the static candidate metadata reused across deployments."""
 
-    candidate_space = DownlinkProblemSpace(context.mcs_table)
-    grid_model = candidate_space.grid_model
+    rate_model = CandidateRateModel(context.mcs_table)
     mcs_model = McsRequirementModel(context.mcs_table)
     sinr_requirement_table = mcs_model.get_required_sinr_table(context.deployment)
 
     candidates = []
-    for candidate_ordinal, candidate in enumerate(candidate_space.iter_candidates(context.built_problem)):
-        rrc = context.rrc_lookup.get((int(candidate.pa_id), int(candidate.bwp_idx)))
-        if rrc is None:
+    for candidate_ordinal, candidate in enumerate(iter_candidates(context.built_problem)):
+        rrc, sched, pa = resolve_candidate_context(context.built_problem, candidate)
+        if rrc is None or pa is None:
             continue
 
-        sched = grid_model.build_scheduler_vars(candidate)
+        rate_result = rate_model.compute_candidate_rate(context.deployment, rrc, sched)
         gamma_req = sinr_requirement_table[sched.mcs]
         candidates.append(
             StaticCandidateSpec(
@@ -145,11 +142,10 @@ def _build_static_candidate_specs(context):
                     n_active_tx=int(candidate.n_active_tx),
                     mcs=int(candidate.mcs),
                 ),
-                pa_name=str(context.pa_catalog[candidate.pa_id].pa_name),
+                pa_name=str(pa.pa_name),
                 bandwidth_hz=float(rrc.bwp_bw_hz),
                 alpha_f=float(sched.n_prb / max(rrc.prb_max_bwp, 1)),
-                alpha_t=float(grid_model.scheduler_duty_cycle(context.deployment, sched)),
-                rate_ach_bps=float(grid_model.compute_rate(context.deployment, rrc, sched)),
+                rate_ach_bps=float(rate_result.rate_ach_bps),
                 gamma_req_lin=float(gamma_req["rho_req_linear"]),
                 gamma_req_db=float(gamma_req["rho_req_db"]),
             )
@@ -164,6 +160,32 @@ def _build_static_candidate_specs(context):
                 candidate.candidate_ordinal,
             ),
         )
+    )
+
+
+def _filter_static_candidates_by_rate(static_candidates, required_rate_bps):
+    """Keep only static candidates that satisfy the requested target rate."""
+
+    return tuple(
+        candidate
+        for candidate in static_candidates
+        if float(candidate.rate_ach_bps) >= float(required_rate_bps)
+    )
+
+
+def _build_active_candidate_table(context, static_candidates, *, parallel=False, max_workers=None):
+    """Evaluate a static candidate slice and assemble the feasible active table."""
+
+    dynamic_results = _evaluate_dynamic_candidate_slice(
+        context,
+        static_candidates,
+        parallel=parallel,
+        max_workers=max_workers,
+    )
+    return _assemble_active_candidate_table(
+        static_candidates,
+        dynamic_results,
+        deployment=context.deployment,
     )
 
 
@@ -186,13 +208,13 @@ def _evaluate_dynamic_candidate_slice(
     )
 
 
-def _assemble_active_candidate_table(static_candidates, dynamic_results):
+def _assemble_active_candidate_table(static_candidates, dynamic_results, *, deployment):
     """Assemble the feasible active candidate table from evaluated dynamic results."""
 
     feasible_result_by_ordinal = {
-        int(result.candidate_ordinal): result
+        int(result["candidate_ordinal"]): result["power_result"]
         for result in dynamic_results
-        if bool(result.is_feasible)
+        if bool(result["power_result"].is_feasible)
     }
 
     rows = []
@@ -200,7 +222,7 @@ def _assemble_active_candidate_table(static_candidates, dynamic_results):
         dynamic_result = feasible_result_by_ordinal.get(int(static_candidate.candidate_ordinal))
         if dynamic_result is None:
             continue
-        rows.append(_build_active_candidate_row(static_candidate, dynamic_result))
+        rows.append(_build_active_candidate_row(static_candidate, dynamic_result, deployment=deployment))
     return _finalize_active_candidate_table(rows)
 
 
@@ -280,24 +302,48 @@ def _run_batched_parallel(mcs_table, problem, candidate_batches, max_workers=Non
 def _run_batched_serial(mcs_table, problem, candidate_batches):
     """Evaluate candidate batches in-process while preserving enumeration order."""
 
-    evaluator = DownlinkCandidateEvaluator(mcs_table)
+    power_model = CandidatePowerModel(mcs_table)
     rows = []
     for _batch_id, candidates in candidate_batches:
-        rows.extend(_evaluate_candidate_batch(evaluator, problem, candidates))
+        rows.extend(_evaluate_candidate_batch(power_model, problem, candidates))
     return rows
 
 
-def _evaluate_candidate_batch(evaluator, problem, candidates):
-    """Evaluate one execution batch using a shared evaluator instance."""
+def _evaluate_candidate_batch(power_model, problem, candidates):
+    """Evaluate one execution batch using a shared power model instance."""
 
-    return [evaluator.evaluate_static_candidate(problem, candidate) for candidate in candidates]
+    rows = []
+    for static_candidate in candidates:
+        rrc, sched, pa = resolve_candidate_context(problem, static_candidate.candidate)
+        if rrc is None or pa is None:
+            power_result = CandidatePowerResult(
+                is_feasible=False,
+                infeasibility_reason="rrc_not_found",
+                gamma_req_lin=float(static_candidate.gamma_req_lin),
+                gamma_req_db=float(static_candidate.gamma_req_db),
+            )
+        else:
+            power_result = power_model.solve_candidate_power(
+                problem.deployment,
+                rrc,
+                sched,
+                pa,
+                gamma_req_lin=float(static_candidate.gamma_req_lin),
+            )
+        rows.append(
+            {
+                "candidate_ordinal": int(static_candidate.candidate_ordinal),
+                "power_result": power_result,
+            }
+        )
+    return rows
 
 
 def _initialize_worker_state(mcs_table, problem):
     """Initialize read-only worker state once per process."""
 
-    global _WORKER_EVALUATOR, _WORKER_PROBLEM
-    _WORKER_EVALUATOR = DownlinkCandidateEvaluator(mcs_table)
+    global _WORKER_POWER_MODEL, _WORKER_PROBLEM
+    _WORKER_POWER_MODEL = CandidatePowerModel(mcs_table)
     _WORKER_PROBLEM = problem
 
 
@@ -305,7 +351,7 @@ def _evaluate_candidate_batch_worker(payload):
     """Worker entry point for one execution batch."""
 
     batch_id, candidates = payload
-    rows = _evaluate_candidate_batch(_WORKER_EVALUATOR, _WORKER_PROBLEM, candidates)
+    rows = _evaluate_candidate_batch(_WORKER_POWER_MODEL, _WORKER_PROBLEM, candidates)
     return batch_id, rows
 
 
@@ -318,12 +364,12 @@ def _flatten_batch_rows(batch_rows):
     return rows
 
 
-def _build_active_candidate_row(static_candidate, dynamic_result):
+def _build_active_candidate_row(static_candidate, dynamic_result, *, deployment):
     """Merge one static candidate spec with one feasible dynamic result."""
 
     return {
-        "distance_m": float(dynamic_result.distance_m),
-        "path_loss_db": float(dynamic_result.path_loss_db),
+        "distance_m": float(deployment.distance_m),
+        "path_loss_db": float(deployment.path_loss_db),
         "pa_id": int(static_candidate.candidate.pa_id),
         "pa_name": str(static_candidate.pa_name),
         "bwp_idx": int(static_candidate.candidate.bwp_idx),
@@ -334,11 +380,10 @@ def _build_active_candidate_row(static_candidate, dynamic_result):
         "n_active_tx": int(static_candidate.candidate.n_active_tx),
         "mcs": int(static_candidate.candidate.mcs),
         "alpha_f": float(static_candidate.alpha_f),
-        "alpha_t": float(static_candidate.alpha_t),
         "p_dc_avg_total_w": float(dynamic_result.p_dc_avg_total_w),
-        "p_rf_out_active_w": float(dynamic_result.p_rf_out_active_w),
+        "p_rf_out_active_w": float(dynamic_result.p_out_total_w),
         "p_out_total_w": float(dynamic_result.p_out_total_w),
-        "p_sig_out_active_w": float(dynamic_result.p_sig_out_active_w),
+        "p_sig_out_active_w": float(dynamic_result.p_sig_out_total_w),
         "p_sig_out_total_w": float(dynamic_result.p_sig_out_total_w),
         "ps_total_w": float(dynamic_result.ps_total_w),
         "rate_ach_bps": float(static_candidate.rate_ach_bps),

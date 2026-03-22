@@ -3,13 +3,13 @@ from itertools import islice
 import numpy as np
 import pandas as pd
 
-from downlink_candidate_evaluation import DownlinkProblemSpace
 from radio_core import SINGLE_USER_SEARCH_PRESET, build_pa_characteristics_table
 from single_user_search.api import (
     enumerate_active_candidates as enumerate_active_candidates_from_engine,
     search_candidate_spaces as search_candidate_spaces_from_engine,
     search_candidates as search_candidates_from_engine,
 )
+from single_user_search.candidate_space import count_candidates_for_rrc, iter_candidates
 from single_user_search.models import SingleUserRequest, SingleUserSearchOptions
 from single_user_search.problem_factory import prepare_single_user_problem
 from single_user_search.search import search_candidates_from_context
@@ -140,10 +140,9 @@ def summarize_single_user_scenario(scenario, scenario_count=1):
 def preview_single_user_candidates(scenario, limit=5):
     """Return the first few discrete candidates from one prepared scenario."""
 
-    problem_space = _build_problem_space(scenario.context)
     preview_rows = [
         candidate.__dict__
-        for candidate in islice(problem_space.iter_candidates(scenario.context.built_problem), int(limit))
+        for candidate in islice(iter_candidates(scenario.context.built_problem), int(limit))
     ]
     return pd.DataFrame(preview_rows)
 
@@ -207,12 +206,6 @@ def _resolve_api_options(options):
     return SingleUserSearchOptions(use_cache=True)
 
 
-def _build_problem_space(context):
-    """Build the problem-space helper for one prepared scenario."""
-
-    return DownlinkProblemSpace(context.mcs_table)
-
-
 def _build_problem_views(context, scenario_count):
     """Build the notebook-facing deployment and search-space summary tables."""
 
@@ -223,7 +216,6 @@ def _build_problem_views(context, scenario_count):
         "search_space_summary": _build_search_space_summary_table(
             built_problem,
             scenario_count=int(scenario_count),
-            problem_space=_build_problem_space(context),
         ),
     }
 
@@ -265,14 +257,14 @@ def _build_rrc_catalog_table(built_problem):
     ).sort_values(["pa_id", "bandwidth_hz"]).reset_index(drop=True)
 
 
-def _build_search_space_summary_table(built_problem, *, scenario_count, problem_space):
+def _build_search_space_summary_table(built_problem, *, scenario_count):
     """Summarize the raw combinatorial search size for notebook inspection."""
 
     per_pa_counts = []
     for pa_id in range(len(built_problem.pa_catalog)):
         rrc_space = [rrc for rrc in built_problem.rrc_catalog if rrc.active_pa_id == pa_id]
         per_pa_counts.append(
-            sum(problem_space.grid_model.count_candidates_for_rrc(built_problem, rrc) for rrc in rrc_space)
+            sum(count_candidates_for_rrc(built_problem, rrc) for rrc in rrc_space)
         )
 
     raw_configs_per_scenario = sum(per_pa_counts)
