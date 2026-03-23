@@ -74,7 +74,7 @@ COMMON_PHY_CONSTANTS = PhyConstantsConfig(
 
 COMMON_SCHEDULER_SPACE = SchedulerSpaceConfig(
     bandwidth_space_hz=(100e6, 50e6),
-    layers_space=(1, 2, 4),
+    layers_space=(1, 2, 3, 4),
     mcs_space=tuple(range(0, 29)),
     prb_step=5,
 )

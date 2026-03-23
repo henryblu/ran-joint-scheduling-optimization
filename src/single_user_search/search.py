@@ -348,7 +348,6 @@ def _build_static_cache_options(options):
     """Keep only the search-space-shaping options in cache keys."""
 
     return SingleUserSearchOptions(
-        fast_mode=options.fast_mode,
         prb_step=options.prb_step,
         bandwidth_space_hz=options.bandwidth_space_hz,
         n_slots_on_space=options.n_slots_on_space,
@@ -391,7 +390,6 @@ def _resolve_run_options(problem_options, options):
         return problem_options
     return replace(
         problem_options,
-        fast_mode=options.fast_mode,
         prb_step=options.prb_step,
         bandwidth_space_hz=options.bandwidth_space_hz,
         n_slots_on_space=options.n_slots_on_space,

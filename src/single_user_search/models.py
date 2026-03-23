@@ -16,7 +16,6 @@ class SingleUserRequest:
 class SingleUserSearchOptions:
     """Execution options that shape one single-user candidate-space run."""
 
-    fast_mode: bool = False
     prb_step: int | None = None
     bandwidth_space_hz: tuple[float, ...] | None = None
     n_slots_on_space: tuple[int, ...] | None = None

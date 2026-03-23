@@ -1,3 +1,5 @@
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 from itertools import islice
 
 import numpy as np
@@ -6,13 +8,12 @@ import pandas as pd
 from radio_core import SINGLE_USER_SEARCH_PRESET, build_pa_characteristics_table
 from single_user_search.api import (
     enumerate_active_candidates as enumerate_active_candidates_from_engine,
-    search_candidate_spaces as search_candidate_spaces_from_engine,
     search_candidates as search_candidates_from_engine,
 )
 from single_user_search.candidate_space import count_candidates_for_rrc, iter_candidates
 from single_user_search.models import SingleUserRequest, SingleUserSearchOptions
 from single_user_search.problem_factory import prepare_single_user_problem
-from single_user_search.search import search_candidates_from_context
+from single_user_search.search import filter_rate_feasible_candidates, search_candidates_from_context
 
 from .models import SingleUserScenario
 
@@ -63,15 +64,72 @@ def search_candidate_spaces(
     preset=None,
     pa_catalog=None,
     options=None,
+    outer_parallel=False,
+    max_workers=None,
 ):
-    """Expose the shared batch candidate-space search through the study module."""
+    """Build many user candidate tables from the notebook-facing study layer.
 
-    return search_candidate_spaces_from_engine(
-        user_table,
-        preset=preset,
-        pa_catalog=pa_catalog,
-        options=options,
-    )
+    Steps:
+    1. Normalize the notebook user table and reject duplicate user ids.
+    2. Group users by deployment-equivalent active-table inputs.
+    3. Build one active table per unique deployment, either serially or in outer processes.
+    4. Filter each shared active table by user target rate and return `user_id -> table`.
+    """
+
+    normalized_users = _normalize_user_table(user_table)
+    resolved_preset = SINGLE_USER_SEARCH_PRESET if preset is None else preset
+    resolved_options = SingleUserSearchOptions(use_cache=True) if options is None else options
+
+    group_requests = {}
+    for user_row in normalized_users.itertuples(index=False):
+        group_key = _build_user_group_key(user_row)
+        if group_key in group_requests:
+            continue
+        group_requests[group_key] = {
+            "distance_m": float(user_row.distance_m),
+            "path_loss_db": user_row.path_loss_db,
+        }
+
+    grouped_active_tables = {}
+    if bool(outer_parallel) and len(group_requests) > 1:
+        try:
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(
+                        _evaluate_user_group_worker,
+                        group_key,
+                        request["distance_m"],
+                        request["path_loss_db"],
+                        resolved_preset,
+                        pa_catalog,
+                        resolved_options,
+                    ): group_key
+                    for group_key, request in group_requests.items()
+                }
+                for future in as_completed(futures):
+                    group_key, active_table = future.result()
+                    grouped_active_tables[group_key] = active_table
+        except (OSError, PermissionError, BrokenProcessPool, RuntimeError):
+            grouped_active_tables = {}
+
+    if not grouped_active_tables:
+        for group_key, request in group_requests.items():
+            grouped_active_tables[group_key] = enumerate_active_candidates(
+                request["distance_m"],
+                path_loss_db=request["path_loss_db"],
+                preset=resolved_preset,
+                pa_catalog=pa_catalog,
+                options=resolved_options,
+            )
+
+    user_candidate_spaces = {}
+    for user_row in normalized_users.itertuples(index=False):
+        active_table = grouped_active_tables[_build_user_group_key(user_row)]
+        user_candidate_spaces[int(user_row.user_id)] = filter_rate_feasible_candidates(
+            active_table,
+            required_rate_bps=float(user_row.required_rate_bps),
+        )
+    return user_candidate_spaces
 
 
 def build_single_user_scenario(
@@ -99,9 +157,9 @@ def build_single_user_scenario(
     )
     context = prepare_single_user_problem(
         request=request,
-        preset=_resolve_preset(preset),
+        preset=SINGLE_USER_SEARCH_PRESET if preset is None else preset,
         pa_catalog=pa_catalog,
-        options=_resolve_api_options(options),
+        options=SingleUserSearchOptions(use_cache=True) if options is None else options,
     )
     return SingleUserScenario(request=request, context=context)
 
@@ -127,13 +185,15 @@ def summarize_single_user_scenario(scenario, scenario_count=1):
     """
 
     context = scenario.context
-    problem_views = _build_problem_views(context, scenario_count=int(scenario_count))
     return {
-        "deployment_summary": problem_views["deployment_summary"],
+        "deployment_summary": _build_deployment_summary_table(context.built_problem),
         "pa_characteristics": build_pa_characteristics_table(context.pa_catalog),
-        "rrc_catalog": problem_views["rrc_catalog"],
+        "rrc_catalog": _build_rrc_catalog_table(context.built_problem),
         "search_space_detail": _build_search_space_detail(context),
-        "search_space_summary": problem_views["search_space_summary"],
+        "search_space_summary": _build_search_space_summary_table(
+            context.built_problem,
+            scenario_count=int(scenario_count),
+        ),
     }
 
 
@@ -192,32 +252,52 @@ def build_single_user_plot_domains(scenario):
     }
 
 
-def _resolve_preset(preset):
-    """Return the canonical notebook preset unless the caller overrides it."""
+def _normalize_user_table(user_table):
+    """Normalize the notebook batch table and validate its required schema."""
 
-    return SINGLE_USER_SEARCH_PRESET if preset is None else preset
+    if not isinstance(user_table, pd.DataFrame):
+        raise TypeError("user_table must be a pandas DataFrame.")
+
+    required_columns = {"user_id", "distance_m", "required_rate_bps"}
+    missing_columns = sorted(required_columns.difference(user_table.columns))
+    if missing_columns:
+        raise ValueError(f"user_table is missing required columns: {missing_columns}")
+
+    normalized = user_table.copy()
+    if "path_loss_db" not in normalized.columns:
+        normalized["path_loss_db"] = None
+
+    normalized["user_id"] = normalized["user_id"].astype(int)
+    if normalized["user_id"].duplicated().any():
+        duplicate_ids = sorted(normalized.loc[normalized["user_id"].duplicated(), "user_id"].unique())
+        raise ValueError(f"user_table contains duplicate user_id values: {duplicate_ids}")
+
+    normalized["distance_m"] = normalized["distance_m"].astype(float)
+    normalized["required_rate_bps"] = normalized["required_rate_bps"].astype(float)
+    normalized["path_loss_db"] = normalized["path_loss_db"].apply(_normalize_optional_float)
+    return normalized[["user_id", "distance_m", "required_rate_bps", "path_loss_db"]]
 
 
-def _resolve_api_options(options):
-    """Return the notebook API's default search options when none are supplied."""
+def _build_user_group_key(user_row):
+    """Build the deployment-equivalent key for one notebook batch row."""
 
-    if options is not None:
-        return options
-    return SingleUserSearchOptions(use_cache=True)
+    return (
+        float(user_row.distance_m),
+        _normalize_optional_float(user_row.path_loss_db),
+    )
 
 
-def _build_problem_views(context, scenario_count):
-    """Build the notebook-facing deployment and search-space summary tables."""
+def _evaluate_user_group_worker(group_key, distance_m, path_loss_db, preset, pa_catalog, options):
+    """Build one shared active table inside an outer worker process."""
 
-    built_problem = context.built_problem
-    return {
-        "deployment_summary": _build_deployment_summary_table(built_problem),
-        "rrc_catalog": _build_rrc_catalog_table(built_problem),
-        "search_space_summary": _build_search_space_summary_table(
-            built_problem,
-            scenario_count=int(scenario_count),
-        ),
-    }
+    active_table = enumerate_active_candidates(
+        float(distance_m),
+        path_loss_db=path_loss_db,
+        preset=preset,
+        pa_catalog=pa_catalog,
+        options=options,
+    )
+    return group_key, active_table
 
 
 def _build_deployment_summary_table(built_problem):
@@ -333,6 +413,14 @@ def _build_integer_axis_config(values, max_ticks=9, dense_span=20):
         "limits": (float(lower), float(upper)),
         "ticks": tick_values,
     }
+
+
+def _normalize_optional_float(value):
+    """Normalize pandas missing values into `None` for batch-group keys."""
+
+    if pd.isna(value):
+        return None
+    return float(value)
 
 
 __all__ = [

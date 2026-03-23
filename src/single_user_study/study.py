@@ -3,7 +3,7 @@ import pandas as pd
 
 from .api import (
     build_single_user_scenario,
-    run_single_user_scenario,
+    search_candidate_spaces,
     summarize_single_user_scenario,
 )
 from .models import SingleUserStudyResult
@@ -60,7 +60,7 @@ TIE_BREAK_COLUMNS = [
 ]
 
 
-def run_rate_study(distance_m, rate_targets_bps):
+def run_rate_study(distance_m, rate_targets_bps, *, outer_parallel=False, max_workers=None):
     """Run a fixed-distance frontier study across explicit rate targets.
 
     Steps:
@@ -74,42 +74,62 @@ def run_rate_study(distance_m, rate_targets_bps):
     return _run_frontier_study(
         scenarios,
         required_rate_targets_bps=required_rate_targets_bps,
+        outer_parallel=outer_parallel,
+        max_workers=max_workers,
     )
 
 
-def run_distance_study(distance_values_m, required_rate_bps):
+def run_distance_study(distance_values_m, required_rate_bps, *, outer_parallel=False, max_workers=None):
     """Run a fixed-rate frontier study across explicit distance values."""
     scenarios = [{"distance_m": float(distance_m)} for distance_m in distance_values_m]
     required_rate_targets_bps = np.asarray([float(required_rate_bps)], dtype=float)
     return _run_frontier_study(
         scenarios,
         required_rate_targets_bps=required_rate_targets_bps,
+        outer_parallel=outer_parallel,
+        max_workers=max_workers,
     )
 
 
-def _run_frontier_study(scenarios, required_rate_targets_bps):
+def _run_frontier_study(scenarios, required_rate_targets_bps, *, outer_parallel=False, max_workers=None):
     """Run the shared scenario loop for rate and distance frontier studies."""
-    built_scenarios = []
     frontier_tables = []
     explanatory_tables = []
     candidate_rate_bps = float(np.min(required_rate_targets_bps))
 
-    for scenario in scenarios:
-        built_scenario = build_single_user_scenario(
-            distance_m=float(scenario["distance_m"]),
-            required_rate_bps=candidate_rate_bps,
-        )
-        candidate_table = run_single_user_scenario(built_scenario)
+    user_table = pd.DataFrame(
+        [
+            {
+                "user_id": int(scenario_idx),
+                "distance_m": float(scenario["distance_m"]),
+                "required_rate_bps": float(candidate_rate_bps),
+                "path_loss_db": scenario.get("path_loss_db"),
+            }
+            for scenario_idx, scenario in enumerate(scenarios)
+        ]
+    )
+    candidate_spaces = search_candidate_spaces(
+        user_table,
+        outer_parallel=outer_parallel,
+        max_workers=max_workers,
+    )
+
+    for scenario_idx, scenario in enumerate(scenarios):
+        candidate_table = candidate_spaces[int(scenario_idx)]
         scenario_frontier, scenario_explanatory = _evaluate_scenario_frontier(
             candidate_table,
             required_rate_targets_bps=required_rate_targets_bps,
         )
-        built_scenarios.append(built_scenario)
         frontier_tables.append(scenario_frontier)
         explanatory_tables.append(scenario_explanatory)
 
+    summary_scenario = build_single_user_scenario(
+        distance_m=float(scenarios[0]["distance_m"]),
+        required_rate_bps=candidate_rate_bps,
+        path_loss_db=scenarios[0].get("path_loss_db"),
+    )
     summary_views = summarize_single_user_scenario(
-        built_scenarios[0],
+        summary_scenario,
         scenario_count=len(scenarios),
     )
     return SingleUserStudyResult(

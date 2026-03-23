@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 from dataclasses import asdict, is_dataclass
 from enum import Enum
@@ -107,11 +108,11 @@ def resolve_model_inputs(preset):
     cache_key = _build_model_inputs_cache_key(preset)
     cached = _MODEL_INPUTS_CACHE.get(cache_key)
     if cached is not None:
-        return cached
+        return deepcopy(cached)
 
     model_inputs = build_model_inputs(preset)
-    _MODEL_INPUTS_CACHE[cache_key] = model_inputs
-    return model_inputs
+    _MODEL_INPUTS_CACHE[cache_key] = deepcopy(model_inputs)
+    return deepcopy(_MODEL_INPUTS_CACHE[cache_key])
 
 
 def resolve_pa_catalog(model_inputs, pa_catalog=None):
@@ -123,11 +124,11 @@ def resolve_pa_catalog(model_inputs, pa_catalog=None):
     cache_key = _build_pa_catalog_cache_key(model_inputs["pa_data_csv"])
     cached = _PA_CATALOG_CACHE.get(cache_key)
     if cached is not None:
-        return cached
+        return deepcopy(cached)
 
     resolved_pa_catalog = build_pa_catalog(model_inputs["pa_data_csv"])
-    _PA_CATALOG_CACHE[cache_key] = resolved_pa_catalog
-    return resolved_pa_catalog
+    _PA_CATALOG_CACHE[cache_key] = deepcopy(resolved_pa_catalog)
+    return deepcopy(_PA_CATALOG_CACHE[cache_key])
 
 
 def clear_problem_factory_cache():

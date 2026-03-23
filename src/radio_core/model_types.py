@@ -78,7 +78,6 @@ class ModelOptions:
     """Execution and optimization policy."""
 
     tie_break_keys: tuple = ("p_dc_avg_total_w", "bandwidth_hz", "n_prb", "n_slots_on")
-    fast_mode: bool = False
 
 
 @dataclass
