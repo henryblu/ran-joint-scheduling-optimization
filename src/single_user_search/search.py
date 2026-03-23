@@ -1,6 +1,5 @@
 import hashlib
 import json
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import asdict, is_dataclass, replace
 from enum import Enum
 
@@ -10,7 +9,7 @@ import pandas as pd
 from downlink_candidate_evaluation import CandidatePowerModel, CandidatePowerResult, CandidateRateModel
 from downlink_candidate_evaluation.mcs_requirements import McsRequirementModel
 
-from .candidate_space import build_scheduler_vars, iter_candidates, resolve_candidate_context
+from .candidate_space import iter_candidates, resolve_candidate_context
 from .models import SingleUserSearchOptions, SingleUserStaticCandidateCatalog, StaticCandidateSpec
 from .problem_factory import clear_problem_factory_cache
 
@@ -48,8 +47,6 @@ ACTIVE_RESULT_COLUMNS = [
 _ACTIVE_TABLE_CACHE = {}
 _STATIC_CANDIDATE_CATALOG_CACHE = {}
 _CANDIDATE_BATCH_SIZE = 2048
-_WORKER_POWER_MODEL = None
-_WORKER_PROBLEM = None
 
 
 def enumerate_active_candidates_from_context(context, *, options=None):
@@ -63,12 +60,7 @@ def enumerate_active_candidates_from_context(context, *, options=None):
             return cached_active_table
 
     static_catalog = _build_static_candidate_catalog(context)
-    active_table = _build_active_candidate_table(
-        context,
-        static_catalog.candidates,
-        parallel=resolved_options.parallel,
-        max_workers=resolved_options.max_workers,
-    )
+    active_table = _build_active_candidate_table(context, static_catalog.candidates)
     if cache_key is not None:
         _store_cached_active_table(cache_key, active_table)
     return active_table
@@ -83,12 +75,7 @@ def search_candidates_from_context(context, required_rate_bps, *, options=None):
         static_catalog.candidates,
         required_rate_bps=float(required_rate_bps),
     )
-    return _build_active_candidate_table(
-        context,
-        filtered_candidates,
-        parallel=resolved_options.parallel,
-        max_workers=resolved_options.max_workers,
-    )
+    return _build_active_candidate_table(context, filtered_candidates)
 
 
 def clear_cache():
@@ -173,38 +160,19 @@ def _filter_static_candidates_by_rate(static_candidates, required_rate_bps):
     )
 
 
-def _build_active_candidate_table(context, static_candidates, *, parallel=False, max_workers=None):
+def _build_active_candidate_table(context, static_candidates):
     """Evaluate a static candidate slice and assemble the feasible active table."""
 
-    dynamic_results = _evaluate_dynamic_candidate_slice(
-        context,
-        static_candidates,
-        parallel=parallel,
-        max_workers=max_workers,
-    )
+    power_model = CandidatePowerModel(context.mcs_table)
+    dynamic_results = []
+    for candidate_batch in _iter_candidate_batches(static_candidates, batch_size=_CANDIDATE_BATCH_SIZE):
+        dynamic_results.extend(
+            _evaluate_candidate_batch(power_model, context.built_problem, candidate_batch)
+        )
     return _assemble_active_candidate_table(
         static_candidates,
         dynamic_results,
         deployment=context.deployment,
-    )
-
-
-def _evaluate_dynamic_candidate_slice(
-    context,
-    static_candidates,
-    *,
-    parallel=False,
-    max_workers=None,
-):
-    """Evaluate the dynamic power feasibility for one static candidate slice."""
-
-    candidate_batch_builder = _build_candidate_batch_builder(static_candidates)
-    return _evaluate_candidate_batches(
-        context.mcs_table,
-        context.built_problem,
-        candidate_batch_builder,
-        parallel=parallel,
-        max_workers=max_workers,
     )
 
 
@@ -238,75 +206,18 @@ def filter_rate_feasible_candidates(active_candidate_table, required_rate_bps):
     return filtered_candidate_table.reset_index(drop=True).reindex(columns=ACTIVE_RESULT_COLUMNS)
 
 
-def _build_candidate_batch_builder(candidates):
-    """Return a generator factory for fixed-size batches over a candidate slice."""
-
-    return lambda: _iter_candidate_batches(candidates, batch_size=_CANDIDATE_BATCH_SIZE)
-
-
 def _iter_candidate_batches(candidates, *, batch_size):
     """Yield fixed-size evaluation batches while preserving candidate order."""
 
-    batch_id = 0
     batch = []
     for candidate in candidates:
         batch.append(candidate)
         if len(batch) < batch_size:
             continue
-        yield batch_id, batch
-        batch_id += 1
+        yield batch
         batch = []
     if batch:
-        yield batch_id, batch
-
-
-def _evaluate_candidate_batches(mcs_table, problem, candidate_batch_builder, *, parallel=False, max_workers=None):
-    """Evaluate candidate batches either in worker processes or in-process."""
-
-    if parallel:
-        parallel_rows = _run_batched_parallel(
-            mcs_table,
-            problem,
-            candidate_batch_builder(),
-            max_workers=max_workers,
-        )
-        if parallel_rows is not None:
-            return parallel_rows
-    return _run_batched_serial(mcs_table, problem, candidate_batch_builder())
-
-
-def _run_batched_parallel(mcs_table, problem, candidate_batches, max_workers=None):
-    """Try process-based evaluation and fall back to serial mode when unavailable."""
-
-    futures = {}
-    try:
-        with ProcessPoolExecutor(
-            max_workers=max_workers,
-            initializer=_initialize_worker_state,
-            initargs=(mcs_table, problem),
-        ) as executor:
-            for batch_id, candidates in candidate_batches:
-                futures[executor.submit(_evaluate_candidate_batch_worker, (batch_id, candidates))] = batch_id
-            if not futures:
-                return []
-
-            batch_rows = {}
-            for future in as_completed(futures):
-                batch_id, rows = future.result()
-                batch_rows[batch_id] = rows
-    except (OSError, PermissionError):
-        return None
-    return _flatten_batch_rows(batch_rows)
-
-
-def _run_batched_serial(mcs_table, problem, candidate_batches):
-    """Evaluate candidate batches in-process while preserving enumeration order."""
-
-    power_model = CandidatePowerModel(mcs_table)
-    rows = []
-    for _batch_id, candidates in candidate_batches:
-        rows.extend(_evaluate_candidate_batch(power_model, problem, candidates))
-    return rows
+        yield batch
 
 
 def _evaluate_candidate_batch(power_model, problem, candidates):
@@ -336,31 +247,6 @@ def _evaluate_candidate_batch(power_model, problem, candidates):
                 "power_result": power_result,
             }
         )
-    return rows
-
-
-def _initialize_worker_state(mcs_table, problem):
-    """Initialize read-only worker state once per process."""
-
-    global _WORKER_POWER_MODEL, _WORKER_PROBLEM
-    _WORKER_POWER_MODEL = CandidatePowerModel(mcs_table)
-    _WORKER_PROBLEM = problem
-
-
-def _evaluate_candidate_batch_worker(payload):
-    """Worker entry point for one execution batch."""
-
-    batch_id, candidates = payload
-    rows = _evaluate_candidate_batch(_WORKER_POWER_MODEL, _WORKER_PROBLEM, candidates)
-    return batch_id, rows
-
-
-def _flatten_batch_rows(batch_rows):
-    """Flatten completed batch rows back into canonical batch order."""
-
-    rows = []
-    for batch_id in sorted(batch_rows):
-        rows.extend(batch_rows[batch_id])
     return rows
 
 
@@ -416,8 +302,6 @@ def _build_active_table_cache_key_if_enabled(context, options):
         context,
         options=replace(
             context.options,
-            parallel=False,
-            max_workers=None,
             use_cache=False,
         ),
     )
@@ -468,8 +352,6 @@ def _build_static_cache_options(options):
         prb_step=options.prb_step,
         bandwidth_space_hz=options.bandwidth_space_hz,
         n_slots_on_space=options.n_slots_on_space,
-        parallel=False,
-        max_workers=None,
         use_cache=False,
     )
 
@@ -513,7 +395,5 @@ def _resolve_run_options(problem_options, options):
         prb_step=options.prb_step,
         bandwidth_space_hz=options.bandwidth_space_hz,
         n_slots_on_space=options.n_slots_on_space,
-        parallel=options.parallel,
-        max_workers=options.max_workers,
         use_cache=options.use_cache,
     )

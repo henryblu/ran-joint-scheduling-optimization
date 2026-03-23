@@ -1,4 +1,4 @@
-from .api import enumerate_active_candidates, search_candidate_spaces, search_candidates
+from .api import enumerate_active_candidates, search_candidates
 from .models import PreparedSingleUserContext, SingleUserSearchOptions
 from .search import clear_cache
 
@@ -7,6 +7,5 @@ __all__ = [
     "SingleUserSearchOptions",
     "clear_cache",
     "enumerate_active_candidates",
-    "search_candidate_spaces",
     "search_candidates",
 ]

@@ -20,8 +20,6 @@ class SingleUserSearchOptions:
     prb_step: int | None = None
     bandwidth_space_hz: tuple[float, ...] | None = None
     n_slots_on_space: tuple[int, ...] | None = None
-    parallel: bool = False
-    max_workers: int | None = None
     use_cache: bool = True
 
 
