@@ -1,16 +1,12 @@
 import pandas as pd
 
-from radio_core import (
-    MULTI_USER_TDMA_PRESET,
-    build_multi_user_system_cfg,
-    build_pa_characteristics_table,
-    resolve_model_inputs,
-    resolve_pa_catalog,
-    resolve_path_loss_db_values,
-    resolve_search_shape,
-)
+from pa_models import build_pa_catalog, build_pa_characteristics_table
+from radio_configs import MULTI_USER_TDMA_CONFIG
+from radio_models import PathLossModel, build_resolved_fingerprint
+from single_user_search.models import SearchSpace
 
-from .models import MultiUserTdmaScenario, MultiUserTdmaStudyResult
+from .models import MultiUserSystemConfig, MultiUserTdmaScenario, MultiUserTdmaStudyResult
+from .presets import MULTI_USER_TDMA_PRESET
 from .user_space import (
     build_active_candidate_summary_df,
     build_user_candidate_review_tables,
@@ -31,17 +27,17 @@ def build_multi_user_tdma_scenario(user_table):
     """
 
     resolved_preset = MULTI_USER_TDMA_PRESET
-    active_search_model_inputs = resolve_model_inputs(resolved_preset.model)
-    active_search_shape = resolve_search_shape(active_search_model_inputs)
+    active_search_model_inputs = MULTI_USER_TDMA_CONFIG
+    active_search_shape = _build_search_space(active_search_model_inputs)
     scenario_user_table = _resolve_scenario_user_table(
         user_table,
-        link_constants=active_search_model_inputs.link,
+        link_constants=active_search_model_inputs,
     )
     return MultiUserTdmaScenario(
         user_table=scenario_user_table,
         preset=resolved_preset,
-        system_cfg=build_multi_user_system_cfg(active_search_model_inputs, resolved_preset.tdd),
-        pa_catalog=resolve_pa_catalog(active_search_model_inputs),
+        system_cfg=_build_system_cfg(active_search_model_inputs, resolved_preset.tdd),
+        pa_catalog=tuple(build_pa_catalog(active_search_model_inputs.pa_data_csv)),
         active_search_model_inputs=active_search_model_inputs,
         active_search_shape=active_search_shape,
     )
@@ -176,8 +172,97 @@ def _resolve_scenario_user_table(user_table, *, link_constants):
 
     scenario_user_table = user_table.copy()
     scenario_user_table["distance_m"] = scenario_user_table["distance_m"].astype(float)
-    scenario_user_table["path_loss_db"] = resolve_path_loss_db_values(
+    scenario_user_table["path_loss_db"] = _resolve_path_loss_db_values(
         link_constants,
         scenario_user_table["distance_m"].tolist(),
     )
     return scenario_user_table[["user_id", "distance_m", "required_rate_bps", "path_loss_db"]]
+
+
+def _build_search_space(model_inputs):
+    n_slots_on_space = tuple(range(1, int(model_inputs.n_slots_win) + 1))
+    return SearchSpace(
+        config=model_inputs,
+        bandwidth_space_hz=model_inputs.bandwidth_space_hz,
+        n_slots_on_space=n_slots_on_space,
+        layers_space=model_inputs.layers_space,
+        mcs_space=model_inputs.mcs_space,
+        prb_step=model_inputs.prb_step,
+        fingerprint=build_resolved_fingerprint({"n_slots_on_space": n_slots_on_space}),
+        use_cache=True,
+    )
+
+
+def _resolve_path_loss_db_values(config, distance_values_m):
+    """Resolve one concrete path-loss value per user distance for the TDMA study."""
+
+    path_loss_model = PathLossModel(
+        fc_hz=config.fc_hz,
+        model=config.pl_model,
+        g_tx_db=config.g_tx_db,
+        g_rx_db=config.g_rx_db,
+        shadow_margin_db=config.shadow_margin_db,
+        h_bs_m=config.h_bs_m,
+        h_ut_m=config.h_ut_m,
+    )
+    return [
+        path_loss_model.effective_path_loss_db(float(distance_m))
+        for distance_m in distance_values_m
+    ]
+
+
+def _build_system_cfg(config, tdd_config):
+    """Build the TDMA-owned mixed-slot system view from radio config and TDD pattern."""
+
+    _validate_mixed_slot_pattern(config, tdd_config)
+    return MultiUserSystemConfig(
+        fc_hz=config.fc_hz,
+        channel_bw_hz=config.channel_bw_hz,
+        bandwidth_space_hz=config.bandwidth_space_hz,
+        total_prbs=int(config.channel_bw_hz // (12.0 * config.delta_f_hz)),
+        frame_slots=config.n_slots_win,
+        slot_dl_symbols=tdd_config.n_dl_symbols,
+        slot_guard_symbols=tdd_config.n_guard_symbols,
+        slot_ul_symbols=tdd_config.n_ul_symbols,
+        slot_payload_symbols=tdd_config.n_dl_symbols - config.n_dmrs_sym,
+        total_slots=config.n_slots_win,
+        delta_f_hz=config.delta_f_hz,
+        g_tx_db=config.g_tx_db,
+        g_rx_db=config.g_rx_db,
+        noise_density_dbm_per_hz=config.n0_dbm_per_hz,
+        noise_figure_db=config.lna_noise_figure_db,
+        impl_loss_db=config.l_impl_db,
+        mi_n_samples=config.mi_n_samples,
+        n_dmrs_sym=config.n_dmrs_sym,
+        n_guard_sym=config.n_guard_sym,
+        n_ul_sym=config.n_ul_sym,
+        n_sym_data=config.n_sym_data,
+        n_sym_total=config.n_sym_total,
+        dft_size_N=config.dft_size_N,
+        t_slot_s=config.t_slot_s,
+        n_tx_chains=config.n_tx_chains,
+        use_psd_constraint=config.use_psd_constraint,
+        psd_max_w_per_hz=config.psd_max_w_per_hz,
+        papr_db=config.papr_db,
+        g_phi=config.g_phi,
+        sigma_phi2=config.sigma_phi2,
+        sigma_q2=config.sigma_q2,
+        layers_space=config.layers_space,
+        mcs_space=config.mcs_space,
+        prb_step=config.prb_step,
+    )
+
+
+def _validate_mixed_slot_pattern(config, tdd_config):
+    """Reject inconsistent mixed-slot TDD definitions before TDMA study code uses them."""
+
+    if int(tdd_config.n_dl_symbols) != int(config.n_sym_data):
+        raise ValueError("TDD DL-symbol count must match n_sym_data.")
+    if int(tdd_config.n_guard_symbols) != int(config.n_guard_sym):
+        raise ValueError("TDD guard-symbol count must match n_guard_sym.")
+    if int(tdd_config.n_ul_symbols) != int(config.n_ul_sym):
+        raise ValueError("TDD UL-symbol count must match n_ul_sym.")
+    if int(tdd_config.n_dl_symbols) + int(tdd_config.n_guard_symbols) + int(tdd_config.n_ul_symbols) != int(config.n_sym_total):
+        raise ValueError("TDD slot symbols must sum to n_sym_total.")
+    if int(config.n_dmrs_sym) > int(tdd_config.n_dl_symbols):
+        raise ValueError("DMRS symbols cannot exceed the DL-symbol region in one slot.")

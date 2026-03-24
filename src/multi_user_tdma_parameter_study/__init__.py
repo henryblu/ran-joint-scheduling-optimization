@@ -8,8 +8,10 @@ from .api import (
     summarize_multi_user_tdma_scenario,
 )
 from .models import MultiUserTdmaScenario, MultiUserTdmaStudyResult
+from .presets import MULTI_USER_TDMA_PRESET
 
 __all__ = [
+    "MULTI_USER_TDMA_PRESET",
     "MultiUserTdmaScenario",
     "MultiUserTdmaStudyResult",
     "build_multi_user_tdma_scenario",

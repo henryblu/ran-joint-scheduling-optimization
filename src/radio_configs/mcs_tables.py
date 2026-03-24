@@ -1,3 +1,9 @@
+"""
+3GPP NR MCS tables and source references.
+ref: 3GPP TS 38.214, Table 5.1.3.1-1
+MCS index table 1 for PDSCH
+"""
+
 DEFAULT_NR_MCS_TABLE = {
     0: {"qm": 2, "r": 120, "eta": 0.2344},
     1: {"qm": 2, "r": 157, "eta": 0.3066},

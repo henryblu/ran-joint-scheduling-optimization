@@ -2,9 +2,7 @@ from types import MappingProxyType
 
 import numpy as np
 
-from radio_core import Candidate, RRCParams
-
-from .models import SearchCatalog
+from .models import Candidate, RRCParams, SearchCatalog
 
 
 def build_search_catalog(
@@ -15,17 +13,18 @@ def build_search_catalog(
 ):
     """Build the static search catalog shared across deployments."""
 
+    config = getattr(model_inputs, "config", model_inputs)
     rrc_catalog = []
     for bwp_index, bwp_bw_hz in enumerate(search_shape.bandwidth_space_hz):
-        prb_max = int(np.floor(bwp_bw_hz / (12.0 * model_inputs.phy.delta_f_hz)))
+        prb_max = int(np.floor(bwp_bw_hz / (12.0 * config.delta_f_hz)))
         for pa_id in range(len(pa_catalog)):
             rrc_catalog.append(
                 RRCParams(
                     bwp_bw_hz=bwp_bw_hz,
                     bwp_index=bwp_index,
-                    delta_f_hz=model_inputs.phy.delta_f_hz,
+                    delta_f_hz=config.delta_f_hz,
                     prb_max_bwp=prb_max,
-                    max_layers=model_inputs.phy.n_tx_chains,
+                    max_layers=config.n_tx_chains,
                     max_mcs=max(search_shape.mcs_space),
                     active_pa_id=pa_id,
                 )

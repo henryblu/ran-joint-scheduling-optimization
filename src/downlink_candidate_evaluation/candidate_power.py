@@ -1,6 +1,6 @@
 import numpy as np
 
-from radio_core.pa_models import average_pa_power
+from pa_models import average_pa_power
 
 from .candidate_geometry import get_n_streams
 from .mcs_requirements import McsRequirementModel

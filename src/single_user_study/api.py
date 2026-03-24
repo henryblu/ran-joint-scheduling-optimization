@@ -5,21 +5,16 @@ from itertools import islice
 import numpy as np
 import pandas as pd
 
-from radio_core import (
-    SINGLE_USER_SEARCH_PRESET,
-    build_pa_characteristics_table,
-    resolve_model_inputs,
-    resolve_pa_catalog,
-    resolve_search_shape,
-)
+from pa_models import build_pa_catalog, build_pa_characteristics_table
+from radio_configs import SINGLE_USER_SEARCH_CONFIG
+from radio_models import build_resolved_fingerprint
 from single_user_search.api import enumerate_active_candidates, search_candidates
 from single_user_search.candidate_space import count_candidates_for_rrc, iter_candidates
-from single_user_search.models import SingleUserRequest
+from single_user_search.models import SearchSpace, SingleUserRequest
 from single_user_search.problem_factory import prepare_single_user_problem
 from single_user_search.search import (
     enumerate_active_candidates_from_context,
     filter_rate_feasible_candidates,
-    search_candidates_from_context,
 )
 
 from .models import SingleUserScenario
@@ -120,7 +115,7 @@ def build_single_user_scenario(
 def run_single_user_scenario(scenario):
     """Run the candidate-space engine for one prepared study scenario."""
 
-    return search_candidates_from_context(
+    return search_candidates(
         scenario.context,
         required_rate_bps=float(scenario.request.required_rate_bps),
     )
@@ -171,6 +166,7 @@ def build_single_user_pa_curve_table(scenario):
             rows.append(
                 {
                     "pa_id": int(pa_id),
+                    "scenario_label": str(pa.scenario_label),
                     "pa_name": str(pa.pa_name),
                     "pin_w": float(pin_w),
                     "pout_w": float(pout_w),
@@ -215,7 +211,7 @@ def _normalize_user_table(user_table):
     if missing_columns:
         raise ValueError(f"user_table is missing required columns: {missing_columns}")
     if "path_loss_db" in user_table.columns:
-        raise ValueError("user_table must not include path_loss_db; path loss is derived from distance in radio_core.")
+        raise ValueError("user_table must not include path_loss_db; path loss is derived from distance in the shared radio model.")
 
     normalized = user_table.copy()
     normalized["user_id"] = normalized["user_id"].astype(int)
@@ -231,9 +227,9 @@ def _normalize_user_table(user_table):
 def _resolve_default_single_user_engine_state():
     """Resolve the canonical single-user engine state owned by the study boundary."""
 
-    model_inputs = resolve_model_inputs(SINGLE_USER_SEARCH_PRESET)
-    search_shape = resolve_search_shape(model_inputs)
-    pa_catalog = resolve_pa_catalog(model_inputs)
+    model_inputs = SINGLE_USER_SEARCH_CONFIG
+    search_shape = _build_search_space(model_inputs)
+    pa_catalog = tuple(build_pa_catalog(model_inputs.pa_data_csv))
     return model_inputs, search_shape, pa_catalog
 
 
@@ -249,7 +245,7 @@ def _build_active_table_for_distance(distance_m, *, model_inputs, search_shape, 
         search_shape=search_shape,
         pa_catalog=pa_catalog,
     )
-    return enumerate_active_candidates_from_context(context)
+    return enumerate_active_candidates(context)
 
 
 def _evaluate_user_group_worker(group_key, distance_m, model_inputs, search_shape, pa_catalog):
@@ -375,6 +371,20 @@ def _build_integer_axis_config(values, max_ticks=9, dense_span=20):
         "limits": (float(lower), float(upper)),
         "ticks": tick_values,
     }
+
+
+def _build_search_space(model_inputs):
+    n_slots_on_space = tuple(range(1, int(model_inputs.n_slots_win) + 1))
+    return SearchSpace(
+        config=model_inputs,
+        bandwidth_space_hz=model_inputs.bandwidth_space_hz,
+        n_slots_on_space=n_slots_on_space,
+        layers_space=model_inputs.layers_space,
+        mcs_space=model_inputs.mcs_space,
+        prb_step=model_inputs.prb_step,
+        fingerprint=build_resolved_fingerprint({"n_slots_on_space": n_slots_on_space}),
+        use_cache=True,
+    )
 
 
 __all__ = [

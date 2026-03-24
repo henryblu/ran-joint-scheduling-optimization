@@ -1,4 +1,44 @@
+"""Shared derived radio-domain types, physics, and shared utilities."""
+
+from collections.abc import Mapping
+from dataclasses import dataclass, fields, is_dataclass
+from enum import Enum
+import hashlib
+import json
+from pathlib import Path
+
 import numpy as np
+
+
+@dataclass(frozen=True)
+class DeploymentParams:
+    """Physical deployment parameters derived from shared radio config and distance."""
+
+    fc_hz: float
+    channel_bw_hz: float
+    distance_m: float
+    path_loss_db: float
+    g_tx_db: float
+    g_rx_db: float
+    n0_dbm_per_hz: float
+    lna_noise_figure_db: float
+    l_impl_db: float
+    mi_n_samples: int
+    n_dmrs_sym: int
+    n_guard_sym: int
+    n_ul_sym: int
+    dft_size_N: int
+    n_slots_win: int
+    t_slot_s: float
+    n_sym_data: int
+    n_sym_total: int
+    use_psd_constraint: bool
+    psd_max_w_per_hz: float
+    papr_db: float
+    g_phi: float
+    sigma_phi2: float
+    sigma_q2: float
+    n_tx_chains: int
 
 
 class PathLossModel:
@@ -115,3 +155,43 @@ class PathLossModel:
         g_rx_linear = 10 ** (self.g_rx_db / 10.0)
         path_loss_linear = 10 ** (float(path_loss_db) / 10.0)
         return (g_tx_linear * g_rx_linear) / path_loss_linear
+
+
+def build_resolved_fingerprint(value):
+    """Build one stable SHA256 fingerprint for resolved config or engine state."""
+
+    raw_payload = json.dumps(
+        _normalize_fingerprint_value(value),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(raw_payload.encode("utf-8")).hexdigest()
+
+
+def _normalize_fingerprint_value(value):
+    """Convert resolved values into stable JSON primitives for fingerprinting."""
+
+    if is_dataclass(value):
+        return {
+            field.name: _normalize_fingerprint_value(getattr(value, field.name))
+            for field in fields(value)
+        }
+    if isinstance(value, Mapping):
+        return {
+            str(key): _normalize_fingerprint_value(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_normalize_fingerprint_value(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return [_normalize_fingerprint_value(item) for item in value.tolist()]
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+__all__ = ["DeploymentParams", "PathLossModel", "build_resolved_fingerprint"]
