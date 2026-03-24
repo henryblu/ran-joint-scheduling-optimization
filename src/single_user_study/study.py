@@ -20,9 +20,7 @@ PUBLIC_COLUMNS = [
     "mcs",
     "n_prb",
     "n_slots_on",
-    "alpha_f",
     "bandwidth_hz",
-    "n_active_tx",
     "p_out_total_w",
     "ps_total_w",
     "gamma_req_lin",
@@ -40,9 +38,7 @@ FRONTIER_COLUMNS = [
     "mcs",
     "n_prb",
     "n_slots_on",
-    "alpha_f",
     "bandwidth_hz",
-    "n_active_tx",
     "p_out_total_w",
     "ps_total_w",
     "gamma_req_lin",
@@ -56,7 +52,6 @@ TIE_BREAK_COLUMNS = [
     "n_slots_on",
     "mcs",
     "layers",
-    "n_active_tx",
 ]
 
 

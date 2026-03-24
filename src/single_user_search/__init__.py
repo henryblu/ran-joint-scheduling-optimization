@@ -1,11 +1,20 @@
 from .api import enumerate_active_candidates, search_candidates
-from .models import PreparedSingleUserContext, SingleUserSearchOptions
-from .search import clear_cache
+from .models import (
+    PreparedSingleUserContext,
+    ResolvedModelInputs,
+    ResolvedSearchShape,
+    SearchCatalog,
+    SingleUserRequest,
+    SingleUserSearchOptions,
+)
 
 __all__ = [
     "PreparedSingleUserContext",
+    "ResolvedModelInputs",
+    "ResolvedSearchShape",
+    "SearchCatalog",
+    "SingleUserRequest",
     "SingleUserSearchOptions",
-    "clear_cache",
     "enumerate_active_candidates",
     "search_candidates",
 ]

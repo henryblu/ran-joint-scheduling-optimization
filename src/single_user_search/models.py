@@ -1,48 +1,72 @@
 from dataclasses import dataclass
+from typing import Mapping
 
-from radio_core import Candidate, SchedulerVars
+from radio_core import Candidate, DeploymentParams, PAParams, RRCParams, ResolvedModelInputs, ResolvedSearchShape
+
+
+SingleUserSearchOptions = ResolvedSearchShape
 
 
 @dataclass(frozen=True)
 class SingleUserRequest:
-    """One single-user scheduler request."""
+    """One notebook or API request for a single-user deployment."""
 
     distance_m: float
     required_rate_bps: float
 
 
 @dataclass(frozen=True)
-class SingleUserSearchOptions:
-    """Execution options that shape one single-user candidate-space run."""
-    prb_step: int
-    bandwidth_space_hz: tuple[float, ...]
-    n_slots_on_space: tuple[int, ...]
-    use_cache: bool = True
+class SearchCatalog:
+    """Static search-space data shared across deployment evaluations."""
+
+    pa_catalog: tuple[PAParams, ...]
+    rrc_catalog: tuple[RRCParams, ...]
+    search_shape: ResolvedSearchShape
+    rrc_lookup: Mapping[tuple[int, int], RRCParams]
 
 
-@dataclass
+@dataclass(frozen=True)
 class PreparedSingleUserContext:
-    """Reusable single-user radio/search context for active-candidate evaluation."""
+    """Resolved single-user context split into static catalog and deployment."""
 
-    model_inputs: dict
-    deployment: object
-    built_problem: object
-    pa_catalog: list
-    mcs_table: dict
-    rrc_lookup: dict
-    options: SingleUserSearchOptions
+    request: SingleUserRequest
+    model_inputs: ResolvedModelInputs
+    deployment: DeploymentParams
+    search_catalog: SearchCatalog
+    static_catalog_key: str
+    active_table_key: str
+
+    @property
+    def mcs_table(self) -> dict[int, dict[str, float]]:
+        return self.model_inputs.mcs_table
+
+    @property
+    def search_shape(self) -> ResolvedSearchShape:
+        return self.search_catalog.search_shape
+
+    @property
+    def options(self) -> ResolvedSearchShape:
+        return self.search_shape
+
+    @property
+    def pa_catalog(self) -> tuple[PAParams, ...]:
+        return self.search_catalog.pa_catalog
+
+    @property
+    def rrc_catalog(self) -> tuple[RRCParams, ...]:
+        return self.search_catalog.rrc_catalog
+
+    @property
+    def rrc_lookup(self) -> Mapping[tuple[int, int], RRCParams]:
+        return self.search_catalog.rrc_lookup
 
 
 @dataclass(frozen=True)
 class StaticCandidateSpec:
-    """Scenario-invariant candidate metadata reused across user evaluations."""
+    """Cached static candidate metadata reused across deployment evaluation."""
 
     candidate_ordinal: int
     candidate: Candidate
-    scheduler_vars: SchedulerVars
-    pa_name: str
-    bandwidth_hz: float
-    alpha_f: float
     rate_ach_bps: float
     gamma_req_lin: float
     gamma_req_db: float

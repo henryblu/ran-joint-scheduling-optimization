@@ -2,10 +2,12 @@ import pandas as pd
 
 from radio_core import (
     MULTI_USER_TDMA_PRESET,
-    build_pa_catalog,
     build_multi_user_system_cfg,
     build_pa_characteristics_table,
+    resolve_model_inputs,
+    resolve_pa_catalog,
     resolve_path_loss_db_values,
+    resolve_search_shape,
 )
 
 from .models import MultiUserTdmaScenario, MultiUserTdmaStudyResult
@@ -22,22 +24,26 @@ def build_multi_user_tdma_scenario(user_table):
     """Build the notebook-facing multi-user TDMA study scenario.
 
     Steps:
-    1. Keep the notebook user table as the study-owned scenario table.
-    2. Resolve the shared slot-level system view from the canonical preset.
-    3. Load the preset PA catalog once for notebook summaries.
+    1. Normalize the notebook-facing user table into one resolved path-loss row per user.
+    2. Resolve the canonical active-search radio state once at the study boundary.
+    3. Build the shared slot-level system view and immutable PA catalog once.
     4. Return the compact scenario reused by search and reporting helpers.
     """
+
     resolved_preset = MULTI_USER_TDMA_PRESET
+    active_search_model_inputs = resolve_model_inputs(resolved_preset.model)
+    active_search_shape = resolve_search_shape(active_search_model_inputs)
     scenario_user_table = _resolve_scenario_user_table(
         user_table,
-        link_constants=resolved_preset.model.link.__dict__,
+        link_constants=active_search_model_inputs.link,
     )
-    resolved_system_cfg = build_multi_user_system_cfg(resolved_preset.model, resolved_preset.tdd)
     return MultiUserTdmaScenario(
         user_table=scenario_user_table,
         preset=resolved_preset,
-        system_cfg=resolved_system_cfg,
-        pa_catalog=build_pa_catalog(str(resolved_preset.model.pa_data_csv)),
+        system_cfg=build_multi_user_system_cfg(active_search_model_inputs, resolved_preset.tdd),
+        pa_catalog=resolve_pa_catalog(active_search_model_inputs),
+        active_search_model_inputs=active_search_model_inputs,
+        active_search_shape=active_search_shape,
     )
 
 
@@ -55,9 +61,12 @@ def run_multi_user_tdma_scenario(
     3. Build the exact per-user TDMA candidate spaces for the resolved repeated-frame count.
     4. Return notebook-facing tables without imposing heuristic config-count cuts.
     """
-    
     active_candidate_tables = enumerate_user_active_operating_tables(
         scenario.user_table,
+        system_cfg=scenario.system_cfg,
+        model_inputs=scenario.active_search_model_inputs,
+        search_shape=scenario.active_search_shape,
+        pa_catalog=scenario.pa_catalog,
         outer_parallel=outer_parallel,
         max_workers=max_workers,
     )
@@ -69,7 +78,7 @@ def run_multi_user_tdma_scenario(
     repeated_frame_requirement = resolve_repeated_frame_requirement(
         scenario.user_table,
         active_candidate_tables,
-        frame_slot_count=int(scenario.system_cfg["frame_slots"]),
+        frame_slot_count=int(scenario.system_cfg.frame_slots),
         max_repeated_frames=max_repeated_frames,
     )
     status = str(repeated_frame_requirement["status"])
@@ -97,12 +106,12 @@ def run_multi_user_tdma_scenario(
         scenario.user_table,
         active_candidate_tables,
         repeated_frames=repeated_frames,
-        frame_slot_count=int(scenario.system_cfg["frame_slots"]),
+        frame_slot_count=int(scenario.system_cfg.frame_slots),
     )
     user_candidate_review_tables = build_user_candidate_review_tables(user_candidate_spaces)
     return MultiUserTdmaStudyResult(
         repeated_frames=int(repeated_frames),
-        repeated_period_slots=int(repeated_frames * int(scenario.system_cfg["frame_slots"])),
+        repeated_period_slots=int(repeated_frames * int(scenario.system_cfg.frame_slots)),
         active_candidate_tables=active_candidate_tables,
         active_summary_df=active_summary_df,
         frame_share_summary_df=repeated_frame_requirement.get("share_rows", pd.DataFrame()).copy(),
@@ -114,26 +123,26 @@ def run_multi_user_tdma_scenario(
 
 def summarize_multi_user_tdma_scenario(scenario):
     """Return the notebook-facing tables that describe one prepared multi-user scenario."""
+
     system_summary = pd.DataFrame(
         [
             {
                 "n_users": int(len(scenario.user_table)),
-                "frame_slots": int(scenario.system_cfg["frame_slots"]),
-                "slot_duration_ms": 1e3 * float(scenario.system_cfg["t_slot_s"]),
-                "frame_duration_ms": 1e3
-                * float(scenario.system_cfg["frame_slots"] * scenario.system_cfg["t_slot_s"]),
+                "frame_slots": int(scenario.system_cfg.frame_slots),
+                "slot_duration_ms": 1e3 * float(scenario.system_cfg.t_slot_s),
+                "frame_duration_ms": 1e3 * float(scenario.system_cfg.frame_slots * scenario.system_cfg.t_slot_s),
             }
         ]
     )
     active_search_summary = pd.DataFrame(
         [
             {
-                "bandwidth_space_hz": tuple(float(v) for v in scenario.system_cfg["bandwidth_space_hz"]),
-                "frame_slots": (int(scenario.system_cfg["frame_slots"]),),
-                "layers_space": tuple(int(v) for v in scenario.system_cfg["layers_space"]),
-                "mcs_min": int(min(scenario.system_cfg["mcs_space"])),
-                "mcs_max": int(max(scenario.system_cfg["mcs_space"])),
-                "prb_step": int(scenario.system_cfg["prb_step"]),
+                "bandwidth_space_hz": tuple(float(v) for v in scenario.active_search_shape.bandwidth_space_hz),
+                "frame_slots": (int(scenario.system_cfg.frame_slots),),
+                "layers_space": tuple(int(v) for v in scenario.active_search_shape.layers_space),
+                "mcs_min": int(min(scenario.active_search_shape.mcs_space)),
+                "mcs_max": int(max(scenario.active_search_shape.mcs_space)),
+                "prb_step": int(scenario.active_search_shape.prb_step),
             }
         ]
     )
@@ -164,9 +173,6 @@ def search_user_candidate_spaces(
 
 def _resolve_scenario_user_table(user_table, *, link_constants):
     """Resolve the scenario table into one concrete path-loss row per user."""
-
-    if "path_loss_db" in user_table.columns:
-        raise ValueError("user_table must not include path_loss_db; path loss is derived from distance in radio_core.")
 
     scenario_user_table = user_table.copy()
     scenario_user_table["distance_m"] = scenario_user_table["distance_m"].astype(float)

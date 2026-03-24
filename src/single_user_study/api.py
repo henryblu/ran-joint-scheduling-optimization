@@ -5,34 +5,24 @@ from itertools import islice
 import numpy as np
 import pandas as pd
 
-from radio_core import SINGLE_USER_SEARCH_PRESET, build_pa_characteristics_table
-from single_user_search.api import (
-    enumerate_active_candidates as enumerate_active_candidates_from_engine,
-    search_candidates as search_candidates_from_engine,
+from radio_core import (
+    SINGLE_USER_SEARCH_PRESET,
+    build_pa_characteristics_table,
+    resolve_model_inputs,
+    resolve_pa_catalog,
+    resolve_search_shape,
 )
+from single_user_search.api import enumerate_active_candidates, search_candidates
 from single_user_search.candidate_space import count_candidates_for_rrc, iter_candidates
 from single_user_search.models import SingleUserRequest
 from single_user_search.problem_factory import prepare_single_user_problem
-from single_user_search.search import filter_rate_feasible_candidates, search_candidates_from_context
+from single_user_search.search import (
+    enumerate_active_candidates_from_context,
+    filter_rate_feasible_candidates,
+    search_candidates_from_context,
+)
 
 from .models import SingleUserScenario
-
-
-def enumerate_active_candidates(
-    distance_m,
-):
-    """Expose the single-user active-table engine through the notebook-facing study module."""
-
-    return enumerate_active_candidates_from_engine(distance_m)
-
-
-def search_candidates(
-    distance_m,
-    required_rate_bps,
-):
-    """Expose the single-user rate-filtered search through the notebook-facing study module."""
-
-    return search_candidates_from_engine(distance_m, required_rate_bps)
 
 
 def search_candidate_spaces(
@@ -45,12 +35,13 @@ def search_candidate_spaces(
 
     Steps:
     1. Normalize the notebook user table and reject duplicate user ids.
-    2. Group users by deployment-equivalent active-table inputs.
+    2. Resolve the canonical single-user engine state once for the whole batch.
     3. Build one active table per unique deployment, either serially or in outer processes.
     4. Filter each shared active table by user target rate and return `user_id -> table`.
     """
 
     normalized_users = _normalize_user_table(user_table)
+    model_inputs, search_shape, pa_catalog = _resolve_default_single_user_engine_state()
 
     group_requests = {}
     for user_row in normalized_users.itertuples(index=False):
@@ -68,6 +59,9 @@ def search_candidate_spaces(
                         _evaluate_user_group_worker,
                         group_key,
                         distance_m,
+                        model_inputs,
+                        search_shape,
+                        pa_catalog,
                     ): group_key
                     for group_key, distance_m in group_requests.items()
                 }
@@ -79,7 +73,12 @@ def search_candidate_spaces(
 
     if not grouped_active_tables:
         for group_key, distance_m in group_requests.items():
-            grouped_active_tables[group_key] = enumerate_active_candidates(distance_m)
+            grouped_active_tables[group_key] = _build_active_table_for_distance(
+                distance_m,
+                model_inputs=model_inputs,
+                search_shape=search_shape,
+                pa_catalog=pa_catalog,
+            )
 
     user_candidate_spaces = {}
     for user_row in normalized_users.itertuples(index=False):
@@ -99,7 +98,7 @@ def build_single_user_scenario(
 
     Steps:
     1. Normalize the scalar notebook inputs into the strict request model.
-    2. Resolve the canonical preset and API-owned default runtime policy.
+    2. Resolve the canonical preset-owned engine state once at the study boundary.
     3. Build the reusable single-user context once for the deployment.
     4. Return the scenario object reused by search and reporting helpers.
     """
@@ -108,9 +107,12 @@ def build_single_user_scenario(
         distance_m=float(distance_m),
         required_rate_bps=float(required_rate_bps),
     )
+    model_inputs, search_shape, pa_catalog = _resolve_default_single_user_engine_state()
     context = prepare_single_user_problem(
         request=request,
-        preset=SINGLE_USER_SEARCH_PRESET,
+        model_inputs=model_inputs,
+        search_shape=search_shape,
+        pa_catalog=pa_catalog,
     )
     return SingleUserScenario(request=request, context=context)
 
@@ -136,12 +138,12 @@ def summarize_single_user_scenario(scenario, scenario_count=1):
 
     context = scenario.context
     return {
-        "deployment_summary": _build_deployment_summary_table(context.built_problem),
+        "deployment_summary": _build_deployment_summary_table(context),
         "pa_characteristics": build_pa_characteristics_table(context.pa_catalog),
-        "rrc_catalog": _build_rrc_catalog_table(context.built_problem),
+        "rrc_catalog": _build_rrc_catalog_table(context),
         "search_space_detail": _build_search_space_detail(context),
         "search_space_summary": _build_search_space_summary_table(
-            context.built_problem,
+            context,
             scenario_count=int(scenario_count),
         ),
     }
@@ -152,7 +154,7 @@ def preview_single_user_candidates(scenario, limit=5):
 
     preview_rows = [
         candidate.__dict__
-        for candidate in islice(iter_candidates(scenario.context.built_problem), int(limit))
+        for candidate in islice(iter_candidates(scenario.context.search_catalog), int(limit))
     ]
     return pd.DataFrame(preview_rows)
 
@@ -181,24 +183,24 @@ def build_single_user_pa_curve_table(scenario):
 def build_single_user_plot_domains(scenario):
     """Return discrete axis metadata for notebook plots."""
 
-    built_problem = scenario.context.built_problem
+    context = scenario.context
     prb_values = sorted(
         {
             int(n_prb)
-            for rrc in built_problem.rrc_catalog
+            for rrc in context.rrc_catalog
             for n_prb in range(
                 1,
                 int(rrc.prb_max_bwp) + 1,
-                max(1, int(built_problem.search_space.prb_step)),
+                max(1, int(context.search_shape.prb_step)),
             )
         }
     )
     return {
-        "frame_slot_count": int(built_problem.deployment.n_slots_win),
-        "layers": _build_integer_axis_config(built_problem.search_space.layers_space),
-        "mcs": _build_integer_axis_config(built_problem.search_space.mcs_space),
+        "frame_slot_count": int(context.deployment.n_slots_win),
+        "layers": _build_integer_axis_config(context.search_shape.layers_space),
+        "mcs": _build_integer_axis_config(context.search_shape.mcs_space),
         "n_prb": _build_integer_axis_config(prb_values),
-        "n_slots_on": _build_integer_axis_config(built_problem.search_space.n_slots_on_space),
+        "n_slots_on": _build_integer_axis_config(context.search_shape.n_slots_on_space),
     }
 
 
@@ -226,33 +228,62 @@ def _normalize_user_table(user_table):
     return normalized[["user_id", "distance_m", "required_rate_bps"]]
 
 
-def _evaluate_user_group_worker(group_key, distance_m):
+def _resolve_default_single_user_engine_state():
+    """Resolve the canonical single-user engine state owned by the study boundary."""
+
+    model_inputs = resolve_model_inputs(SINGLE_USER_SEARCH_PRESET)
+    search_shape = resolve_search_shape(model_inputs)
+    pa_catalog = resolve_pa_catalog(model_inputs)
+    return model_inputs, search_shape, pa_catalog
+
+
+def _build_active_table_for_distance(distance_m, *, model_inputs, search_shape, pa_catalog):
+    """Build one active candidate table for a resolved deployment distance."""
+
+    context = prepare_single_user_problem(
+        request=SingleUserRequest(
+            distance_m=float(distance_m),
+            required_rate_bps=0.0,
+        ),
+        model_inputs=model_inputs,
+        search_shape=search_shape,
+        pa_catalog=pa_catalog,
+    )
+    return enumerate_active_candidates_from_context(context)
+
+
+def _evaluate_user_group_worker(group_key, distance_m, model_inputs, search_shape, pa_catalog):
     """Build one shared active table inside an outer worker process."""
 
-    active_table = enumerate_active_candidates(float(distance_m))
+    active_table = _build_active_table_for_distance(
+        distance_m,
+        model_inputs=model_inputs,
+        search_shape=search_shape,
+        pa_catalog=pa_catalog,
+    )
     return group_key, active_table
 
 
-def _build_deployment_summary_table(built_problem):
+def _build_deployment_summary_table(context):
     """Build the deployment summary table used by the study notebooks."""
 
     return pd.DataFrame(
         [
             {
-                "distance_m": float(built_problem.deployment.distance_m),
-                "path_loss_db": float(built_problem.deployment.path_loss_db),
-                "fc_hz": float(built_problem.deployment.fc_hz),
-                "n_tx_chains": int(built_problem.deployment.n_tx_chains),
-                "n_slots_win": int(built_problem.deployment.n_slots_win),
+                "distance_m": float(context.deployment.distance_m),
+                "path_loss_db": float(context.deployment.path_loss_db),
+                "fc_hz": float(context.deployment.fc_hz),
+                "n_tx_chains": int(context.deployment.n_tx_chains),
+                "n_slots_win": int(context.deployment.n_slots_win),
                 "delta_f_hz": (
-                    float(built_problem.rrc_catalog[0].delta_f_hz) if built_problem.rrc_catalog else np.nan
+                    float(context.rrc_catalog[0].delta_f_hz) if context.rrc_catalog else np.nan
                 ),
             }
         ]
     )
 
 
-def _build_rrc_catalog_table(built_problem):
+def _build_rrc_catalog_table(context):
     """Build the notebook-facing RRC envelope table."""
 
     return pd.DataFrame(
@@ -265,35 +296,34 @@ def _build_rrc_catalog_table(built_problem):
                 "max_layers": int(rrc.max_layers),
                 "max_mcs": int(rrc.max_mcs),
             }
-            for rrc in built_problem.rrc_catalog
+            for rrc in context.rrc_catalog
         ]
     ).sort_values(["pa_id", "bandwidth_hz"]).reset_index(drop=True)
 
 
-def _build_search_space_summary_table(built_problem, *, scenario_count):
+def _build_search_space_summary_table(context, *, scenario_count):
     """Summarize the raw combinatorial search size for notebook inspection."""
 
     per_pa_counts = []
-    for pa_id in range(len(built_problem.pa_catalog)):
-        rrc_space = [rrc for rrc in built_problem.rrc_catalog if rrc.active_pa_id == pa_id]
+    for pa_id in range(len(context.pa_catalog)):
+        rrc_space = [rrc for rrc in context.rrc_catalog if rrc.active_pa_id == pa_id]
         per_pa_counts.append(
-            sum(count_candidates_for_rrc(built_problem, rrc) for rrc in rrc_space)
+            sum(count_candidates_for_rrc(context.search_catalog, rrc) for rrc in rrc_space)
         )
 
     raw_configs_per_scenario = sum(per_pa_counts)
     return pd.DataFrame(
         [
             {
-                "pa_count": int(len(built_problem.pa_catalog)),
+                "pa_count": int(len(context.pa_catalog)),
                 "scenario_count": int(scenario_count),
                 "raw_configs_per_pa_per_scenario": int(per_pa_counts[0]) if per_pa_counts else 0,
                 "raw_configs_per_scenario": int(raw_configs_per_scenario),
                 "raw_total_configs": int(raw_configs_per_scenario * scenario_count),
-                "n_slots_on_values": len(built_problem.search_space.n_slots_on_space),
-                "layers_values": len(built_problem.search_space.layers_space),
-                "n_active_tx_values": len(built_problem.search_space.n_active_tx_space),
-                "mcs_values": len(built_problem.search_space.mcs_space),
-                "prb_step": int(built_problem.search_space.prb_step),
+                "n_slots_on_values": len(context.search_shape.n_slots_on_space),
+                "layers_values": len(context.search_shape.layers_space),
+                "mcs_values": len(context.search_shape.mcs_space),
+                "prb_step": int(context.search_shape.prb_step),
             }
         ]
     )
@@ -302,17 +332,16 @@ def _build_search_space_summary_table(built_problem, *, scenario_count):
 def _build_search_space_detail(context):
     """Return the explicit discrete search dimensions behind the candidate ledger."""
 
-    built_problem = context.built_problem
-    bandwidth_space_hz = tuple(sorted({float(rrc.bwp_bw_hz) for rrc in built_problem.rrc_catalog}))
-    mcs_space = tuple(int(value) for value in built_problem.search_space.mcs_space)
+    bandwidth_space_hz = tuple(sorted({float(rrc.bwp_bw_hz) for rrc in context.rrc_catalog}))
+    mcs_space = tuple(int(value) for value in context.search_shape.mcs_space)
     return pd.DataFrame(
         [
             {
                 "bandwidth_space_hz": bandwidth_space_hz,
-                "layers_space": tuple(int(value) for value in built_problem.search_space.layers_space),
+                "layers_space": tuple(int(value) for value in context.search_shape.layers_space),
                 "mcs_min": int(min(mcs_space)) if mcs_space else np.nan,
                 "mcs_max": int(max(mcs_space)) if mcs_space else np.nan,
-                "prb_step": int(built_problem.search_space.prb_step),
+                "prb_step": int(context.search_shape.prb_step),
                 "mcs_entry_count": int(len(context.mcs_table)),
             }
         ]

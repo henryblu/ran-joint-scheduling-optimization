@@ -1,5 +1,7 @@
 import numpy as np
 
+from .candidate_geometry import get_n_streams, occupied_bandwidth_hz, slot_level_re_counts
+
 
 class SinrChainModel:
     """Explicit SINR and source-power solve chain for one candidate.
@@ -9,15 +11,15 @@ class SinrChainModel:
     before dropping into the algebraic details.
     """
 
-    def solve_required_source_power_for_target(self, rho_req, deployment, rrc, sched, pa):
+    def solve_required_source_power_for_target(self, rho_req, deployment, rrc, candidate, pa):
         """Solve the minimum PA input power for an explicit required SINR target."""
-        comps = self.build_sinr_terms(deployment, rrc, sched, pa)
+        comps = self.build_sinr_terms(deployment, rrc, candidate, pa)
         denom_coeff = comps["a_num"] - rho_req * comps["b_dist"]
         if denom_coeff <= 0.0:
             return None
 
         ps_lb = max(rho_req * comps["c_noise"] / denom_coeff, 0.0)
-        state_lb = self.effective_sinr_from_ps(ps_lb, deployment, rrc, sched, pa, comps=comps)
+        state_lb = self.effective_sinr_from_ps(ps_lb, deployment, rrc, candidate, pa, comps=comps)
         if state_lb["rho_eff"] >= rho_req:
             return self._build_source_power_solution(ps_lb, rho_req, state_lb, comps)
 
@@ -26,7 +28,7 @@ class SinrChainModel:
             ps_lb,
             deployment,
             rrc,
-            sched,
+            candidate,
             pa,
             comps,
         )
@@ -40,30 +42,30 @@ class SinrChainModel:
             hi,
             deployment,
             rrc,
-            sched,
+            candidate,
             pa,
             comps,
         )
-        state = self.effective_sinr_from_ps(ps_sol, deployment, rrc, sched, pa, comps=comps)
+        state = self.effective_sinr_from_ps(ps_sol, deployment, rrc, candidate, pa, comps=comps)
         return self._build_source_power_solution(ps_sol, rho_req, state, comps)
 
-    def build_sinr_terms(self, deployment, rrc, sched, pa):
+    def build_sinr_terms(self, deployment, rrc, candidate, pa):
         """Precompute per-tone SINR coefficients reused across the solve."""
-        n_streams = self.get_n_streams(sched)
+        n_streams = get_n_streams(candidate)
         g_l = self.channel_gain_linear(deployment)
-        g_bf_linear = max(sched.n_active_tx / n_streams, 1)
+        g_bf_linear = max(deployment.n_tx_chains / n_streams, 1)
         g_l *= g_bf_linear
 
         n0_w_per_hz = self.noise_density_w_per_hz(deployment)
         f_lna = 10 ** (deployment.lna_noise_figure_db / 10.0)
         sigma_v2_tone = f_lna * n0_w_per_hz * rrc.delta_f_hz
 
-        b_occ = self.occupied_bandwidth_hz(rrc, sched)
-        k_active = self.compute_k_active_re(deployment, sched)
-        re_counts = self.slot_level_re_counts(deployment, sched)
+        b_occ = occupied_bandwidth_hz(rrc, candidate)
+        k_active = self.compute_k_active_re(deployment, candidate)
+        re_counts = slot_level_re_counts(deployment, candidate)
 
         a_num = g_l * pa.g_pa_eff_linear * deployment.g_phi / max(k_active, 1.0)
-        b_dist = g_l * self.distortion_gain_kappa(pa, sched) / max(k_active, 1.0)
+        b_dist = g_l * self.distortion_gain_kappa(pa, candidate) / max(k_active, 1.0)
         c_noise = sigma_v2_tone + deployment.sigma_q2 + deployment.sigma_phi2
 
         return {
@@ -84,23 +86,23 @@ class SinrChainModel:
             "papr_ofdm_linear": self.ofdm_papr_linear(deployment),
         }
 
-    def rho_from_ps(self, ps_w_total, deployment, rrc, sched, pa, comps=None):
+    def rho_from_ps(self, ps_w_total, deployment, rrc, candidate, pa, comps=None):
         """Compute achievable per-stream per-tone SINR from total source power."""
         if comps is None:
-            comps = self.build_sinr_terms(deployment, rrc, sched, pa)
-        n_streams = max(int(comps.get("n_streams", self.get_n_streams(sched))), 1)
+            comps = self.build_sinr_terms(deployment, rrc, candidate, pa)
+        n_streams = max(int(comps.get("n_streams", get_n_streams(candidate))), 1)
         ps_stream_w = ps_w_total / n_streams
         denom = comps["b_dist"] * ps_stream_w + comps["c_noise"]
         if denom <= 0.0:
             return np.inf
         return comps["a_num"] * ps_stream_w / denom
 
-    def effective_sinr_from_ps(self, ps_w_total, deployment, rrc, sched, pa, comps=None):
+    def effective_sinr_from_ps(self, ps_w_total, deployment, rrc, candidate, pa, comps=None):
         """Evaluate the end-to-end effective SINR for a candidate power point."""
         if comps is None:
-            comps = self.build_sinr_terms(deployment, rrc, sched, pa)
+            comps = self.build_sinr_terms(deployment, rrc, candidate, pa)
         # Effective-SINR chain: rho_raw -> sigma_e^2 = 1 / (rho_raw * N_pilot) -> rho_eff.
-        rho_ach = self.rho_from_ps(ps_w_total, deployment, rrc, sched, pa, comps=comps)
+        rho_ach = self.rho_from_ps(ps_w_total, deployment, rrc, candidate, pa, comps=comps)
         sigma_e2 = self.channel_estimation_error(rho_ach, comps["n_pilot"])
         rho_eff = self.effective_sinr(rho_ach, sigma_e2)
         return {
@@ -140,38 +142,11 @@ class SinrChainModel:
         return self.distortion_gain_kappa(pa, sched) * ps_w
 
     @staticmethod
-    def slot_level_re_counts(deployment, sched):
-        """Per-slot NR resource-element accounting with explicit pilot subtraction."""
-
-        n_re_raw = sched.n_prb * 12 * deployment.n_sym_data
-        n_dmrs_re_per_prb = 12 * deployment.n_dmrs_sym
-        n_pilot = sched.n_prb * n_dmrs_re_per_prb
-        n_re_data = max(n_re_raw - n_pilot, 1.0)
-        return {
-            "n_re_raw": float(n_re_raw),
-            "n_dmrs_re_per_prb": float(n_dmrs_re_per_prb),
-            "n_pilot": float(n_pilot),
-            "n_re_data": float(n_re_data),
-        }
-
-    @staticmethod
-    def occupied_bandwidth_hz(rrc, sched):
-        """Occupied bandwidth from allocated PRBs."""
-
-        return sched.n_prb * 12.0 * rrc.delta_f_hz
-
-    @staticmethod
-    def compute_k_active_re(deployment, sched):
+    def compute_k_active_re(deployment, candidate):
         """Active resource elements used in the estimator model."""
 
-        k_active = int(sched.n_prb * 12)
+        k_active = int(candidate.n_prb * 12)
         return int(np.clip(k_active, 1, deployment.dft_size_N))
-
-    @staticmethod
-    def get_n_streams(sched):
-        """Current single-user stream count."""
-
-        return max(int(getattr(sched, "layers", 1)), 1)
 
     @staticmethod
     def channel_estimation_error(rho_ach, n_pilot):
@@ -185,22 +160,22 @@ class SinrChainModel:
         """Map raw SINR and estimation error to effective per-RE SINR."""
         return rho_ach / (1.0 + rho_ach * sigma_e2)
 
-    def _expand_solution_bracket(self, rho_req, ps_lb, deployment, rrc, sched, pa, comps):
+    def _expand_solution_bracket(self, rho_req, ps_lb, deployment, rrc, candidate, pa, comps):
         """Expand an upper bracket until the effective-SINR target becomes reachable."""
         lo = ps_lb
         hi = max(ps_lb * 2.0 + 1e-12, 1e-12)
-        while self.effective_sinr_from_ps(hi, deployment, rrc, sched, pa, comps=comps)["rho_eff"] < rho_req and hi < 1e9:
+        while self.effective_sinr_from_ps(hi, deployment, rrc, candidate, pa, comps=comps)["rho_eff"] < rho_req and hi < 1e9:
             lo = hi
             hi *= 2.0
         if hi >= 1e9:
             return None
         return lo, hi
 
-    def _bisect_required_source_power(self, rho_req, lo, hi, deployment, rrc, sched, pa, comps):
+    def _bisect_required_source_power(self, rho_req, lo, hi, deployment, rrc, candidate, pa, comps):
         """Refine the bracketed source-power solution by bisection."""
         for _ in range(80):
             mid = 0.5 * (lo + hi)
-            if self.effective_sinr_from_ps(mid, deployment, rrc, sched, pa, comps=comps)["rho_eff"] >= rho_req:
+            if self.effective_sinr_from_ps(mid, deployment, rrc, candidate, pa, comps=comps)["rho_eff"] >= rho_req:
                 hi = mid
             else:
                 lo = mid

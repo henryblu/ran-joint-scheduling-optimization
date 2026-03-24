@@ -5,6 +5,9 @@ from .config_values import (
     COMMON_PHY_CONSTANTS,
     COMMON_SCHEDULER_SPACE,
     DEFAULT_PA_DATA_CSV,
+    LinkConstantsConfig,
+    PhyConstantsConfig,
+    SchedulerSpaceConfig,
 )
 from .mcs_tables import DEFAULT_NR_MCS_TABLE
 from .pa_models import PASwitchPolicy
@@ -12,9 +15,9 @@ from .pa_models import PASwitchPolicy
 
 @dataclass(frozen=True)
 class ModelPreset:
-    link: object
-    phy: object
-    scheduler: object
+    link: LinkConstantsConfig
+    phy: PhyConstantsConfig
+    scheduler: SchedulerSpaceConfig
     mcs_table: dict
     pa_data_csv: str
 

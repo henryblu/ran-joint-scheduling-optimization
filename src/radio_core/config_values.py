@@ -11,6 +11,8 @@ class LinkConstantsConfig:
     n0_dbm_per_hz: float
     lna_noise_figure_db: float
     shadow_margin_db: float
+    h_bs_m: float = 10.0
+    h_ut_m: float = 1.5
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,12 @@ class PhyConstantsConfig:
     delta_f_hz: float
     n_slots_win: int
 
+    def __post_init__(self):
+        if int(self.n_slots_win) < 1:
+            raise ValueError("PhyConstantsConfig requires n_slots_win >= 1.")
+        if int(self.n_tx_chains) < 1:
+            raise ValueError("PhyConstantsConfig requires n_tx_chains >= 1.")
+
 
 @dataclass(frozen=True)
 class SchedulerSpaceConfig:
@@ -42,6 +50,26 @@ class SchedulerSpaceConfig:
     layers_space: tuple[int, ...]
     mcs_space: tuple[int, ...]
     prb_step: int
+
+    def __post_init__(self):
+        bandwidth_space_hz = tuple(float(value) for value in self.bandwidth_space_hz)
+        layers_space = tuple(int(value) for value in self.layers_space)
+        mcs_space = tuple(int(value) for value in self.mcs_space)
+        prb_step = int(self.prb_step)
+
+        if not bandwidth_space_hz:
+            raise ValueError("SchedulerSpaceConfig requires at least one bandwidth value.")
+        if not layers_space:
+            raise ValueError("SchedulerSpaceConfig requires at least one layer value.")
+        if not mcs_space:
+            raise ValueError("SchedulerSpaceConfig requires at least one MCS value.")
+        if prb_step < 1:
+            raise ValueError("SchedulerSpaceConfig requires prb_step >= 1.")
+
+        object.__setattr__(self, "bandwidth_space_hz", bandwidth_space_hz)
+        object.__setattr__(self, "layers_space", layers_space)
+        object.__setattr__(self, "mcs_space", mcs_space)
+        object.__setattr__(self, "prb_step", prb_step)
 
 
 COMMON_LINK_CONSTANTS = LinkConstantsConfig(
@@ -52,6 +80,8 @@ COMMON_LINK_CONSTANTS = LinkConstantsConfig(
     n0_dbm_per_hz=-174.0,
     lna_noise_figure_db=5.0,
     shadow_margin_db=4.0,
+    h_bs_m=10.0,
+    h_ut_m=1.5,
 )
 
 COMMON_PHY_CONSTANTS = PhyConstantsConfig(

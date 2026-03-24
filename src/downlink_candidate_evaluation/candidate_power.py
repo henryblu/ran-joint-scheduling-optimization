@@ -2,6 +2,7 @@ import numpy as np
 
 from radio_core.pa_models import average_pa_power
 
+from .candidate_geometry import get_n_streams
 from .mcs_requirements import McsRequirementModel
 from .models import CandidatePowerResult
 from .sinr_chain import SinrChainModel
@@ -14,10 +15,10 @@ class CandidatePowerModel:
         self.mcs_model = McsRequirementModel(mcs_table)
         self.sinr_model = SinrChainModel()
 
-    def solve_candidate_power(self, deployment, rrc, sched, pa, *, gamma_req_lin=None):
+    def solve_candidate_power(self, deployment, rrc, candidate, pa, *, gamma_req_lin=None):
         """Compute feasibility, RF power, and PA DC power for one resolved candidate."""
 
-        ok, reason = self._check_structural_limits(deployment, rrc, sched)
+        ok, reason = self._check_structural_limits(deployment, rrc, candidate)
         if not ok:
             return CandidatePowerResult(is_feasible=False, infeasibility_reason=str(reason))
 
@@ -29,7 +30,7 @@ class CandidatePowerModel:
                 else float("-inf")
             )
         else:
-            gamma_req = self.mcs_model.get_required_sinr_table(deployment)[sched.mcs]
+            gamma_req = self.mcs_model.get_required_sinr_table(deployment)[candidate.mcs]
             resolved_gamma_req_lin = float(gamma_req["rho_req_linear"])
             resolved_gamma_req_db = float(gamma_req["rho_req_db"])
 
@@ -37,7 +38,7 @@ class CandidatePowerModel:
             resolved_gamma_req_lin,
             deployment,
             rrc,
-            sched,
+            candidate,
             pa,
         )
         if ps_solution is None:
@@ -48,11 +49,11 @@ class CandidatePowerModel:
                 gamma_req_db=resolved_gamma_req_db,
             )
 
-        rf_terms = self._compute_rf_terms(pa, sched, ps_solution)
+        rf_terms = self._compute_rf_terms(deployment, pa, candidate, ps_solution)
         ok, reason = self._check_rf_and_psd_limits(
             deployment,
             pa=pa,
-            sched=sched,
+            candidate=candidate,
             ps_solution=ps_solution,
             rf_terms=rf_terms,
         )
@@ -66,7 +67,7 @@ class CandidatePowerModel:
         p_dc_avg_total_w = self._compute_average_dc_power(
             deployment,
             pa,
-            sched,
+            candidate,
             float(rf_terms["p_out_ant_w"]),
         )
         return CandidatePowerResult(
@@ -87,34 +88,32 @@ class CandidatePowerModel:
         )
 
     @staticmethod
-    def _check_structural_limits(deployment, rrc, sched):
+    def _check_structural_limits(deployment, rrc, candidate):
         """Reject candidates that do not fit the discrete deployment and RRC limits."""
 
         if rrc is None:
             return False, "rrc_not_found"
-        if not 1 <= sched.layers <= rrc.max_layers:
+        if not 1 <= candidate.layers <= rrc.max_layers:
             return False, "invalid_layer_count"
-        if not sched.layers <= sched.n_active_tx <= deployment.n_tx_chains:
-            return False, "invalid_active_tx_count"
-        if sched.mcs > rrc.max_mcs:
+        if candidate.mcs > rrc.max_mcs:
             return False, "invalid_mcs"
-        if not 1 <= sched.n_slots_on <= deployment.n_slots_win:
+        if not 1 <= candidate.n_slots_on <= deployment.n_slots_win:
             return False, "invalid_slot_count"
-        if not 1 <= sched.n_prb <= rrc.prb_max_bwp:
+        if not 1 <= candidate.n_prb <= rrc.prb_max_bwp:
             return False, "insufficient_res"
         return True, "ok"
 
-    def _compute_rf_terms(self, pa, sched, ps_solution):
+    def _compute_rf_terms(self, deployment, pa, candidate, ps_solution):
         """Translate the solved source-power point into RF output powers."""
 
-        n_streams = self.sinr_model.get_n_streams(sched)
+        n_streams = get_n_streams(candidate)
         ps_total_w = float(ps_solution["ps_min_w"])
         ps_stream_w = ps_total_w / n_streams
-        p_dist_stream_w = self.sinr_model.sigma_z2(pa, ps_stream_w, sched)
+        p_dist_stream_w = self.sinr_model.sigma_z2(pa, ps_stream_w, candidate)
         p_sig_out_stream_w = pa.g_pa_eff_linear * ps_stream_w
         p_sig_out_total_w = n_streams * p_sig_out_stream_w
         p_out_total_w = p_sig_out_total_w + n_streams * p_dist_stream_w
-        p_out_ant_w = p_out_total_w / sched.n_active_tx
+        p_out_ant_w = p_out_total_w / deployment.n_tx_chains
         return {
             "ps_total_w": ps_total_w,
             "p_sig_out_total_w": float(p_sig_out_total_w),
@@ -123,7 +122,7 @@ class CandidatePowerModel:
         }
 
     @staticmethod
-    def _check_rf_and_psd_limits(deployment, *, pa, sched, ps_solution, rf_terms):
+    def _check_rf_and_psd_limits(deployment, *, pa, candidate, ps_solution, rf_terms):
         """Reject solved candidates that violate PHY, PA, or PSD constraints."""
 
         p_out_total = float(rf_terms["p_out_total_w"])
@@ -136,18 +135,15 @@ class CandidatePowerModel:
             return False, "per_chain_pa_cap"
         if pa.curve_pout_w is not None and len(pa.curve_pout_w) and p_out_ant > float(pa.curve_pout_w[-1]):
             return False, "interpolation_out_of_range"
-        if p_out_total > sched.n_active_tx * pa.p_max_w:
+        if p_out_total > deployment.n_tx_chains * pa.p_max_w:
             return False, "total_pa_cap"
         if deployment.use_psd_constraint and psd > deployment.psd_max_w_per_hz:
             return False, "psd_violation"
         return True, "ok"
 
     @staticmethod
-    def _compute_average_dc_power(deployment, pa, sched, p_out_ant_w):
+    def _compute_average_dc_power(deployment, pa, candidate, p_out_ant_w):
         """Compute average PA DC draw including idle chains."""
 
-        alpha_t = sched.n_slots_on / deployment.n_slots_win
-        return (
-            sched.n_active_tx * average_pa_power(pa, p_out_ant_w, alpha_t)
-            + (deployment.n_tx_chains - sched.n_active_tx) * pa.p_idle_w
-        )
+        alpha_t = candidate.n_slots_on / deployment.n_slots_win
+        return deployment.n_tx_chains * average_pa_power(pa, p_out_ant_w, alpha_t)

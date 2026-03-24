@@ -3,8 +3,9 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import numpy as np
 import pandas as pd
 
-from radio_core import MULTI_USER_TDMA_PRESET, build_multi_user_system_cfg
-from single_user_search.api import enumerate_active_candidates as enumerate_single_user_active_candidates
+from single_user_search.models import SingleUserRequest
+from single_user_search.problem_factory import prepare_single_user_problem
+from single_user_search.search import enumerate_active_candidates_from_context
 
 
 ACTIVE_OPERATING_COLUMNS = [
@@ -16,14 +17,10 @@ ACTIVE_OPERATING_COLUMNS = [
     "bandwidth_hz",
     "n_prb",
     "layers",
-    "n_active_tx",
     "mcs",
-    "alpha_f",
     "rate_active_bps",
     "p_dc_active_w",
-    "p_rf_out_active_w",
     "p_out_total_w",
-    "p_sig_out_active_w",
     "ps_total_w",
     "gamma_req_lin",
     "gamma_req_db",
@@ -44,17 +41,13 @@ USER_CANDIDATE_COLUMNS = [
     "bandwidth_hz",
     "n_prb",
     "layers",
-    "n_active_tx",
     "mcs",
-    "alpha_f",
     "rate_active_bps",
     "rate_avg_frame_bps",
     "p_dc_active_w",
     "p_dc_avg_frame_w",
-    "p_rf_out_active_w",
-    "p_rf_out_avg_frame_w",
     "p_out_total_w",
-    "p_sig_out_active_w",
+    "p_out_avg_frame_w",
     "ps_total_w",
     "gamma_req_lin",
     "gamma_req_db",
@@ -117,6 +110,10 @@ def build_user_candidate_review_tables(user_candidate_spaces, *, top_n=None):
 def enumerate_user_active_operating_tables(
     user_table,
     *,
+    system_cfg,
+    model_inputs,
+    search_shape,
+    pa_catalog,
     outer_parallel=False,
     max_workers=None,
 ):
@@ -124,14 +121,13 @@ def enumerate_user_active_operating_tables(
 
     Steps:
     1. Group users only by the deployment input that defines the radio channel: distance.
-    2. Reuse the single-user active table for each unique distance.
+    2. Reuse the prepared single-user active table for each unique distance.
     3. Keep only full-frame operating points because TDMA burst candidates quantize frame shares later.
     4. Re-label the shared active table into the multi-user study schema for each user id.
     """
 
     users = user_table.copy()
-    system_cfg = build_multi_user_system_cfg(MULTI_USER_TDMA_PRESET.model, MULTI_USER_TDMA_PRESET.tdd)
-    frame_slot_count = int(system_cfg["frame_slots"])
+    frame_slot_count = int(system_cfg.frame_slots)
 
     group_requests = {}
     for user_row in users.itertuples(index=False):
@@ -146,6 +142,9 @@ def enumerate_user_active_operating_tables(
                     _evaluate_active_group_worker,
                     group_key,
                     distance_m,
+                    model_inputs,
+                    search_shape,
+                    pa_catalog,
                 ): group_key
                 for group_key, distance_m in group_requests.items()
             }
@@ -155,7 +154,12 @@ def enumerate_user_active_operating_tables(
                 grouped_active_tables[group_key] = active_table
     else:
         grouped_active_tables = {
-            group_key: enumerate_single_user_active_candidates(distance_m)
+            group_key: _build_distance_active_table(
+                distance_m,
+                model_inputs=model_inputs,
+                search_shape=search_shape,
+                pa_catalog=pa_catalog,
+            )
             for group_key, distance_m in group_requests.items()
         }
 
@@ -174,7 +178,6 @@ def enumerate_user_active_operating_tables(
         active_table["distance_m"] = float(user_row.distance_m)
         active_table["rate_active_bps"] = active_table["rate_ach_bps"].astype(float)
         active_table["p_dc_active_w"] = active_table["p_dc_avg_total_w"].astype(float)
-        active_table["p_rf_out_active_w"] = active_table["p_rf_out_active_w"].astype(float)
         active_candidate_tables[int(user_row.user_id)] = (
             active_table[ACTIVE_OPERATING_COLUMNS]
             .sort_values(
@@ -331,7 +334,7 @@ def build_user_candidate_space(user_row, active_table, *, repeated_frames, repea
     candidate_table["alpha_frame"] = candidate_table["n_slots"].astype(float) / float(repeated_period_slots)
     candidate_table["rate_avg_frame_bps"] = candidate_table["alpha_frame"] * candidate_table["rate_active_bps"].astype(float)
     candidate_table["p_dc_avg_frame_w"] = candidate_table["alpha_frame"] * candidate_table["p_dc_active_w"].astype(float)
-    candidate_table["p_rf_out_avg_frame_w"] = candidate_table["alpha_frame"] * candidate_table["p_rf_out_active_w"].astype(float)
+    candidate_table["p_out_avg_frame_w"] = candidate_table["alpha_frame"] * candidate_table["p_out_total_w"].astype(float)
     return (
         candidate_table[USER_CANDIDATE_COLUMNS]
         .sort_values(
@@ -393,13 +396,36 @@ def build_active_candidate_summary_df(user_table, active_candidate_tables):
 def _evaluate_active_group_worker(
     group_key,
     distance_m,
+    model_inputs,
+    search_shape,
+    pa_catalog,
 ):
     """Evaluate one shared active table in a worker process."""
 
     return (
         group_key,
-        enumerate_single_user_active_candidates(float(distance_m)),
+        _build_distance_active_table(
+            float(distance_m),
+            model_inputs=model_inputs,
+            search_shape=search_shape,
+            pa_catalog=pa_catalog,
+        ),
     )
+
+
+def _build_distance_active_table(distance_m, *, model_inputs, search_shape, pa_catalog):
+    """Build one resolved full-search active table for a shared deployment distance."""
+
+    context = prepare_single_user_problem(
+        request=SingleUserRequest(
+            distance_m=float(distance_m),
+            required_rate_bps=0.0,
+        ),
+        model_inputs=model_inputs,
+        search_shape=search_shape,
+        pa_catalog=pa_catalog,
+    )
+    return enumerate_active_candidates_from_context(context)
 
 
 def _resolve_user_path_loss_db(*candidate_tables):

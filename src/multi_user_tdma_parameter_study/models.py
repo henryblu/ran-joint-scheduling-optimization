@@ -2,7 +2,13 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from radio_core import MultiUserPreset
+from radio_core import (
+    MultiUserPreset,
+    PAParams,
+    ResolvedModelInputs,
+    ResolvedMultiUserSystemCfg,
+    ResolvedSearchShape,
+)
 
 
 @dataclass(frozen=True)
@@ -11,8 +17,10 @@ class MultiUserTdmaScenario:
 
     user_table: pd.DataFrame
     preset: MultiUserPreset
-    system_cfg: dict[str, object]
-    pa_catalog: list
+    system_cfg: ResolvedMultiUserSystemCfg
+    pa_catalog: tuple[PAParams, ...]
+    active_search_model_inputs: ResolvedModelInputs
+    active_search_shape: ResolvedSearchShape
 
 
 @dataclass
