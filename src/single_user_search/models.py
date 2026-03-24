@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from radio_core import Candidate
+from radio_core import Candidate, SchedulerVars
 
 
 @dataclass(frozen=True)
@@ -9,16 +9,14 @@ class SingleUserRequest:
 
     distance_m: float
     required_rate_bps: float
-    path_loss_db: float | None = None
 
 
 @dataclass(frozen=True)
 class SingleUserSearchOptions:
     """Execution options that shape one single-user candidate-space run."""
-
-    prb_step: int | None = None
-    bandwidth_space_hz: tuple[float, ...] | None = None
-    n_slots_on_space: tuple[int, ...] | None = None
+    prb_step: int
+    bandwidth_space_hz: tuple[float, ...]
+    n_slots_on_space: tuple[int, ...]
     use_cache: bool = True
 
 
@@ -41,6 +39,7 @@ class StaticCandidateSpec:
 
     candidate_ordinal: int
     candidate: Candidate
+    scheduler_vars: SchedulerVars
     pa_name: str
     bandwidth_hz: float
     alpha_f: float

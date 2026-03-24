@@ -41,12 +41,20 @@ def build_discrete_problem(
 def iter_candidates(problem):
     """Yield scheduler candidates in the same order used by the search layer."""
 
+    for candidate, _, _, _ in iter_resolved_candidates(problem):
+        yield candidate
+
+
+def iter_resolved_candidates(problem):
+    """Yield candidates together with the already-resolved RRC, scheduler vars, and PA."""
+
     sp = problem.search_space
     for rrc in problem.rrc_catalog:
+        pa = problem.pa_catalog[int(rrc.active_pa_id)]
         n_prb_space = range(1, rrc.prb_max_bwp + 1, max(1, sp.prb_step))
         for n_prb in n_prb_space:
             for n_slots_on, layers, n_active_tx, mcs in _iter_valid_scheduler_configs(problem, rrc):
-                yield Candidate(
+                candidate = Candidate(
                     pa_id=int(rrc.active_pa_id),
                     bwp_idx=int(rrc.bwp_index),
                     n_prb=int(n_prb),
@@ -55,6 +63,14 @@ def iter_candidates(problem):
                     n_active_tx=int(n_active_tx),
                     mcs=int(mcs),
                 )
+                scheduler_vars = SchedulerVars(
+                    n_prb=int(n_prb),
+                    n_slots_on=int(n_slots_on),
+                    layers=int(layers),
+                    n_active_tx=int(n_active_tx),
+                    mcs=int(mcs),
+                )
+                yield candidate, rrc, scheduler_vars, pa
 
 
 def count_candidates_for_rrc(problem, rrc):
@@ -64,27 +80,6 @@ def count_candidates_for_rrc(problem, rrc):
     n_prb_points = len(range(1, rrc.prb_max_bwp + 1, max(1, sp.prb_step)))
     scheduler_points = sum(1 for _ in _iter_valid_scheduler_configs(problem, rrc))
     return n_prb_points * scheduler_points
-
-
-def build_scheduler_vars(candidate):
-    """Create scheduler variables from one discrete candidate tuple."""
-
-    return SchedulerVars(
-        n_prb=int(candidate.n_prb),
-        n_slots_on=int(candidate.n_slots_on),
-        layers=int(candidate.layers),
-        n_active_tx=int(candidate.n_active_tx),
-        mcs=int(candidate.mcs),
-    )
-
-
-def resolve_candidate_context(problem, candidate):
-    """Resolve the RRC envelope, scheduler vars, and PA for one candidate."""
-
-    rrc = problem.rrc_lookup.get((int(candidate.pa_id), int(candidate.bwp_idx)))
-    sched = build_scheduler_vars(candidate)
-    pa = None if not (0 <= int(candidate.pa_id) < len(problem.pa_catalog)) else problem.pa_catalog[int(candidate.pa_id)]
-    return rrc, sched, pa
 
 
 def _build_rrc_catalog(deployment, *, pa_catalog, bandwidth_space, delta_f_hz_default, max_mcs):

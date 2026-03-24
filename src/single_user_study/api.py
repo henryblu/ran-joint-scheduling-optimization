@@ -11,7 +11,7 @@ from single_user_search.api import (
     search_candidates as search_candidates_from_engine,
 )
 from single_user_search.candidate_space import count_candidates_for_rrc, iter_candidates
-from single_user_search.models import SingleUserRequest, SingleUserSearchOptions
+from single_user_search.models import SingleUserRequest
 from single_user_search.problem_factory import prepare_single_user_problem
 from single_user_search.search import filter_rate_feasible_candidates, search_candidates_from_context
 
@@ -20,50 +20,24 @@ from .models import SingleUserScenario
 
 def enumerate_active_candidates(
     distance_m,
-    *,
-    path_loss_db=None,
-    preset=None,
-    pa_catalog=None,
-    options=None,
 ):
     """Expose the single-user active-table engine through the notebook-facing study module."""
 
-    return enumerate_active_candidates_from_engine(
-        distance_m,
-        path_loss_db=path_loss_db,
-        preset=preset,
-        pa_catalog=pa_catalog,
-        options=options,
-    )
+    return enumerate_active_candidates_from_engine(distance_m)
 
 
 def search_candidates(
     distance_m,
     required_rate_bps,
-    *,
-    path_loss_db=None,
-    preset=None,
-    pa_catalog=None,
-    options=None,
 ):
     """Expose the single-user rate-filtered search through the notebook-facing study module."""
 
-    return search_candidates_from_engine(
-        distance_m,
-        required_rate_bps,
-        path_loss_db=path_loss_db,
-        preset=preset,
-        pa_catalog=pa_catalog,
-        options=options,
-    )
+    return search_candidates_from_engine(distance_m, required_rate_bps)
 
 
 def search_candidate_spaces(
     user_table,
     *,
-    preset=None,
-    pa_catalog=None,
-    options=None,
     outer_parallel=False,
     max_workers=None,
 ):
@@ -77,18 +51,13 @@ def search_candidate_spaces(
     """
 
     normalized_users = _normalize_user_table(user_table)
-    resolved_preset = SINGLE_USER_SEARCH_PRESET if preset is None else preset
-    resolved_options = SingleUserSearchOptions(use_cache=True) if options is None else options
 
     group_requests = {}
     for user_row in normalized_users.itertuples(index=False):
-        group_key = _build_user_group_key(user_row)
+        group_key = float(user_row.distance_m)
         if group_key in group_requests:
             continue
-        group_requests[group_key] = {
-            "distance_m": float(user_row.distance_m),
-            "path_loss_db": user_row.path_loss_db,
-        }
+        group_requests[group_key] = float(user_row.distance_m)
 
     grouped_active_tables = {}
     if bool(outer_parallel) and len(group_requests) > 1:
@@ -98,13 +67,9 @@ def search_candidate_spaces(
                     executor.submit(
                         _evaluate_user_group_worker,
                         group_key,
-                        request["distance_m"],
-                        request["path_loss_db"],
-                        resolved_preset,
-                        pa_catalog,
-                        resolved_options,
+                        distance_m,
                     ): group_key
-                    for group_key, request in group_requests.items()
+                    for group_key, distance_m in group_requests.items()
                 }
                 for future in as_completed(futures):
                     group_key, active_table = future.result()
@@ -113,18 +78,12 @@ def search_candidate_spaces(
             grouped_active_tables = {}
 
     if not grouped_active_tables:
-        for group_key, request in group_requests.items():
-            grouped_active_tables[group_key] = enumerate_active_candidates(
-                request["distance_m"],
-                path_loss_db=request["path_loss_db"],
-                preset=resolved_preset,
-                pa_catalog=pa_catalog,
-                options=resolved_options,
-            )
+        for group_key, distance_m in group_requests.items():
+            grouped_active_tables[group_key] = enumerate_active_candidates(distance_m)
 
     user_candidate_spaces = {}
     for user_row in normalized_users.itertuples(index=False):
-        active_table = grouped_active_tables[_build_user_group_key(user_row)]
+        active_table = grouped_active_tables[float(user_row.distance_m)]
         user_candidate_spaces[int(user_row.user_id)] = filter_rate_feasible_candidates(
             active_table,
             required_rate_bps=float(user_row.required_rate_bps),
@@ -135,11 +94,6 @@ def search_candidate_spaces(
 def build_single_user_scenario(
     distance_m,
     required_rate_bps,
-    *,
-    path_loss_db=None,
-    preset=None,
-    pa_catalog=None,
-    options=None,
 ):
     """Build the notebook-facing scenario context for one user deployment.
 
@@ -153,24 +107,20 @@ def build_single_user_scenario(
     request = SingleUserRequest(
         distance_m=float(distance_m),
         required_rate_bps=float(required_rate_bps),
-        path_loss_db=None if path_loss_db is None else float(path_loss_db),
     )
     context = prepare_single_user_problem(
         request=request,
-        preset=SINGLE_USER_SEARCH_PRESET if preset is None else preset,
-        pa_catalog=pa_catalog,
-        options=SingleUserSearchOptions(use_cache=True) if options is None else options,
+        preset=SINGLE_USER_SEARCH_PRESET,
     )
     return SingleUserScenario(request=request, context=context)
 
 
-def run_single_user_scenario(scenario, *, options=None):
+def run_single_user_scenario(scenario):
     """Run the candidate-space engine for one prepared study scenario."""
 
     return search_candidates_from_context(
         scenario.context,
         required_rate_bps=float(scenario.request.required_rate_bps),
-        options=options,
     )
 
 
@@ -262,11 +212,10 @@ def _normalize_user_table(user_table):
     missing_columns = sorted(required_columns.difference(user_table.columns))
     if missing_columns:
         raise ValueError(f"user_table is missing required columns: {missing_columns}")
+    if "path_loss_db" in user_table.columns:
+        raise ValueError("user_table must not include path_loss_db; path loss is derived from distance in radio_core.")
 
     normalized = user_table.copy()
-    if "path_loss_db" not in normalized.columns:
-        normalized["path_loss_db"] = None
-
     normalized["user_id"] = normalized["user_id"].astype(int)
     if normalized["user_id"].duplicated().any():
         duplicate_ids = sorted(normalized.loc[normalized["user_id"].duplicated(), "user_id"].unique())
@@ -274,29 +223,13 @@ def _normalize_user_table(user_table):
 
     normalized["distance_m"] = normalized["distance_m"].astype(float)
     normalized["required_rate_bps"] = normalized["required_rate_bps"].astype(float)
-    normalized["path_loss_db"] = normalized["path_loss_db"].apply(_normalize_optional_float)
-    return normalized[["user_id", "distance_m", "required_rate_bps", "path_loss_db"]]
+    return normalized[["user_id", "distance_m", "required_rate_bps"]]
 
 
-def _build_user_group_key(user_row):
-    """Build the deployment-equivalent key for one notebook batch row."""
-
-    return (
-        float(user_row.distance_m),
-        _normalize_optional_float(user_row.path_loss_db),
-    )
-
-
-def _evaluate_user_group_worker(group_key, distance_m, path_loss_db, preset, pa_catalog, options):
+def _evaluate_user_group_worker(group_key, distance_m):
     """Build one shared active table inside an outer worker process."""
 
-    active_table = enumerate_active_candidates(
-        float(distance_m),
-        path_loss_db=path_loss_db,
-        preset=preset,
-        pa_catalog=pa_catalog,
-        options=options,
-    )
+    active_table = enumerate_active_candidates(float(distance_m))
     return group_key, active_table
 
 
@@ -413,14 +346,6 @@ def _build_integer_axis_config(values, max_ticks=9, dense_span=20):
         "limits": (float(lower), float(upper)),
         "ticks": tick_values,
     }
-
-
-def _normalize_optional_float(value):
-    """Normalize pandas missing values into `None` for batch-group keys."""
-
-    if pd.isna(value):
-        return None
-    return float(value)
 
 
 __all__ = [

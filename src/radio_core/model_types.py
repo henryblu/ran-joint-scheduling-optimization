@@ -18,6 +18,8 @@ class DeploymentParams:
     l_impl_db: float
     mi_n_samples: int
     n_dmrs_sym: int
+    n_guard_sym: int
+    n_ul_sym: int
     dft_size_N: int
     n_slots_win: int
     t_slot_s: float

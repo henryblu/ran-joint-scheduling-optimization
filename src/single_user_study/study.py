@@ -103,7 +103,6 @@ def _run_frontier_study(scenarios, required_rate_targets_bps, *, outer_parallel=
                 "user_id": int(scenario_idx),
                 "distance_m": float(scenario["distance_m"]),
                 "required_rate_bps": float(candidate_rate_bps),
-                "path_loss_db": scenario.get("path_loss_db"),
             }
             for scenario_idx, scenario in enumerate(scenarios)
         ]
@@ -126,7 +125,6 @@ def _run_frontier_study(scenarios, required_rate_targets_bps, *, outer_parallel=
     summary_scenario = build_single_user_scenario(
         distance_m=float(scenarios[0]["distance_m"]),
         required_rate_bps=candidate_rate_bps,
-        path_loss_db=scenarios[0].get("path_loss_db"),
     )
     summary_views = summarize_single_user_scenario(
         summary_scenario,

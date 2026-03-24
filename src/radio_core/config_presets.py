@@ -21,8 +21,9 @@ class ModelPreset:
 
 @dataclass(frozen=True)
 class TddPatternConfig:
-    tdd_pattern_slots: int
-    ul_slots: int
+    n_dl_symbols: int
+    n_guard_symbols: int
+    n_ul_symbols: int
 
 
 @dataclass(frozen=True)
@@ -56,8 +57,9 @@ MULTI_USER_TDMA_PRESET = MultiUserPreset(
         pa_data_csv=DEFAULT_PA_DATA_CSV,
     ),
     tdd=TddPatternConfig(
-        tdd_pattern_slots=10,
-        ul_slots=3,
+        n_dl_symbols=10,
+        n_guard_symbols=1,
+        n_ul_symbols=3,
     ),
     runtime=MultiUserRuntimeConfig(
         switch_policy=PASwitchPolicy.STANDBY,

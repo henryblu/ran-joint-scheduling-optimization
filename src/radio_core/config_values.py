@@ -23,6 +23,8 @@ class PhyConstantsConfig:
     sigma_phi2: float
     sigma_q2: float
     n_dmrs_sym: int
+    n_guard_sym: int
+    n_ul_sym: int
     n_sym_data: int
     n_sym_total: int
     dft_size_N: int
@@ -61,7 +63,9 @@ COMMON_PHY_CONSTANTS = PhyConstantsConfig(
     sigma_phi2=0.0,
     sigma_q2=0.0,
     n_dmrs_sym=2,
-    n_sym_data=12,
+    n_guard_sym=1,
+    n_ul_sym=3,
+    n_sym_data=10,
     n_sym_total=14,
     dft_size_N=4096,
     t_slot_s=0.5e-3,

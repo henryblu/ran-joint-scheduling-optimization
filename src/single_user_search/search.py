@@ -6,11 +6,11 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 
-from downlink_candidate_evaluation import CandidatePowerModel, CandidatePowerResult, CandidateRateModel
+from downlink_candidate_evaluation import CandidatePowerModel, CandidateRateModel
 from downlink_candidate_evaluation.mcs_requirements import McsRequirementModel
 
-from .candidate_space import iter_candidates, resolve_candidate_context
-from .models import SingleUserSearchOptions, SingleUserStaticCandidateCatalog, StaticCandidateSpec
+from .candidate_space import iter_resolved_candidates
+from .models import SingleUserStaticCandidateCatalog, StaticCandidateSpec
 from .problem_factory import clear_problem_factory_cache
 
 
@@ -49,27 +49,23 @@ _STATIC_CANDIDATE_CATALOG_CACHE = {}
 _CANDIDATE_BATCH_SIZE = 2048
 
 
-def enumerate_active_candidates_from_context(context, *, options=None):
+def enumerate_active_candidates_from_context(context):
     """Build the full feasible active candidate table for one prepared deployment."""
 
-    resolved_options = _resolve_run_options(context.options, options)
-    cache_key = _build_active_table_cache_key_if_enabled(context, resolved_options)
-    if cache_key is not None:
-        cached_active_table = _get_cached_active_table(cache_key)
-        if cached_active_table is not None:
-            return cached_active_table
+    cache_key = _build_active_table_cache_key(context) if context.options.use_cache else None
+    if cache_key in _ACTIVE_TABLE_CACHE:
+        return _ACTIVE_TABLE_CACHE[cache_key].copy()
 
     static_catalog = _build_static_candidate_catalog(context)
     active_table = _build_active_candidate_table(context, static_catalog.candidates)
     if cache_key is not None:
-        _store_cached_active_table(cache_key, active_table)
+        _ACTIVE_TABLE_CACHE[cache_key] = active_table.copy()
     return active_table
 
 
-def search_candidates_from_context(context, required_rate_bps, *, options=None):
+def search_candidates_from_context(context, required_rate_bps):
     """Filter a prepared deployment's active table down to one user's target-rate space."""
 
-    resolved_options = _resolve_run_options(context.options, options)
     static_catalog = _build_static_candidate_catalog(context)
     filtered_candidates = _filter_static_candidates_by_rate(
         static_catalog.candidates,
@@ -102,18 +98,16 @@ def _build_static_candidate_catalog(context):
 
 
 def _build_static_candidate_specs(context):
-    """Enumerate and sort the static candidate metadata reused across deployments."""
+    """Enumerate and sort the static candidate metadata reused across user evaluations."""
 
     rate_model = CandidateRateModel(context.mcs_table)
     mcs_model = McsRequirementModel(context.mcs_table)
     sinr_requirement_table = mcs_model.get_required_sinr_table(context.deployment)
 
     candidates = []
-    for candidate_ordinal, candidate in enumerate(iter_candidates(context.built_problem)):
-        rrc, sched, pa = resolve_candidate_context(context.built_problem, candidate)
-        if rrc is None or pa is None:
-            continue
-
+    for candidate_ordinal, (candidate, rrc, sched, pa) in enumerate(
+        iter_resolved_candidates(context.built_problem)
+    ):
         rate_result = rate_model.compute_candidate_rate(context.deployment, rrc, sched)
         gamma_req = sinr_requirement_table[sched.mcs]
         candidates.append(
@@ -128,6 +122,14 @@ def _build_static_candidate_specs(context):
                     layers=int(candidate.layers),
                     n_active_tx=int(candidate.n_active_tx),
                     mcs=int(candidate.mcs),
+                ),
+                scheduler_vars=replace(
+                    sched,
+                    n_prb=int(sched.n_prb),
+                    n_slots_on=int(sched.n_slots_on),
+                    layers=int(sched.layers),
+                    n_active_tx=int(sched.n_active_tx),
+                    mcs=int(sched.mcs),
                 ),
                 pa_name=str(pa.pa_name),
                 bandwidth_hz=float(rrc.bwp_bw_hz),
@@ -225,22 +227,14 @@ def _evaluate_candidate_batch(power_model, problem, candidates):
 
     rows = []
     for static_candidate in candidates:
-        rrc, sched, pa = resolve_candidate_context(problem, static_candidate.candidate)
-        if rrc is None or pa is None:
-            power_result = CandidatePowerResult(
-                is_feasible=False,
-                infeasibility_reason="rrc_not_found",
-                gamma_req_lin=float(static_candidate.gamma_req_lin),
-                gamma_req_db=float(static_candidate.gamma_req_db),
-            )
-        else:
-            power_result = power_model.solve_candidate_power(
-                problem.deployment,
-                rrc,
-                sched,
-                pa,
-                gamma_req_lin=float(static_candidate.gamma_req_lin),
-            )
+        candidate = static_candidate.candidate
+        power_result = power_model.solve_candidate_power(
+            problem.deployment,
+            problem.rrc_lookup[(int(candidate.pa_id), int(candidate.bwp_idx))],
+            static_candidate.scheduler_vars,
+            problem.pa_catalog[int(candidate.pa_id)],
+            gamma_req_lin=float(static_candidate.gamma_req_lin),
+        )
         rows.append(
             {
                 "candidate_ordinal": int(static_candidate.candidate_ordinal),
@@ -292,29 +286,13 @@ def _finalize_active_candidate_table(rows):
     return candidate_table.reindex(columns=ACTIVE_RESULT_COLUMNS).reset_index(drop=True)
 
 
-def _build_active_table_cache_key_if_enabled(context, options):
-    """Build the active-table memoization key only when caching is enabled."""
-
-    if not options.use_cache:
-        return None
-
-    cache_context = replace(
-        context,
-        options=replace(
-            context.options,
-            use_cache=False,
-        ),
-    )
-    return _build_active_table_cache_key(cache_context)
-
-
 def _build_static_catalog_cache_key(context):
     """Build the cache key for one search-space-shaped static catalog."""
 
     payload = {
         "model_inputs": _normalize_cache_value(context.model_inputs),
-        "options": _normalize_cache_value(_build_static_cache_options(context.options)),
         "pa_catalog": _normalize_cache_value(context.pa_catalog),
+        "search_shape": _normalize_cache_value(context.options),
     }
     return _build_hash_key(payload)
 
@@ -325,34 +303,10 @@ def _build_active_table_cache_key(context):
     payload = {
         "deployment": _normalize_cache_value(context.deployment),
         "model_inputs": _normalize_cache_value(context.model_inputs),
-        "options": _normalize_cache_value(_build_static_cache_options(context.options)),
         "pa_catalog": _normalize_cache_value(context.pa_catalog),
+        "search_shape": _normalize_cache_value(context.options),
     }
     return _build_hash_key(payload)
-
-
-def _get_cached_active_table(cache_key):
-    """Return a copy of the cached active table, if present."""
-
-    cached_active_table = _ACTIVE_TABLE_CACHE.get(cache_key)
-    return None if cached_active_table is None else cached_active_table.copy()
-
-
-def _store_cached_active_table(cache_key, active_table):
-    """Store a copy of the computed active candidate table."""
-
-    _ACTIVE_TABLE_CACHE[cache_key] = active_table.copy()
-
-
-def _build_static_cache_options(options):
-    """Keep only the search-space-shaping options in cache keys."""
-
-    return SingleUserSearchOptions(
-        prb_step=options.prb_step,
-        bandwidth_space_hz=options.bandwidth_space_hz,
-        n_slots_on_space=options.n_slots_on_space,
-        use_cache=False,
-    )
 
 
 def _build_hash_key(payload):
@@ -381,17 +335,3 @@ def _normalize_cache_value(value):
     if isinstance(value, Enum):
         return value.value
     return value
-
-
-def _resolve_run_options(problem_options, options):
-    """Merge execution overrides onto the prepared context's stored search options."""
-
-    if options is None:
-        return problem_options
-    return replace(
-        problem_options,
-        prb_step=options.prb_step,
-        bandwidth_space_hz=options.bandwidth_space_hz,
-        n_slots_on_space=options.n_slots_on_space,
-        use_cache=options.use_cache,
-    )

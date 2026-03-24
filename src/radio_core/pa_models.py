@@ -80,6 +80,7 @@ def _build_measured_pa_from_curves(pa_name, kappa_distortion, pin_dbm, pout_w, p
 
 def build_pa_catalog(csv_path):
     """Load measured PA profiles from CSV using measured PDCIN as the DC input."""
+
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"Missing PA CSV: {csv_path}")
 

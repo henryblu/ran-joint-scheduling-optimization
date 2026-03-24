@@ -29,9 +29,8 @@ class CandidateRateModel:
     def _slot_level_re_counts(deployment, sched):
         """Per-slot NR resource-element accounting with explicit pilot subtraction."""
 
-        n_re_raw = sched.n_prb * 12 * deployment.n_sym_data
-        n_dmrs_re_per_prb = 12 * deployment.n_dmrs_sym
-        n_pilot = sched.n_prb * n_dmrs_re_per_prb
+        n_re_raw  = sched.n_prb * 12 * deployment.n_sym_data
+        n_pilot   = sched.n_prb * 12 * deployment.n_dmrs_sym
         n_re_data = max(n_re_raw - n_pilot, 1.0)
         return {
             "n_re_raw": float(n_re_raw),

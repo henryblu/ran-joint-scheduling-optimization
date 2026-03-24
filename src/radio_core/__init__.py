@@ -1,5 +1,7 @@
 from .config_builders import (
     build_model_inputs,
+    resolve_path_loss_db,
+    resolve_path_loss_db_values,
     build_single_user_deployment,
     build_multi_user_runtime_cfg,
     build_multi_user_system_cfg,
@@ -45,6 +47,8 @@ from .pa_models import (
 
 __all__ = [
     "build_model_inputs",
+    "resolve_path_loss_db",
+    "resolve_path_loss_db_values",
     "build_single_user_deployment",
     "build_multi_user_runtime_cfg",
     "build_multi_user_system_cfg",

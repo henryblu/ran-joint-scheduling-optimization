@@ -20,9 +20,11 @@ def build_model_inputs(model_preset):
         "pa_data_csv": str(model_preset.pa_data_csv),
     }
 
-def build_single_user_deployment(link_constants, phy_constants, distance_m, *, path_loss_db=None):
-    """Build a deployment object from user-level scenario inputs."""
-    resolved_path_loss_db = (
+
+def resolve_path_loss_db(link_constants, distance_m):
+    """Resolve one deployment's concrete path loss from distance and radio configuration."""
+
+    return float(
         PathLossModel(
             fc_hz=link_constants["fc_hz"],
             model=link_constants.get("pl_model", "fspl"),
@@ -32,8 +34,23 @@ def build_single_user_deployment(link_constants, phy_constants, distance_m, *, p
             h_bs_m=link_constants.get("h_bs_m", 10.0),
             h_ut_m=link_constants.get("h_ut_m", 1.5),
         ).effective_path_loss_db(distance_m)
-        if path_loss_db is None
-        else float(path_loss_db)
+    )
+
+
+def resolve_path_loss_db_values(link_constants, distance_values_m):
+    """Resolve one concrete path-loss value per distance entry."""
+
+    return [
+        resolve_path_loss_db(link_constants, distance_m=float(distance_m))
+        for distance_m in distance_values_m
+    ]
+
+
+def build_single_user_deployment(link_constants, phy_constants, distance_m):
+    """Build a deployment object from user-level scenario inputs."""
+    resolved_path_loss_db = resolve_path_loss_db(
+        link_constants,
+        distance_m=float(distance_m),
     )
     return DeploymentParams(
         fc_hz=float(link_constants["fc_hz"]),
@@ -47,6 +64,8 @@ def build_single_user_deployment(link_constants, phy_constants, distance_m, *, p
         l_impl_db=float(phy_constants["l_impl_db"]),
         mi_n_samples=int(phy_constants["mi_n_samples"]),
         n_dmrs_sym=int(phy_constants["n_dmrs_sym"]),
+        n_guard_sym=int(phy_constants["n_guard_sym"]),
+        n_ul_sym=int(phy_constants["n_ul_sym"]),
         dft_size_N=int(phy_constants["dft_size_N"]),
         n_slots_win=int(phy_constants["n_slots_win"]),
         t_slot_s=float(phy_constants["t_slot_s"]),
@@ -63,13 +82,21 @@ def build_single_user_deployment(link_constants, phy_constants, distance_m, *, p
 
 
 def build_multi_user_system_cfg(model_preset, tdd_config):
-    """Build the derived TDMA/system view from canonical radio config."""
+    """Build the mixed-slot TDMA/system view from canonical radio config.
+
+    Steps:
+    1. Resolve the frame length directly from the shared PHY window.
+    2. Validate that the mixed-slot TDD pattern matches the PHY symbol accounting.
+    3. Expose one schedulable slot per frame slot, with reduced DL payload carried in the PHY symbols.
+    4. Return the notebook/module-facing system dictionary used by multi-user studies.
+    """
     link = model_preset.link
     phy = model_preset.phy
     scheduler = model_preset.scheduler
 
-    frame_slots = int(round(10e-3 / float(phy.t_slot_s)))
-    total_slots = int((frame_slots // int(tdd_config.tdd_pattern_slots)) * (int(tdd_config.tdd_pattern_slots) - int(tdd_config.ul_slots)))
+    frame_slots = int(phy.n_slots_win)
+    _validate_mixed_slot_pattern(phy, tdd_config)
+    total_slots = int(frame_slots)
 
     return {
         "fc_hz": float(link.fc_hz),
@@ -77,8 +104,10 @@ def build_multi_user_system_cfg(model_preset, tdd_config):
         "bandwidth_space_hz": tuple(float(v) for v in scheduler.bandwidth_space_hz),
         "total_prbs": int(float(phy.channel_bw_hz) // (12.0 * float(phy.delta_f_hz))),
         "frame_slots": int(frame_slots),
-        "tdd_pattern_slots": int(tdd_config.tdd_pattern_slots),
-        "ul_slots": int(tdd_config.ul_slots),
+        "slot_dl_symbols": int(tdd_config.n_dl_symbols),
+        "slot_guard_symbols": int(tdd_config.n_guard_symbols),
+        "slot_ul_symbols": int(tdd_config.n_ul_symbols),
+        "slot_payload_symbols": int(tdd_config.n_dl_symbols - int(phy.n_dmrs_sym)),
         "total_slots": int(total_slots),
         "delta_f_hz": float(phy.delta_f_hz),
         "g_tx_db": float(link.g_tx_db),
@@ -88,6 +117,8 @@ def build_multi_user_system_cfg(model_preset, tdd_config):
         "impl_loss_db": float(phy.l_impl_db),
         "mi_n_samples": int(phy.mi_n_samples),
         "n_dmrs_sym": int(phy.n_dmrs_sym),
+        "n_guard_sym": int(phy.n_guard_sym),
+        "n_ul_sym": int(phy.n_ul_sym),
         "n_sym_data": int(phy.n_sym_data),
         "n_sym_total": int(phy.n_sym_total),
         "dft_size_N": int(phy.dft_size_N),
@@ -105,6 +136,21 @@ def build_multi_user_system_cfg(model_preset, tdd_config):
     }
 
 
+def _validate_mixed_slot_pattern(phy, tdd_config):
+    """Reject inconsistent mixed-slot TDD definitions before study code uses them."""
+
+    if int(tdd_config.n_dl_symbols) != int(phy.n_sym_data):
+        raise ValueError("TDD DL-symbol count must match phy.n_sym_data.")
+    if int(tdd_config.n_guard_symbols) != int(phy.n_guard_sym):
+        raise ValueError("TDD guard-symbol count must match phy.n_guard_sym.")
+    if int(tdd_config.n_ul_symbols) != int(phy.n_ul_sym):
+        raise ValueError("TDD UL-symbol count must match phy.n_ul_sym.")
+    if int(tdd_config.n_dl_symbols) + int(tdd_config.n_guard_symbols) + int(tdd_config.n_ul_symbols) != int(phy.n_sym_total):
+        raise ValueError("TDD slot symbols must sum to phy.n_sym_total.")
+    if int(phy.n_dmrs_sym) > int(tdd_config.n_dl_symbols):
+        raise ValueError("DMRS symbols cannot exceed the DL-symbol region in one slot.")
+
+
 def build_multi_user_runtime_cfg(runtime_config):
     """Convert runtime policy into notebook-ready values."""
     return {
@@ -116,6 +162,8 @@ def build_multi_user_runtime_cfg(runtime_config):
 
 __all__ = [
     "build_model_inputs",
+    "resolve_path_loss_db",
+    "resolve_path_loss_db_values",
     "build_single_user_deployment",
     "build_multi_user_runtime_cfg",
     "build_multi_user_system_cfg",
