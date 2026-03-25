@@ -129,7 +129,7 @@ def _run_frontier_study(scenarios, required_rate_targets_bps, *, outer_parallel=
         frontier_table=_concat_frontier_tables(frontier_tables),
         explanatory_configs=_concat_explanatory_tables(explanatory_tables),
         pa_characteristics=summary_views["pa_characteristics"],
-        search_space_summary=summary_views["search_space_summary"],
+        candidate_space_view=summary_views["candidate_space_view"],
     )
 
 

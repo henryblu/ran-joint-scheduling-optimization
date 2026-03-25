@@ -13,7 +13,6 @@ from single_user_search.candidate_space import count_candidates_for_rrc, iter_ca
 from single_user_search.models import SearchSpace, SingleUserRequest
 from single_user_search.problem_factory import prepare_single_user_problem
 from single_user_search.search import (
-    enumerate_active_candidates_from_context,
     filter_rate_feasible_candidates,
 )
 
@@ -125,22 +124,22 @@ def summarize_single_user_scenario(scenario, scenario_count=1):
     """Return the notebook-facing tables that describe one prepared scenario.
 
     Steps:
-    1. Resolve the prepared study context owned by the notebook facade.
-    2. Build the deployment, RRC, and search-space summary tables owned by the study layer.
-    3. Add API-owned PA and search-space detail views required by notebooks.
-    4. Return stable tables without exposing search-package internals.
+        1. Resolve the prepared study context owned by the notebook facade.
+        2. Build one raw candidate-space table that explains the structural search domain.
+        3. Solve the single-user scenario once and choose the deterministic illustrative candidate.
+        4. Return only the non-overlapping notebook tables plus PA characteristics.
     """
 
     context = scenario.context
+    feasible_table = run_single_user_scenario(scenario)
+    example_candidate_row = _select_example_candidate_row(feasible_table)
     return {
-        "deployment_summary": _build_deployment_summary_table(context),
-        "pa_characteristics": build_pa_characteristics_table(context.pa_catalog),
-        "rrc_catalog": _build_rrc_catalog_table(context),
-        "search_space_detail": _build_search_space_detail(context),
-        "search_space_summary": _build_search_space_summary_table(
+        "candidate_space_view": _build_candidate_space_view(
             context,
             scenario_count=int(scenario_count),
         ),
+        "example_candidate_view": _build_example_candidate_view(context, example_candidate_row),
+        "pa_characteristics": build_pa_characteristics_table(context.pa_catalog),
     }
 
 
@@ -174,30 +173,6 @@ def build_single_user_pa_curve_table(scenario):
                 }
             )
     return pd.DataFrame(rows)
-
-
-def build_single_user_plot_domains(scenario):
-    """Return discrete axis metadata for notebook plots."""
-
-    context = scenario.context
-    prb_values = sorted(
-        {
-            int(n_prb)
-            for rrc in context.rrc_catalog
-            for n_prb in range(
-                1,
-                int(rrc.prb_max_bwp) + 1,
-                max(1, int(context.search_shape.prb_step)),
-            )
-        }
-    )
-    return {
-        "frame_slot_count": int(context.deployment.n_slots_win),
-        "layers": _build_integer_axis_config(context.search_shape.layers_space),
-        "mcs": _build_integer_axis_config(context.search_shape.mcs_space),
-        "n_prb": _build_integer_axis_config(prb_values),
-        "n_slots_on": _build_integer_axis_config(context.search_shape.n_slots_on_space),
-    }
 
 
 def _normalize_user_table(user_table):
@@ -260,117 +235,108 @@ def _evaluate_user_group_worker(group_key, distance_m, model_inputs, search_shap
     return group_key, active_table
 
 
-def _build_deployment_summary_table(context):
-    """Build the deployment summary table used by the study notebooks."""
+def _build_candidate_space_view(context, *, scenario_count):
+    """Return the compact definition and size of the raw structural candidate space."""
 
-    return pd.DataFrame(
-        [
-            {
-                "distance_m": float(context.deployment.distance_m),
-                "path_loss_db": float(context.deployment.path_loss_db),
-                "fc_hz": float(context.deployment.fc_hz),
-                "n_tx_chains": int(context.deployment.n_tx_chains),
-                "n_slots_win": int(context.deployment.n_slots_win),
-                "delta_f_hz": (
-                    float(context.rrc_catalog[0].delta_f_hz) if context.rrc_catalog else np.nan
-                ),
-            }
-        ]
+    pa_labels = tuple(str(pa.scenario_label) for pa in context.pa_catalog)
+    bandwidth_options_hz = tuple(sorted({float(rrc.bwp_bw_hz) for rrc in context.rrc_catalog}))
+    max_prbs_by_bwp = tuple(
+        (
+            str(context.pa_catalog[int(rrc.active_pa_id)].scenario_label),
+            int(rrc.bwp_index),
+            int(rrc.prb_max_bwp),
+        )
+        for rrc in sorted(
+            context.rrc_catalog,
+            key=lambda item: (int(item.active_pa_id), float(item.bwp_bw_hz), int(item.bwp_index)),
+        )
     )
-
-
-def _build_rrc_catalog_table(context):
-    """Build the notebook-facing RRC envelope table."""
-
-    return pd.DataFrame(
-        [
-            {
-                "pa_id": int(rrc.active_pa_id),
-                "bwp_idx": int(rrc.bwp_index),
-                "bandwidth_hz": float(rrc.bwp_bw_hz),
-                "prb_max_bwp": int(rrc.prb_max_bwp),
-                "max_layers": int(rrc.max_layers),
-                "max_mcs": int(rrc.max_mcs),
-            }
-            for rrc in context.rrc_catalog
-        ]
-    ).sort_values(["pa_id", "bandwidth_hz"]).reset_index(drop=True)
-
-
-def _build_search_space_summary_table(context, *, scenario_count):
-    """Summarize the raw combinatorial search size for notebook inspection."""
-
     per_pa_counts = []
     for pa_id in range(len(context.pa_catalog)):
         rrc_space = [rrc for rrc in context.rrc_catalog if rrc.active_pa_id == pa_id]
         per_pa_counts.append(
-            sum(count_candidates_for_rrc(context.search_catalog, rrc) for rrc in rrc_space)
+            (
+                str(context.pa_catalog[int(pa_id)].scenario_label),
+                int(sum(count_candidates_for_rrc(context.search_catalog, rrc) for rrc in rrc_space)),
+            )
         )
 
-    raw_configs_per_scenario = sum(per_pa_counts)
+    raw_candidate_count_total = int(sum(count for _label, count in per_pa_counts))
     return pd.DataFrame(
         [
             {
-                "pa_count": int(len(context.pa_catalog)),
-                "scenario_count": int(scenario_count),
-                "raw_configs_per_pa_per_scenario": int(per_pa_counts[0]) if per_pa_counts else 0,
-                "raw_configs_per_scenario": int(raw_configs_per_scenario),
-                "raw_total_configs": int(raw_configs_per_scenario * scenario_count),
-                "n_slots_on_values": len(context.search_shape.n_slots_on_space),
-                "layers_values": len(context.search_shape.layers_space),
-                "mcs_values": len(context.search_shape.mcs_space),
+                "pa_labels": pa_labels,
+                "bandwidth_options_hz": bandwidth_options_hz,
+                "max_prbs_by_bwp": max_prbs_by_bwp,
+                "slot_domain": (1, int(context.deployment.n_slots_win)),
+                "layer_domain": (
+                    int(min(context.search_shape.layers_space)),
+                    int(max(context.search_shape.layers_space)),
+                ),
+                "mcs_domain": (
+                    int(min(context.search_shape.mcs_space)),
+                    int(max(context.search_shape.mcs_space)),
+                ),
                 "prb_step": int(context.search_shape.prb_step),
+                "raw_candidate_count_per_pa": tuple(per_pa_counts),
+                "raw_candidate_count_total": raw_candidate_count_total,
+                "raw_candidate_count_across_scenarios": int(raw_candidate_count_total * scenario_count),
             }
         ]
     )
 
 
-def _build_search_space_detail(context):
-    """Return the explicit discrete search dimensions behind the candidate ledger."""
+def _build_example_candidate_view(context, example_candidate_row):
+    """Return the deterministic illustrative feasible candidate with its envelope."""
 
-    bandwidth_space_hz = tuple(sorted({float(rrc.bwp_bw_hz) for rrc in context.rrc_catalog}))
-    mcs_space = tuple(int(value) for value in context.search_shape.mcs_space)
+    selected_rrc = next(
+        rrc
+        for rrc in context.rrc_catalog
+        if int(rrc.active_pa_id) == int(example_candidate_row["pa_id"])
+        and int(rrc.bwp_index) == int(example_candidate_row["bwp_idx"])
+    )
     return pd.DataFrame(
         [
             {
-                "bandwidth_space_hz": bandwidth_space_hz,
-                "layers_space": tuple(int(value) for value in context.search_shape.layers_space),
-                "mcs_min": int(min(mcs_space)) if mcs_space else np.nan,
-                "mcs_max": int(max(mcs_space)) if mcs_space else np.nan,
-                "prb_step": int(context.search_shape.prb_step),
-                "mcs_entry_count": int(len(context.mcs_table)),
+                "scenario_label": str(example_candidate_row["scenario_label"]),
+                "pa_name": str(example_candidate_row["pa_name"]),
+                "bandwidth_hz": float(example_candidate_row["bandwidth_hz"]),
+                "bwp_idx": int(example_candidate_row["bwp_idx"]),
+                "allocated_prbs": int(example_candidate_row["n_prb"]),
+                "available_prbs": int(selected_rrc.prb_max_bwp),
+                "allocated_slots": int(example_candidate_row["n_slots_on"]),
+                "available_slots": int(context.deployment.n_slots_win),
+                "allocated_layers": int(example_candidate_row["layers"]),
+                "available_layers": int(selected_rrc.max_layers),
+                "mcs": int(example_candidate_row["mcs"]),
+                "rate_ach_bps": float(example_candidate_row["rate_ach_bps"]),
+                "window_avg_total_pa_dc_w": float(example_candidate_row["p_dc_avg_total_w"]),
             }
         ]
     )
 
 
-def _build_integer_axis_config(values, max_ticks=9, dense_span=20):
-    """Build y-axis limits and ticks for a discrete scheduler dimension."""
+def _select_example_candidate_row(feasible_table):
+    """Return the stable illustrative candidate from the feasible cloud."""
 
-    normalized_values = sorted({int(value) for value in values})
-    if not normalized_values:
-        raise ValueError("Discrete axis config requires at least one value.")
-
-    lower = int(normalized_values[0])
-    upper = int(normalized_values[-1])
-    if lower == upper:
-        tick_values = [lower]
-    elif upper - lower <= int(dense_span):
-        tick_values = list(range(lower, upper + 1))
-    else:
-        step_candidates = [
-            b - a for a, b in zip(normalized_values, normalized_values[1:]) if b > a
-        ]
-        base_step = max(1, min(step_candidates) if step_candidates else 1)
-        approx_step = max(base_step, int(np.ceil((upper - lower) / max(max_ticks - 1, 1))))
-        tick_step = int(base_step * np.ceil(approx_step / base_step))
-        tick_values = list(range(lower, upper + 1, tick_step))
-        if tick_values[-1] != upper:
-            tick_values.append(upper)
-    return {
-        "limits": (float(lower), float(upper)),
-        "ticks": tick_values,
-    }
+    if feasible_table.empty:
+        raise ValueError("Cannot build an example candidate view from an empty feasible table.")
+    return (
+        feasible_table.sort_values(
+            [
+                "p_dc_avg_total_w",
+                "bandwidth_hz",
+                "n_prb",
+                "n_slots_on",
+                "layers",
+                "mcs",
+                "pa_id",
+                "bwp_idx",
+            ]
+        )
+        .reset_index(drop=True)
+        .iloc[0]
+    )
 
 
 def _build_search_space(model_inputs):
@@ -389,7 +355,6 @@ def _build_search_space(model_inputs):
 
 __all__ = [
     "build_single_user_pa_curve_table",
-    "build_single_user_plot_domains",
     "enumerate_active_candidates",
     "search_candidate_spaces",
     "search_candidates",

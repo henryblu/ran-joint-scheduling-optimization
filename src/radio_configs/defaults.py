@@ -37,7 +37,7 @@ COMMON_RADIO_CONFIG = RadioConfig(
     t_slot_s=0.5e-3,
     n_tx_chains=4,
     use_psd_constraint=True,
-    psd_max_w_per_hz=8e-7,
+    psd_max_w_per_hz=8e-6,
     delta_f_hz=30e3,
     n_slots_win=20,
 

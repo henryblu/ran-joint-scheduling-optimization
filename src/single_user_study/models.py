@@ -20,4 +20,4 @@ class SingleUserStudyResult:
     frontier_table: pd.DataFrame = field(default_factory=pd.DataFrame)
     explanatory_configs: pd.DataFrame = field(default_factory=pd.DataFrame)
     pa_characteristics: pd.DataFrame = field(default_factory=pd.DataFrame)
-    search_space_summary: pd.DataFrame = field(default_factory=pd.DataFrame)
+    candidate_space_view: pd.DataFrame = field(default_factory=pd.DataFrame)

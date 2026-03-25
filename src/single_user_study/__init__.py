@@ -1,6 +1,5 @@
 from .api import (
     build_single_user_pa_curve_table,
-    build_single_user_plot_domains,
     enumerate_active_candidates,
     search_candidate_spaces,
     search_candidates,
@@ -18,7 +17,6 @@ __all__ = [
     "SingleUserSearchOptions",
     "SingleUserStudyResult",
     "build_single_user_pa_curve_table",
-    "build_single_user_plot_domains",
     "enumerate_active_candidates",
     "search_candidate_spaces",
     "search_candidates",
