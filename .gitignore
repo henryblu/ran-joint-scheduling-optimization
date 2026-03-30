@@ -12,14 +12,12 @@ tests/
 
 # Archived or generated project content
 old/
-data/
 graphs/
 csvs/
 
 # temporary ignore docs as they need to be pruned before being added to the repo
 img/
 docs/
-src/ARCHITECTURE.md
 
 # Ignore all PA model source material except the 3.5 GHz CSVs used by the models
 PA models/**
