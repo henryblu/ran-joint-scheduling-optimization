@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from configs import SINGLE_USER_SEARCH_CONFIG, build_pa_catalog
+from configs import SINGLE_USER_SEARCH_CONFIG, USER_REQUIREMENT_COLUMNS, build_pa_catalog
 from models import build_resolved_fingerprint
 from single_user_solver.api import search_candidates
 from single_user_solver.models import SearchSpace, SingleUserRequest
@@ -10,8 +10,8 @@ from single_user_solver.problem_factory import prepare_single_user_problem
 
 from .models import (
     BATCH_USER_REQUIREMENT_COLUMNS,
-    BATCH_USER_PARAMETER_SPACE_COLUMNS,
     BatchUserParameterSpace,
+    BATCH_USER_PARAMETER_SPACE_COLUMNS,
 )
 
 
@@ -110,7 +110,7 @@ def _normalize_user_table(user_table):
     if not isinstance(user_table, pd.DataFrame):
         raise TypeError("user_table must be a pandas DataFrame.")
 
-    required_columns = {"user_id", "distance_m", "required_rate_bps"}
+    required_columns = set(USER_REQUIREMENT_COLUMNS)
     missing_columns = sorted(required_columns.difference(user_table.columns))
     if missing_columns:
         raise ValueError(f"user_table is missing required columns: {missing_columns}")
@@ -127,7 +127,7 @@ def _normalize_user_table(user_table):
 
     users["distance_m"] = users["distance_m"].astype(float)
     users["required_rate_bps"] = users["required_rate_bps"].astype(float)
-    return users[["user_id", "distance_m", "required_rate_bps"]]
+    return users[USER_REQUIREMENT_COLUMNS]
 
 
 def _project_batch_user_parameter_space(candidate_table, *, frame_n_slots):

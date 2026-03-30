@@ -11,7 +11,7 @@ from models import PAParams, PAState, PASwitchPolicy
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PA_DATA_CSV = str(
-    REPO_ROOT / "PA models" / "3.5Ghz_pas" / "4W_8W_NR_combined_NR_carrier.csv"
+    REPO_ROOT / "PA models" / "3.5Ghz_pas" / "4W_8W_NR_combined_NR_carrier_with_idle.csv"
 )
 
 
@@ -129,6 +129,10 @@ def _build_measured_pa_from_curves(pa_name, scenario_label, kappa_distortion, pi
     pin_dbm = np.asarray(pin_dbm, dtype=float)
     pout_w = np.asarray(pout_w, dtype=float)
     pdcin_w = np.asarray(pdcin_w, dtype=float)
+    finite_pdcin_w = pdcin_w[np.isfinite(pdcin_w)]
+    if len(finite_pdcin_w) == 0:
+        raise ValueError(f"Missing PA DC samples for {pa_name}")
+    p_idle_w = float(np.min(finite_pdcin_w))
 
     valid = np.isfinite(pin_dbm) & np.isfinite(pout_w) & np.isfinite(pdcin_w)
     pin_dbm = pin_dbm[valid]
@@ -155,7 +159,8 @@ def _build_measured_pa_from_curves(pa_name, scenario_label, kappa_distortion, pi
 
     eta_samples = np.clip(pout_grid_w / np.clip(pdc_grid_w, 1e-12, None), 1e-4, 1.0)
     p_max_w = float(np.max(pout_grid_w))
-    p_idle_w = float(np.min(pdc_grid_w))
+    if p_idle_w is None:
+        p_idle_w = float(np.min(pdc_grid_w))
     eta_max = float(np.max(eta_samples))
 
     n_gain = max(3, int(0.3 * len(pin_grid_w)))
@@ -167,6 +172,11 @@ def _build_measured_pa_from_curves(pa_name, scenario_label, kappa_distortion, pi
     pdc_sorted = pdc_grid_w[order_out]
     pout_unique, idx = np.unique(pout_sorted, return_index=True)
     pdc_unique = pdc_sorted[idx]
+    positive_mask = np.asarray(pout_unique, dtype=float) > 0.0
+    pout_curve_w = np.asarray(pout_unique, dtype=float)[positive_mask]
+    pdc_curve_w = np.asarray(pdc_unique, dtype=float)[positive_mask]
+    if len(pout_curve_w) == 0:
+        raise ValueError(f"Missing positive-output PA samples for {pa_name}")
 
     return PAParams(
         p_max_w=p_max_w,
@@ -177,8 +187,8 @@ def _build_measured_pa_from_curves(pa_name, scenario_label, kappa_distortion, pi
         backoff_db=6.0,
         pa_name=pa_name,
         scenario_label=scenario_label,
-        curve_pout_w=pout_unique,
-        curve_pdc_w=pdc_unique,
+        curve_pout_w=pout_curve_w,
+        curve_pdc_w=pdc_curve_w,
         curve_pin_w=pin_grid_w,
         source_csv=source_tag,
     )

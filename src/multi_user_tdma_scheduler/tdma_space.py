@@ -181,16 +181,23 @@ def prune_user_tdma_spaces(user_tdma_spaces):
 
 
 def exact_prune_user_tdma_space(candidate_table):
-    """Drop rows that are exactly dominated under the joint scheduler objective."""
+    """Drop rows that are exactly dominated without erasing PA-family alternatives.
+
+    The joint scheduler may prefer one PA family over another even when a row on a
+    different bank is locally better on slots or average-frame power. We therefore
+    only prune rows against competitors on the same PA bank.
+    """
 
     ranked_rows = candidate_table.sort_values(
-        ["n_slots", "p_dc_avg_frame_w", "rate_avg_frame_bps", "bandwidth_hz", "n_prb", "mcs", "pa_id"],
-        ascending=[True, True, False, True, True, True, True],
+        ["pa_id", "n_slots", "p_dc_avg_frame_w", "rate_avg_frame_bps", "bandwidth_hz", "n_prb", "mcs"],
+        ascending=[True, True, True, False, True, True, True],
     ).to_dict("records")
 
     kept_rows = []
     for row in ranked_rows:
         is_dominated = any(
+            int(kept_row["pa_id"]) == int(row["pa_id"])
+            and
             int(kept_row["n_slots"]) <= int(row["n_slots"])
             and float(kept_row["p_dc_avg_frame_w"]) <= float(row["p_dc_avg_frame_w"])
             and float(kept_row["rate_avg_frame_bps"]) >= float(row["rate_avg_frame_bps"])

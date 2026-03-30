@@ -44,21 +44,25 @@ def generate_synthetic_day_population(
     config: SyntheticSessionGenerationConfig,
     target_load_table: pd.DataFrame,
 ) -> tuple[SyntheticSession, ...]:
-    """Generate one full synthetic day whose nominal bin load follows the target table.
+    """Generate one synthetic day that tracks the target table with preset-sized sessions.
 
     Steps:
     1. Copy the target bin budget into a mutable remaining-demand vector.
     2. Repeatedly build one feasible session against that remaining budget.
     3. Subtract the session's nominal per-bin footprint from the remaining bins.
-    4. Stop once the residual demand is exhausted within a small tolerance.
+    4. Stop once every bin residual falls below the smallest total-data preset.
     """
 
     rng = np.random.default_rng(config.rng_seed)
     remaining_bits = target_load_table["target_bits_in_bin"].to_numpy(dtype=float).copy()
+    smallest_total_data_bits = float(min(config.total_data_presets_bits))
     sessions = []
     session_id = 0
 
-    while _has_remaining_demand(remaining_bits):
+    while _has_remaining_demand(
+        remaining_bits,
+        smallest_total_data_bits=smallest_total_data_bits,
+    ):
         session = _generate_synthetic_session(
             session_id=session_id,
             config=config,
@@ -164,8 +168,7 @@ def _sample_nominal_duration_bins(
     if feasible_durations:
         return int(_weighted_choice(feasible_durations, feasible_weights, rng))
 
-    # Keep cleanup simple even when the remaining demand is below the smallest preset.
-    return 1
+    raise RuntimeError("Could not find a duration that can host a preset-sized session.")
 
 
 def _sample_start_bin(
@@ -179,11 +182,12 @@ def _sample_start_bin(
     feasible_start_bins = []
     feasible_weights = []
     max_start_bin = int(config.day_bin_count) - int(nominal_duration_bins)
+    smallest_total_data_bits = float(min(config.total_data_presets_bits))
 
     for start_bin in range(max_start_bin + 1):
         window_remaining_bits = remaining_bits[start_bin : start_bin + nominal_duration_bins]
         max_total_data_bits = _max_total_data_bits_for_window(window_remaining_bits)
-        if max_total_data_bits <= RESIDUAL_TOL:
+        if max_total_data_bits + RESIDUAL_TOL < smallest_total_data_bits:
             continue
         feasible_start_bins.append(int(start_bin))
         feasible_weights.append(float(max_total_data_bits))
@@ -201,7 +205,7 @@ def _sample_total_data_bits(
     nominal_duration_bins: int,
     rng: np.random.Generator,
 ) -> float:
-    """Choose one feasible total-data preset, or emit a cleanup value for the residual."""
+    """Choose one feasible total-data preset for the selected session window."""
 
     window_remaining_bits = remaining_bits[start_bin : start_bin + nominal_duration_bins]
     max_total_data_bits = _max_total_data_bits_for_window(window_remaining_bits)
@@ -219,7 +223,7 @@ def _sample_total_data_bits(
     if feasible_total_data_bits:
         return float(_weighted_choice(feasible_total_data_bits, feasible_weights, rng))
 
-    return float(max_total_data_bits)
+    raise RuntimeError("Selected session window could not host any total-data preset.")
 
 
 def _sample_distance_m(
@@ -265,10 +269,14 @@ def _apply_nominal_session_to_remaining_bits(
         remaining_bits[bin_index] -= nominal_bits_per_bin
 
 
-def _has_remaining_demand(remaining_bits: np.ndarray) -> bool:
-    """Return whether any bin still carries material residual demand."""
+def _has_remaining_demand(
+    remaining_bits: np.ndarray,
+    *,
+    smallest_total_data_bits: float,
+) -> bool:
+    """Return whether any bin still carries at least one preset-sized residual."""
 
-    return bool(np.any(remaining_bits > RESIDUAL_TOL))
+    return bool(np.any(remaining_bits + RESIDUAL_TOL >= float(smallest_total_data_bits)))
 
 
 def _clip_small_negative_residuals(remaining_bits: np.ndarray) -> None:

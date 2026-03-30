@@ -45,6 +45,7 @@ class ExactJointScheduleSearch:
             if isinstance(switch_policy, PASwitchPolicy)
             else PASwitchPolicy(str(switch_policy))
         )
+        self.standby_idle_baseline_w = self._resolve_standby_idle_baseline()
 
         self.ranked_user_rows = {}
         self.user_order = []
@@ -53,7 +54,8 @@ class ExactJointScheduleSearch:
         self.lower_bound_cache = {}
         self.best_schedule = None
         self.best_schedule_power = np.inf
-        self.best_rank = (np.inf, np.inf, np.inf)
+        self.best_pa_signature = self._worst_pa_signature()
+        self.best_rank = self._worst_schedule_rank()
         self.search_stats = {}
 
         self._prepare_search_state()
@@ -74,7 +76,7 @@ class ExactJointScheduleSearch:
         self._search_from(
             depth=0,
             slot_sum=0,
-            exact_cost_sum=0.0,
+            exact_cost_sum=self._initial_schedule_cost(),
             rate_sum=0.0,
             used_pa_ids=frozenset(),
             selected_rows=[],
@@ -141,33 +143,44 @@ class ExactJointScheduleSearch:
                 self.search_stats["pruned_time_direct"] += 1
                 continue
 
-            next_exact_cost_sum = float(exact_cost_sum + self._incremental_schedule_cost(row, used_pa_ids))
-            if next_exact_cost_sum > self.best_schedule_power + self.TOL:
-                self.search_stats["pruned_power_direct"] += 1
+            next_used_pa_ids = frozenset(set(used_pa_ids) | {int(row["pa_id"])})
+            next_pa_signature = self._used_pa_signature(next_used_pa_ids)
+            if self._pa_signature_is_worse_than_best(next_pa_signature):
                 continue
+
+            next_exact_cost_sum = float(exact_cost_sum + self._incremental_schedule_cost(row, used_pa_ids))
+            if self._power_pruning_enabled(next_pa_signature):
+                if next_exact_cost_sum > self.best_schedule_power + self.TOL:
+                    self.search_stats["pruned_power_direct"] += 1
+                    continue
 
             if next_slot_sum + remaining_slots_lb > self.window_n_slots:
                 self.search_stats["pruned_time_bound"] += 1
                 continue
 
-            next_used_pa_ids = frozenset(set(used_pa_ids) | {int(row["pa_id"])})
-            power_lb = float(
-                next_exact_cost_sum + self._remaining_cost_lower_bound(depth + 1, next_used_pa_ids)
-            )
-            if power_lb > self.best_schedule_power + self.TOL:
-                self.search_stats["pruned_power_bound"] += 1
-                continue
+            power_lb = None
+            if self._power_pruning_enabled(next_pa_signature):
+                power_lb = float(
+                    next_exact_cost_sum + self._remaining_cost_lower_bound(depth + 1, next_used_pa_ids)
+                )
+                if power_lb > self.best_schedule_power + self.TOL:
+                    self.search_stats["pruned_power_bound"] += 1
+                    continue
 
             next_rate_sum = float(rate_sum + float(row["rate_avg_frame_bps"]))
-            if np.isfinite(self.best_rank[0]) and abs(power_lb - self.best_rank[0]) <= self.TOL:
+            if (
+                power_lb is not None
+                and np.isfinite(self.best_schedule_power)
+                and abs(power_lb - self.best_schedule_power) <= self.TOL
+            ):
                 slot_lb = int(next_slot_sum + remaining_slots_lb)
-                if slot_lb > int(self.best_rank[1]):
+                if slot_lb > int(self.best_rank[-2]):
                     self.search_stats["pruned_rank_bound"] += 1
                     continue
 
-                if slot_lb == int(self.best_rank[1]):
+                if slot_lb == int(self.best_rank[-2]):
                     max_rate_ub = float(next_rate_sum + self.suffix_max_rate_avg_frame_bps[depth + 1])
-                    if max_rate_ub <= float(-self.best_rank[2]) + self.TOL:
+                    if max_rate_ub <= float(-self.best_rank[-1]) + self.TOL:
                         self.search_stats["pruned_rank_bound"] += 1
                         continue
 
@@ -185,17 +198,15 @@ class ExactJointScheduleSearch:
     def _accept_schedule(self, schedule_result):
         """Accept a better schedule according to the exact objective and tie-breaks."""
 
-        candidate_rank = (
-            float(schedule_result["schedule_p_dc_total_avg_frame_w"]),
-            int(schedule_result["slot_total"]),
-            -float(schedule_result["total_rate_bps"]),
-        )
+        candidate_rank = self._schedule_rank(schedule_result)
         if candidate_rank >= self.best_rank:
             return
 
         self.best_rank = candidate_rank
         self.best_schedule_power = float(schedule_result["schedule_p_dc_total_avg_frame_w"])
-        self.best_schedule = schedule_result
+        if self.switch_policy == PASwitchPolicy.HARD_OFF:
+            self.best_pa_signature = self._used_pa_signature(schedule_result["used_pa_ids"])
+        self.best_schedule = self._public_schedule(schedule_result)
         self.search_stats["best_updates"] += 1
 
     def _seed_greedy_schedule(self):
@@ -246,26 +257,29 @@ class ExactJointScheduleSearch:
     def _evaluate_schedule(self, selected_rows):
         """Evaluate one complete schedule from already-valid user candidate rows."""
 
-        inactive_state = PAState.IDLE if self.switch_policy == PASwitchPolicy.STANDBY else PAState.OFF
+        used_pa_ids = sorted({int(row["pa_id"]) for row in selected_rows})
         slot_total = int(sum(int(row["n_slots"]) for row in selected_rows))
         total_rate_bps = float(sum(float(row["rate_avg_frame_bps"]) for row in selected_rows))
         schedule_p_out_total_avg_frame_w = float(sum(float(row["p_out_avg_frame_w"]) for row in selected_rows))
 
-        schedule_p_dc_total_avg_frame_w = 0.0
-        for pa_id in sorted({int(row["pa_id"]) for row in selected_rows}):
+        schedule_p_dc_total_avg_frame_w = self._initial_schedule_cost()
+        for pa_id in used_pa_ids:
             pa_rows = [row for row in selected_rows if int(row["pa_id"]) == pa_id]
+            pa_p_dc_active_avg_frame_w = float(sum(float(row["p_dc_avg_frame_w"]) for row in pa_rows))
+            if self.switch_policy == PASwitchPolicy.HARD_OFF:
+                schedule_p_dc_total_avg_frame_w += pa_p_dc_active_avg_frame_w
+                continue
+
             pa_alpha_frame = float(
                 np.clip(sum(float(row["n_slots"]) for row in pa_rows) / float(self.window_n_slots), 0.0, 1.0)
             )
-            pa_p_dc_active_avg_frame_w = float(sum(float(row["p_dc_avg_frame_w"]) for row in pa_rows))
-            inactive_bank_w = float(
-                inactive_pa_bank_power(self.pa_catalog[pa_id], inactive_state, self.n_tx_chains)
-            )
-            pa_p_dc_inactive_avg_frame_w = float((1.0 - pa_alpha_frame) * inactive_bank_w)
-            schedule_p_dc_total_avg_frame_w += float(pa_p_dc_active_avg_frame_w + pa_p_dc_inactive_avg_frame_w)
+            idle_bank_w = float(inactive_pa_bank_power(self.pa_catalog[pa_id], PAState.IDLE, self.n_tx_chains))
+            schedule_p_dc_total_avg_frame_w += float(pa_p_dc_active_avg_frame_w - pa_alpha_frame * idle_bank_w)
 
         return {
             "rows": sorted([dict(row) for row in selected_rows], key=lambda row: int(row["user_id"])),
+            "used_pa_ids": list(used_pa_ids),
+            "used_pa_signature": self._used_pa_signature(used_pa_ids),
             "slot_total": int(slot_total),
             "unused_slots": int(self.window_n_slots - slot_total),
             "total_rate_bps": float(total_rate_bps),
@@ -283,13 +297,22 @@ class ExactJointScheduleSearch:
         pa_id = int(row["pa_id"])
         row_alpha = float(row["n_slots"]) / float(self.window_n_slots)
         idle_bank_w = float(inactive_pa_bank_power(self.pa_catalog[pa_id], PAState.IDLE, self.n_tx_chains))
-        incremental_cost = active_cost - row_alpha * idle_bank_w
-        if pa_id not in used_pa_ids:
-            incremental_cost += idle_bank_w
-        return float(incremental_cost)
+        return float(active_cost - row_alpha * idle_bank_w)
 
     def _ranked_row_key(self, row):
         """Return the deterministic ordering key used before the exact search."""
+
+        if self.switch_policy == PASwitchPolicy.HARD_OFF:
+            return (
+                self._used_pa_signature((int(row["pa_id"]),)),
+                float(row["p_dc_avg_frame_w"]),
+                int(row["n_slots"]),
+                -float(row["rate_avg_frame_bps"]),
+                int(row["pa_id"]),
+                float(row["bandwidth_hz"]),
+                int(row["n_prb"]),
+                int(row["mcs"]),
+            )
 
         return (
             self._incremental_schedule_cost(row, frozenset()),
@@ -309,6 +332,89 @@ class ExactJointScheduleSearch:
             best_schedule=self.best_schedule,
             search_stats=self.search_stats,
         )
+
+    def _public_schedule(self, schedule_result):
+        """Return the trimmed public schedule payload stored on the result model."""
+
+        return {
+            "rows": schedule_result["rows"],
+            "slot_total": int(schedule_result["slot_total"]),
+            "unused_slots": int(schedule_result["unused_slots"]),
+            "total_rate_bps": float(schedule_result["total_rate_bps"]),
+            "schedule_p_dc_total_avg_frame_w": float(schedule_result["schedule_p_dc_total_avg_frame_w"]),
+            "schedule_p_out_total_avg_frame_w": float(schedule_result["schedule_p_out_total_avg_frame_w"]),
+        }
+
+    def _schedule_rank(self, schedule_result):
+        """Return the exact schedule rank for the active switch policy."""
+
+        if self.switch_policy == PASwitchPolicy.HARD_OFF:
+            return (
+                self._used_pa_signature(schedule_result["used_pa_ids"]),
+                float(schedule_result["schedule_p_dc_total_avg_frame_w"]),
+                int(schedule_result["slot_total"]),
+                -float(schedule_result["total_rate_bps"]),
+            )
+
+        return (
+            float(schedule_result["schedule_p_dc_total_avg_frame_w"]),
+            int(schedule_result["slot_total"]),
+            -float(schedule_result["total_rate_bps"]),
+        )
+
+    def _worst_pa_signature(self):
+        """Return a sentinel PA-signature rank worse than any feasible schedule."""
+
+        return tuple(np.inf for _ in self.pa_catalog)
+
+    def _worst_schedule_rank(self):
+        """Return a sentinel full schedule rank worse than any feasible schedule."""
+
+        if self.switch_policy == PASwitchPolicy.HARD_OFF:
+            return (self._worst_pa_signature(), np.inf, np.inf, np.inf)
+
+        return (np.inf, np.inf, np.inf)
+
+    def _used_pa_signature(self, used_pa_ids):
+        """Encode the activated PA banks from highest to lowest power tier."""
+
+        used_pa_set = {int(pa_id) for pa_id in used_pa_ids}
+        return tuple(int(pa_id in used_pa_set) for pa_id in range(len(self.pa_catalog)))
+
+    def _pa_signature_is_worse_than_best(self, pa_signature):
+        """Return whether a branch can no longer beat the best PA-family choice."""
+
+        if self.switch_policy != PASwitchPolicy.HARD_OFF or self.best_schedule is None:
+            return False
+
+        return pa_signature > self.best_pa_signature
+
+    def _power_pruning_enabled(self, pa_signature):
+        """Return whether power bounds are valid for the current branch."""
+
+        if self.best_schedule is None:
+            return False
+        if self.switch_policy != PASwitchPolicy.HARD_OFF:
+            return True
+
+        return pa_signature == self.best_pa_signature
+
+    def _resolve_standby_idle_baseline(self):
+        """Return the standby idle cost paid when every installed PA bank is left idle."""
+
+        return float(
+            sum(
+                inactive_pa_bank_power(pa, PAState.IDLE, self.n_tx_chains)
+                for pa in self.pa_catalog
+            )
+        )
+
+    def _initial_schedule_cost(self):
+        """Return the constant schedule-side baseline before any row-specific adjustments."""
+
+        if self.switch_policy == PASwitchPolicy.STANDBY:
+            return float(self.standby_idle_baseline_w)
+        return 0.0
 
 
 __all__ = [

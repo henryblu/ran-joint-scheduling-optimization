@@ -15,15 +15,15 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 
-from day_cycle_simulation.generation import build_scheduler_day_user_table
-from day_cycle_simulation.models import (
+from configs.day_cycle import (
     DEFAULT_SYNTHETIC_SESSION_GENERATION_CONFIG,
     SyntheticSessionGenerationConfig,
 )
-from configs import USER_REQUIREMENT_COLUMNS
+from day_cycle_simulation.generation import build_scheduler_day_user_table
 from models import PASwitchPolicy
 from multi_user_tdma_scheduler.api import run_multi_user_tdma_scheduler
 from multi_user_tdma_scheduler.models import MultiUserTdmaSchedulerResult
+from configs import USER_REQUIREMENT_COLUMNS
 from single_user_parameter_space.api import build_batch_user_parameter_space
 
 
@@ -85,7 +85,7 @@ def _build_experiment() -> ExperimentConfig:
     """Choose one concrete full-day experiment using the current default inputs."""
 
     return ExperimentConfig(
-        load_curve_csv=REPO_ROOT / "data" / "total_network_load_curve.csv",
+        load_curve_csv=REPO_ROOT / "data" / "four_mimo_subarray_load_curve.csv",
         session_generation_config=DEFAULT_SYNTHETIC_SESSION_GENERATION_CONFIG,
         window_n_frames=None,
         switch_policy=PASwitchPolicy.STANDBY,
