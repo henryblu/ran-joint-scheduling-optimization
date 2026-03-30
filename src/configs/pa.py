@@ -1,40 +1,18 @@
-"""PA-specific types and behavior owned outside the config and shared-runtime layers."""
+"""Shared PA defaults, catalog loading, and PA power helpers."""
 
 import os
-from dataclasses import dataclass
-from enum import Enum
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-
-class PAState(Enum):
-    ACTIVE = "active"
-    IDLE = "idle"
-    OFF = "off"
+from models import PAParams, PAState, PASwitchPolicy
 
 
-class PASwitchPolicy(Enum):
-    STANDBY = "standby"
-    HARD_OFF = "hard_off"
-
-
-@dataclass(frozen=True)
-class PAParams:
-    """Measured PA representation."""
-
-    p_max_w: float
-    p_idle_w: float
-    eta_max: float
-    g_pa_eff_linear: float
-    kappa_distortion: float
-    backoff_db: float
-    pa_name: str = ""
-    scenario_label: str = ""
-    curve_pout_w: np.ndarray | None = None
-    curve_pdc_w: np.ndarray | None = None
-    curve_pin_w: np.ndarray | None = None
-    source_csv: str = ""
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_PA_DATA_CSV = str(
+    REPO_ROOT / "PA models" / "3.5Ghz_pas" / "4W_8W_NR_combined_NR_carrier.csv"
+)
 
 
 def build_pa_catalog(csv_path):
@@ -55,7 +33,7 @@ def build_pa_catalog(csv_path):
         "QPA9942": "4W PA",
         "Bae et al. NR": "8W PA",
     }
-    pa_models = []
+    catalog = []
     for pa_name in sorted(df["pa_name"].dropna().unique()):
         sel = df[df["pa_name"] == pa_name].copy().sort_values("Pin_dBm")
         p_out = sel["Pout_W"].to_numpy(dtype=float)
@@ -67,7 +45,7 @@ def build_pa_catalog(csv_path):
             spread = float(np.nanmax(eta_obs) - np.nanmin(eta_obs))
             kappa_guess = float(np.clip(0.02 + 0.5 * spread, 0.01, 0.08))
 
-        pa_models.append(
+        catalog.append(
             _build_measured_pa_from_curves(
                 pa_name=str(pa_name),
                 scenario_label=scenario_label_alias.get(str(pa_name), str(pa_name)),
@@ -79,7 +57,7 @@ def build_pa_catalog(csv_path):
             )
         )
 
-    return sorted(pa_models, key=lambda pa: (-float(pa.p_max_w), str(pa.pa_name)))
+    return sorted(catalog, key=lambda pa: (-float(pa.p_max_w), str(pa.pa_name)))
 
 
 def build_pa_characteristics_table(pa_catalog_or_problem):
@@ -211,9 +189,7 @@ def _dbm_to_w(x_dbm):
 
 
 __all__ = [
-    "PAParams",
-    "PAState",
-    "PASwitchPolicy",
+    "DEFAULT_PA_DATA_CSV",
     "average_pa_power",
     "build_pa_catalog",
     "build_pa_characteristics_table",

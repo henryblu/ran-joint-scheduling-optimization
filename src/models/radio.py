@@ -1,4 +1,4 @@
-"""Static radio configuration types and immutable shared config values."""
+"""Shared radio configuration models and immutable helper types."""
 
 from dataclasses import dataclass
 from types import MappingProxyType
