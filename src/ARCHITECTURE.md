@@ -6,15 +6,15 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 
 ### `src/configs`
 
-- **Owns:** Shared configuration values, trusted user-table builders, user presets, radio scenario presets, default file paths, PA catalog loading, and PA helper behavior used by higher layers.
-- **Consumes:** Repository-local default tables and source-file references needed to build those configs and catalogs.
+- **Owns:** Shared configuration values, the scheduler user-table column contract, radio scenario presets, default file paths, day-cycle session-generation presets, the default `SyntheticSessionGenerationConfig`, PA catalog loading, and PA helper behavior used by higher layers.
+- **Consumes:** Repository-local default tables, source-file references, and config model types needed to build those configs and catalogs.
 - **Does not own:** Derived deployment state, path-loss runtime values, candidate enumeration, or study orchestration.
 
 ### `src/models`
 
 - **Owns:** Shared data models such as `RadioConfig`, `UserRequest`, `PAParams`, and derived runtime radio state such as `DeploymentParams`, path-loss helpers, and stable fingerprinting of resolved state.
 - **Consumes:** Resolved config values, link distance, and other already-resolved values that need deterministic fingerprints.
-- **Does not own:** Canonical scenario defaults, user presets, PA catalog loading behavior, or solver and study policy.
+- **Does not own:** Canonical scenario defaults, PA catalog loading behavior, or solver and study policy.
 
 ### `src/downlink_candidate_evaluation`
 
@@ -30,8 +30,8 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 
 ### `src/single_user_parameter_space`
 
-- **Owns:** The higher-level single-user study layer: canonical default single-user engine state, request-table normalization, `BatchUserParameterSpace`, and notebook-facing helpers such as `SingleUserScenario` and `SingleUserStudyResult`.
-- **Consumes:** `configs` presets and builders, `models` value objects, and `single_user_solver`.
+- **Owns:** The higher-level single-user study layer: request-table normalization, canonical default single-user engine state, `BatchUserParameterSpace`, and notebook-facing helpers such as `SingleUserScenario` and `SingleUserStudyResult`.
+- **Consumes:** `configs` radio defaults and PA catalog builders, `models` value objects, and `single_user_solver`.
 - **Does not own:** Per-candidate PHY equations, shared radio physics primitives, or joint TDMA scheduling across users.
 
 ### `src/multi_user_tdma_scheduler`
@@ -42,13 +42,13 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 
 ### `src/day_cycle_simulation`
 
-- **Owns:** Synthetic daily load and session generation, including 15-minute load expansion, `SyntheticSessionGenerationConfig`, and `SyntheticSession`.
-- **Consumes:** Hourly or per-bin load tables and local preset catalogs for distance, duration, and total data.
+- **Owns:** Synthetic daily load and session generation, including 15-minute load expansion, the `SyntheticSessionGenerationConfig` model, and `SyntheticSession`.
+- **Consumes:** Hourly or per-bin load tables and shared day-cycle preset catalogs from `configs`.
 - **Does not own:** Radio configuration, link-budget physics, single-user solving, or multi-user schedule search.
 
 ## Main Dependency Flow
 
-1. `src/configs` defines the shared radio assumptions, user presets, trusted user-table builders, PA source paths, and PA catalog behavior.
+1. `src/configs` defines the shared radio assumptions, the scheduler user-table column contract, day-cycle presets, PA source paths, and PA catalog behavior.
 2. `src/models` provides the shared value objects and the derived deployment and fingerprint helpers consumed by the solver layers.
 3. `src/single_user_solver` combines `configs`, `models`, and `downlink_candidate_evaluation` to build one prepared single-user context and enumerate candidate rows.
 4. `src/single_user_parameter_space` chooses the canonical shared single-user engine state from `configs`, batches many user requests, and produces trusted per-user parameter-space artifacts.
@@ -59,8 +59,9 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 
 - If logic evaluates one resolved candidate's rate, SINR, or power, it belongs in `downlink_candidate_evaluation`.
 - If logic builds or searches one user's discrete candidate space from a prepared context, it belongs in `single_user_solver`.
+- If logic defines the shared scheduler user-table column contract, it belongs in `configs`.
 - If logic chooses default single-user settings, batches many requests, or prepares notebook-facing single-user studies, it belongs in `single_user_parameter_space`.
 - If logic reasons jointly across users under a shared slot budget, it belongs in `multi_user_tdma_scheduler`.
-- If logic builds user request presets or PA catalogs, it belongs in `configs`.
+- If logic builds shared default configs or PA catalogs, it belongs in `configs`.
 - If logic builds daily load curves or synthetic session demand, it belongs in `day_cycle_simulation`.
 - Shared config values and PA behavior belong in `configs`; shared models and derived radio physics belong in `models`.
