@@ -2,7 +2,26 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from single_user_search.models import PreparedSingleUserContext, SingleUserRequest
+from models import PAParams
+from single_user_solver.models import PreparedSingleUserContext, SingleUserRequest
+
+
+BATCH_USER_REQUIREMENT_COLUMNS = [
+    "user_id",
+    "required_rate_bps",
+]
+
+
+BATCH_USER_PARAMETER_SPACE_COLUMNS = [
+    "pa_id",
+    "bandwidth_hz",
+    "n_prb",
+    "layers",
+    "mcs",
+    "rate_active_bps",
+    "p_dc_active_w",
+    "p_out_total_w",
+]
 
 
 @dataclass(frozen=True)
@@ -11,6 +30,17 @@ class SingleUserScenario:
 
     request: SingleUserRequest
     context: PreparedSingleUserContext
+
+
+@dataclass(frozen=True)
+class BatchUserParameterSpace:
+    """Trusted batch single-user artifact consumed by the TDMA scheduler."""
+
+    user_requirements: pd.DataFrame
+    user_parameter_spaces: dict[int, pd.DataFrame]
+    frame_n_slots: int
+    n_tx_chains: int
+    pa_catalog: tuple[PAParams, ...]
 
 
 @dataclass

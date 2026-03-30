@@ -1,6 +1,4 @@
-import numpy as np
-
-from pa_models import average_pa_power
+from configs import average_pa_power
 
 from .candidate_geometry import get_n_streams
 from .mcs_requirements import McsRequirementModel
@@ -24,15 +22,9 @@ class CandidatePowerModel:
 
         if gamma_req_lin is not None:
             resolved_gamma_req_lin = float(gamma_req_lin)
-            resolved_gamma_req_db = (
-                float(10.0 * np.log10(resolved_gamma_req_lin))
-                if resolved_gamma_req_lin > 0.0
-                else float("-inf")
-            )
         else:
             gamma_req = self.mcs_model.get_required_sinr_table(deployment)[candidate.mcs]
             resolved_gamma_req_lin = float(gamma_req["rho_req_linear"])
-            resolved_gamma_req_db = float(gamma_req["rho_req_db"])
 
         ps_solution = self.sinr_model.solve_required_source_power_for_target(
             resolved_gamma_req_lin,
@@ -46,7 +38,6 @@ class CandidatePowerModel:
                 is_feasible=False,
                 infeasibility_reason="sinr_infeasible",
                 gamma_req_lin=resolved_gamma_req_lin,
-                gamma_req_db=resolved_gamma_req_db,
             )
 
         rf_terms = self._compute_rf_terms(deployment, pa, candidate, ps_solution)
@@ -62,7 +53,6 @@ class CandidatePowerModel:
                 is_feasible=False,
                 infeasibility_reason=str(reason),
                 gamma_req_lin=resolved_gamma_req_lin,
-                gamma_req_db=resolved_gamma_req_db,
             )
         p_dc_avg_total_w = self._compute_average_dc_power(
             deployment,
@@ -74,16 +64,9 @@ class CandidatePowerModel:
             is_feasible=True,
             infeasibility_reason="ok",
             gamma_req_lin=resolved_gamma_req_lin,
-            gamma_req_db=resolved_gamma_req_db,
             gamma_achieved=float(ps_solution["rho_achieved_linear"]),
-            rho_ach_raw_linear=float(ps_solution["rho_ach_raw_linear"]),
-            sigma_e2=float(ps_solution["sigma_e2"]),
-            n_streams=int(ps_solution["n_streams"]),
-            g_bf_linear=float(ps_solution["g_bf_linear"]),
             ps_total_w=float(rf_terms["ps_total_w"]),
-            p_sig_out_total_w=float(rf_terms["p_sig_out_total_w"]),
             p_out_total_w=float(rf_terms["p_out_total_w"]),
-            p_out_ant_w=float(rf_terms["p_out_ant_w"]),
             p_dc_avg_total_w=float(p_dc_avg_total_w),
         )
 

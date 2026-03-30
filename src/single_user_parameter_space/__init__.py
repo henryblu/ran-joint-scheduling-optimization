@@ -1,4 +1,5 @@
 from .api import (
+    build_batch_user_parameter_space,
     build_single_user_pa_curve_table,
     enumerate_active_candidates,
     search_candidate_spaces,
@@ -8,14 +9,16 @@ from .api import (
     run_single_user_scenario,
     summarize_single_user_scenario,
 )
-from .models import SingleUserScenario, SingleUserStudyResult
-from single_user_search.models import SingleUserSearchOptions
+from .models import BatchUserParameterSpace, SingleUserScenario, SingleUserStudyResult
+from single_user_solver.models import SingleUserSearchOptions
 from .study import run_distance_study, run_rate_study
 
 __all__ = [
+    "BatchUserParameterSpace",
     "SingleUserScenario",
     "SingleUserSearchOptions",
     "SingleUserStudyResult",
+    "build_batch_user_parameter_space",
     "build_single_user_pa_curve_table",
     "enumerate_active_candidates",
     "search_candidate_spaces",

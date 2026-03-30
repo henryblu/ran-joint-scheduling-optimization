@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 from typing import Mapping
 
-from pa_models import PAParams
-from radio_configs import RadioConfig
-from radio_models import DeploymentParams
+from models import DeploymentParams, PAParams, RadioConfig
 
 
 @dataclass(frozen=True)
@@ -110,7 +108,6 @@ class StaticCandidateSpec:
     candidate: Candidate
     rate_ach_bps: float
     gamma_req_lin: float
-    gamma_req_db: float
 
 
 @dataclass(frozen=True)

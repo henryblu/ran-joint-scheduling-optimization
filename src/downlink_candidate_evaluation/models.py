@@ -19,14 +19,7 @@ class CandidatePowerResult:
     is_feasible: bool
     infeasibility_reason: str
     gamma_req_lin: float | None = None
-    gamma_req_db: float | None = None
     gamma_achieved: float | None = None
-    rho_ach_raw_linear: float | None = None
-    sigma_e2: float | None = None
-    n_streams: int | None = None
-    g_bf_linear: float | None = None
     ps_total_w: float | None = None
-    p_sig_out_total_w: float | None = None
     p_out_total_w: float | None = None
-    p_out_ant_w: float | None = None
     p_dc_avg_total_w: float | None = None

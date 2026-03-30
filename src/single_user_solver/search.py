@@ -7,12 +7,10 @@ from .candidate_space import iter_candidates, resolve_candidate_context
 from .models import SingleUserStaticCandidateCatalog, StaticCandidateSpec
 
 
+# Keep the runtime active table narrow: candidate identity, achieved rate,
+# scheduler-side power terms, and one compact SINR sanity check.
 ACTIVE_RESULT_COLUMNS = [
-    "distance_m",
-    "path_loss_db",
     "pa_id",
-    "scenario_label",
-    "pa_name",
     "bwp_idx",
     "bandwidth_hz",
     "n_prb",
@@ -21,15 +19,9 @@ ACTIVE_RESULT_COLUMNS = [
     "mcs",
     "p_dc_avg_total_w",
     "p_out_total_w",
-    "ps_total_w",
     "rate_ach_bps",
     "gamma_req_lin",
-    "gamma_req_db",
     "gamma_achieved",
-    "rho_ach_raw_linear",
-    "n_streams",
-    "g_bf_linear",
-    "sigma_e2",
 ]
 
 
@@ -99,7 +91,6 @@ def _get_static_candidates(context):
                 candidate=candidate,
                 rate_ach_bps=rate.rate_ach_bps,
                 gamma_req_lin=gamma["rho_req_linear"],
-                gamma_req_db=gamma["rho_req_db"],
             )
         )
 
@@ -138,14 +129,10 @@ def _evaluate_active_candidates(context, static_candidates):
         if result is None:
             continue
         candidate = static_candidate.candidate
-        rrc, pa = resolve_candidate_context(context.search_catalog, candidate)
+        rrc, _pa = resolve_candidate_context(context.search_catalog, candidate)
         rows.append(
             {
-                "distance_m": context.deployment.distance_m,
-                "path_loss_db": context.deployment.path_loss_db,
                 "pa_id": candidate.pa_id,
-                "scenario_label": pa.scenario_label,
-                "pa_name": pa.pa_name,
                 "bwp_idx": candidate.bwp_idx,
                 "bandwidth_hz": rrc.bwp_bw_hz,
                 "n_prb": candidate.n_prb,
@@ -154,15 +141,9 @@ def _evaluate_active_candidates(context, static_candidates):
                 "mcs": candidate.mcs,
                 "p_dc_avg_total_w": result.p_dc_avg_total_w,
                 "p_out_total_w": result.p_out_total_w,
-                "ps_total_w": result.ps_total_w,
                 "rate_ach_bps": static_candidate.rate_ach_bps,
                 "gamma_req_lin": static_candidate.gamma_req_lin,
-                "gamma_req_db": static_candidate.gamma_req_db,
                 "gamma_achieved": result.gamma_achieved,
-                "rho_ach_raw_linear": result.rho_ach_raw_linear,
-                "n_streams": result.n_streams,
-                "g_bf_linear": result.g_bf_linear,
-                "sigma_e2": result.sigma_e2,
             }
         )
 

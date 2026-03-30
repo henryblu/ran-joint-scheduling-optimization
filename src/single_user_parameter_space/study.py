@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from .api import (
+from .scenario import (
     build_single_user_scenario,
-    search_candidate_spaces,
+    run_single_user_scenario,
     summarize_single_user_scenario,
 )
 from .models import SingleUserStudyResult
@@ -11,7 +11,6 @@ from .models import SingleUserStudyResult
 
 PUBLIC_COLUMNS = [
     "distance_m",
-    "path_loss_db",
     "pa_id",
     "pa_name",
     "rate_ach_bps",
@@ -22,13 +21,11 @@ PUBLIC_COLUMNS = [
     "n_slots_on",
     "bandwidth_hz",
     "p_out_total_w",
-    "ps_total_w",
     "gamma_req_lin",
 ]
 
 FRONTIER_COLUMNS = [
     "distance_m",
-    "path_loss_db",
     "pa_id",
     "pa_name",
     "rate_target_bps",
@@ -40,7 +37,6 @@ FRONTIER_COLUMNS = [
     "n_slots_on",
     "bandwidth_hz",
     "p_out_total_w",
-    "ps_total_w",
     "gamma_req_lin",
 ]
 
@@ -91,25 +87,21 @@ def _run_frontier_study(scenarios, required_rate_targets_bps, *, outer_parallel=
     frontier_tables = []
     explanatory_tables = []
     candidate_rate_bps = float(np.min(required_rate_targets_bps))
+    _ = (outer_parallel, max_workers)
+    prepared_scenarios = [
+        build_single_user_scenario(
+            distance_m=float(scenario["distance_m"]),
+            required_rate_bps=candidate_rate_bps,
+        )
+        for scenario in scenarios
+    ]
 
-    user_table = pd.DataFrame(
-        [
-            {
-                "user_id": int(scenario_idx),
-                "distance_m": float(scenario["distance_m"]),
-                "required_rate_bps": float(candidate_rate_bps),
-            }
-            for scenario_idx, scenario in enumerate(scenarios)
-        ]
-    )
-    candidate_spaces = search_candidate_spaces(
-        user_table,
-        outer_parallel=outer_parallel,
-        max_workers=max_workers,
-    )
-
-    for scenario_idx, scenario in enumerate(scenarios):
-        candidate_table = candidate_spaces[int(scenario_idx)]
+    for scenario, prepared_scenario in zip(scenarios, prepared_scenarios):
+        candidate_table = _build_study_candidate_table(
+            run_single_user_scenario(prepared_scenario),
+            distance_m=float(scenario["distance_m"]),
+            pa_catalog=prepared_scenario.context.pa_catalog,
+        )
         scenario_frontier, scenario_explanatory = _evaluate_scenario_frontier(
             candidate_table,
             required_rate_targets_bps=required_rate_targets_bps,
@@ -117,13 +109,9 @@ def _run_frontier_study(scenarios, required_rate_targets_bps, *, outer_parallel=
         frontier_tables.append(scenario_frontier)
         explanatory_tables.append(scenario_explanatory)
 
-    summary_scenario = build_single_user_scenario(
-        distance_m=float(scenarios[0]["distance_m"]),
-        required_rate_bps=candidate_rate_bps,
-    )
     summary_views = summarize_single_user_scenario(
-        summary_scenario,
-        scenario_count=len(scenarios),
+        prepared_scenarios[0],
+        scenario_count=len(prepared_scenarios),
     )
     return SingleUserStudyResult(
         frontier_table=_concat_frontier_tables(frontier_tables),
@@ -171,6 +159,20 @@ def _filter_feasible_candidate_table(candidate_table):
     if feasible_table.empty:
         return pd.DataFrame(columns=PUBLIC_COLUMNS)
     return feasible_table[PUBLIC_COLUMNS].copy()
+
+
+def _build_study_candidate_table(candidate_table, *, distance_m, pa_catalog):
+    """Derive the notebook-facing study columns from the slim runtime candidate table."""
+
+    if candidate_table.empty:
+        return pd.DataFrame(columns=PUBLIC_COLUMNS)
+
+    study_table = candidate_table.copy()
+    study_table["distance_m"] = float(distance_m)
+    study_table["pa_name"] = study_table["pa_id"].map(
+        lambda pa_id: str(pa_catalog[int(pa_id)].pa_name)
+    )
+    return study_table
 
 
 def _rank_rate_feasible_rows(pa_configs, required_rate_bps):
