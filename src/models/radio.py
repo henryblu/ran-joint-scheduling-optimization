@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Shared radio configuration models and immutable helper types."""
 
 from dataclasses import dataclass

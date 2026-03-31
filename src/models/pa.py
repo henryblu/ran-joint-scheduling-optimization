@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Shared PA data models and enums."""
 
 from dataclasses import dataclass

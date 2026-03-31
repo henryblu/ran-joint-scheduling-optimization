@@ -1,4 +1,4 @@
-"""Helpers for the downlink power optimisation discussion notebook."""
+"""Helpers for the downlink power optimization discussion notebook."""
 
 from __future__ import annotations
 

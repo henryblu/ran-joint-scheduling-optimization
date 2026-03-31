@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Core data models for synthetic day-cycle session generation."""
 
 from dataclasses import dataclass

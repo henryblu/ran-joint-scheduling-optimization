@@ -12,7 +12,7 @@ class PathLossModel:
         self,
         fc_hz,
         model="umi_sc_los",
-        g_tx_db=0.0,
+        g_tx_db=8.0,
         g_rx_db=0.0,
         shadow_margin_db=4.0,
         h_bs_m=10.0,

@@ -9,6 +9,7 @@ tmp.py
 tmp/
 _tmp_cells/
 tests/
+copy/
 
 # Archived or generated project content
 old/
