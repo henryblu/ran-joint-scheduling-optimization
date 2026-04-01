@@ -57,8 +57,6 @@ def run_joint_schedule_search(
     if result.best_schedule is None:
         raise RuntimeError("No feasible joint TDMA schedule was found for the prepared user spaces.")
     return result
-
-
 __all__ = [
     "run_multi_user_tdma_scheduler",
     "prepare_joint_schedule_problem",

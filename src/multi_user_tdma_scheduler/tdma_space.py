@@ -7,7 +7,6 @@ from single_user_parameter_space.models import BATCH_USER_PARAMETER_SPACE_COLUMN
 
 from .models import PreparedJointScheduleProblem
 
-
 FULL_FRAME_ACTIVE_COLUMNS = list(BATCH_USER_PARAMETER_SPACE_COLUMNS)
 
 
@@ -151,21 +150,25 @@ def quantize_user_tdma_spaces(batch_space, full_frame_user_spaces, *, window_n_s
         active_table = full_frame_user_spaces[int(user_row.user_id)]
         required_rate_bps = float(user_row.required_rate_bps)
         rate_active_bps = active_table["rate_active_bps"].astype(float).to_numpy()
-        n_slots = np.ceil(float(window_n_slots) * required_rate_bps / rate_active_bps - 1e-12).astype(int)
-        feasible_mask = (rate_active_bps > 0.0) & (n_slots >= 1) & (n_slots <= int(window_n_slots))
+        required_slots = np.ceil(
+            float(window_n_slots) * required_rate_bps / rate_active_bps - 1e-12
+        ).astype(int)
+        feasible_mask = (
+            (rate_active_bps > 0.0)
+            & (required_slots >= 1)
+            & (required_slots <= int(window_n_slots))
+        )
         if not np.any(feasible_mask):
             quantized_user_spaces[int(user_row.user_id)] = pd.DataFrame(columns=USER_CANDIDATE_COLUMNS)
             continue
 
         candidate_table = active_table.loc[feasible_mask].copy().reset_index(drop=True)
         candidate_table["user_id"] = int(user_row.user_id)
-        alpha_window = candidate_table.index.to_series().map(
-            lambda idx: float(n_slots[feasible_mask][idx]) / float(window_n_slots)
-        )
-        candidate_table["n_slots"] = n_slots[feasible_mask]
-        candidate_table["rate_avg_frame_bps"] = alpha_window.to_numpy() * candidate_table["rate_active_bps"].astype(float)
-        candidate_table["p_dc_avg_frame_w"] = alpha_window.to_numpy() * candidate_table["p_dc_active_w"].astype(float)
-        candidate_table["p_out_avg_frame_w"] = alpha_window.to_numpy() * candidate_table["p_out_total_w"].astype(float)
+        candidate_table["n_slots"] = required_slots[feasible_mask]
+        slot_share = candidate_table["n_slots"].astype(float) / float(window_n_slots)
+        candidate_table["rate_avg_frame_bps"] = slot_share * candidate_table["rate_active_bps"].astype(float)
+        candidate_table["p_dc_avg_frame_w"] = slot_share * candidate_table["p_dc_active_w"].astype(float)
+        candidate_table["p_out_avg_frame_w"] = slot_share * candidate_table["p_out_total_w"].astype(float)
         quantized_user_spaces[int(user_row.user_id)] = candidate_table[USER_CANDIDATE_COLUMNS].copy()
 
     return quantized_user_spaces
@@ -194,26 +197,32 @@ def exact_prune_user_tdma_space(candidate_table):
     ).to_dict("records")
 
     kept_rows = []
+    kept_rows_by_pa = {}
     for row in ranked_rows:
-        is_dominated = any(
-            int(kept_row["pa_id"]) == int(row["pa_id"])
-            and
-            int(kept_row["n_slots"]) <= int(row["n_slots"])
-            and float(kept_row["p_dc_avg_frame_w"]) <= float(row["p_dc_avg_frame_w"])
-            and float(kept_row["rate_avg_frame_bps"]) >= float(row["rate_avg_frame_bps"])
-            and (
-                int(kept_row["n_slots"]) < int(row["n_slots"])
-                or float(kept_row["p_dc_avg_frame_w"]) < float(row["p_dc_avg_frame_w"])
-                or float(kept_row["rate_avg_frame_bps"]) > float(row["rate_avg_frame_bps"])
-            )
-            for kept_row in kept_rows
-        )
-        if is_dominated:
+        pa_id = int(row["pa_id"])
+        kept_rows_for_pa = kept_rows_by_pa.setdefault(pa_id, [])
+        if any(_same_pa_row_dominates(kept_row, row) for kept_row in kept_rows_for_pa):
             continue
+
+        kept_rows_for_pa.append(row)
         kept_rows.append(row)
 
     return pd.DataFrame(kept_rows, columns=USER_CANDIDATE_COLUMNS).reset_index(drop=True)
 
+
+def _same_pa_row_dominates(left_row, right_row):
+    """Return whether one row strictly dominates another on the same PA bank."""
+
+    return (
+        int(left_row["n_slots"]) <= int(right_row["n_slots"])
+        and float(left_row["p_dc_avg_frame_w"]) <= float(right_row["p_dc_avg_frame_w"])
+        and float(left_row["rate_avg_frame_bps"]) >= float(right_row["rate_avg_frame_bps"])
+        and (
+            int(left_row["n_slots"]) < int(right_row["n_slots"])
+            or float(left_row["p_dc_avg_frame_w"]) < float(right_row["p_dc_avg_frame_w"])
+            or float(left_row["rate_avg_frame_bps"]) > float(right_row["rate_avg_frame_bps"])
+        )
+    )
 
 __all__ = [
     "prepare_joint_schedule_problem",

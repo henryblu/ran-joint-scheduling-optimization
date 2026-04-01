@@ -4,7 +4,7 @@ import pandas as pd
 
 from configs import SINGLE_USER_SEARCH_CONFIG, USER_REQUIREMENT_COLUMNS, build_pa_catalog
 from models import build_resolved_fingerprint
-from single_user_solver.api import search_candidates
+from single_user_solver.api import enumerate_active_candidates, search_candidates
 from single_user_solver.models import SearchSpace, SingleUserRequest
 from single_user_solver.problem_factory import prepare_single_user_problem
 
@@ -13,7 +13,6 @@ from .models import (
     BatchUserParameterSpace,
     BATCH_USER_PARAMETER_SPACE_COLUMNS,
 )
-
 
 @dataclass(frozen=True)
 class _SingleUserEngineState:
@@ -45,14 +44,32 @@ def search_candidate_space_for_request(
     )
 
 
+def _enumerate_active_candidate_space_for_request(
+    request,
+    *,
+    model_inputs,
+    search_shape,
+    pa_catalog,
+):
+    """Enumerate the full active candidate table for one deployment context."""
+
+    context = prepare_single_user_problem(
+        request=request,
+        model_inputs=model_inputs,
+        search_shape=search_shape,
+        pa_catalog=pa_catalog,
+    )
+    return enumerate_active_candidates(context)
+
+
 def search_candidate_spaces(user_table):
     """Build the trusted batch parameter-space artifact for one user table.
 
     Steps:
     1. Normalize the user request table and reject duplicate user ids.
     2. Resolve the canonical single-user engine state once for the whole batch.
-    3. Solve each unique `(distance_m, required_rate_bps)` request once.
-    4. Project the scheduler-owned full-frame feasible spaces from the raw user tables.
+    3. Enumerate the full active candidate table once per unique deployment distance.
+    4. Filter each distance-level table by the requested target rate and keep the scheduler-owned rows.
     5. Return one trusted artifact that carries only the shared runtime state each downstream layer owns.
     """
 
@@ -73,9 +90,10 @@ def search_candidate_spaces(user_table):
 
 
 def _collect_batch_user_parameter_spaces(users, engine_state):
-    """Solve each unique request once and build one scheduler-facing space per user."""
+    """Reuse distance-level active tables and build one scheduler-facing space per user."""
 
     frame_n_slots = int(engine_state.model_inputs.n_slots_win)
+    grouped_active_tables = {}
     grouped_candidate_spaces = {}
     request_groups = {
         (float(user_row.distance_m), float(user_row.required_rate_bps)): SingleUserRequest(
@@ -84,17 +102,28 @@ def _collect_batch_user_parameter_spaces(users, engine_state):
         )
         for user_row in users.itertuples(index=False)
     }
-    for group_key, request in request_groups.items():
-        raw_candidate_table = search_candidate_space_for_request(
+    distance_requests = {}
+    for request in request_groups.values():
+        distance_requests.setdefault(float(request.distance_m), request)
+
+    for distance_m, request in distance_requests.items():
+        grouped_active_tables[distance_m] = _enumerate_active_candidate_space_for_request(
             request,
             model_inputs=engine_state.model_inputs,
             search_shape=engine_state.search_shape,
             pa_catalog=engine_state.pa_catalog,
         )
-        grouped_candidate_spaces[group_key] = _project_batch_user_parameter_space(
+
+    for group_key, request in request_groups.items():
+        raw_candidate_table = _filter_rate_feasible_candidate_table(
+            grouped_active_tables[float(request.distance_m)],
+            required_rate_bps=float(request.required_rate_bps),
+        )
+        projected_table = _project_batch_user_parameter_space(
             raw_candidate_table,
             frame_n_slots=frame_n_slots,
         )
+        grouped_candidate_spaces[group_key] = projected_table
 
     return {
         int(user_row.user_id): grouped_candidate_spaces[
@@ -155,6 +184,21 @@ def _project_batch_user_parameter_space(candidate_table, *, frame_n_slots):
     )
 
 
+def _filter_rate_feasible_candidate_table(candidate_table, *, required_rate_bps):
+    """Keep the active rows that satisfy one user's rate target."""
+
+    if candidate_table.empty:
+        return candidate_table.copy()
+
+    return (
+        candidate_table[
+            candidate_table["rate_ach_bps"].astype(float) >= float(required_rate_bps)
+        ]
+        .copy()
+        .reset_index(drop=True)
+    )
+
+
 def _resolve_default_single_user_engine_state():
     """Resolve the canonical single-user engine state owned by the batch layer."""
 
@@ -182,7 +226,6 @@ def _build_search_space(model_inputs):
         fingerprint=build_resolved_fingerprint({"n_slots_on_space": n_slots_on_space}),
         use_cache=True,
     )
-
 
 __all__ = [
     "search_candidate_space_for_request",
