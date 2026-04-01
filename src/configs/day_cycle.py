@@ -1,21 +1,27 @@
 """Shared default presets for synthetic day-cycle session generation."""
 
+from pathlib import Path
+
 from day_cycle_simulation.models import SyntheticSessionGenerationConfig
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_DAY_CYCLE_LOAD_CURVE_CSV = REPO_ROOT / "data" / "half_load_curve.csv"
+DEFAULT_DAY_CYCLE_BIN_WORKERS = 8
 
 
 DEFAULT_DISTANCE_PRESETS_M = (50.0, 125.0, 200.0, 300.0, 500.0)
 DEFAULT_DISTANCE_WEIGHTS = (0.08, 0.22, 0.34, 0.24, 0.12)
 
-# The generator stops once every bin residual falls below the 2 GB floor,
-# so only preset-sized sessions are emitted into the scheduler-facing day table.
+# Use a coarser total-data preset ladder so the total-network load curve does
+# not explode the user count under the default day simulation.
 DEFAULT_TOTAL_DATA_PRESETS_BITS = (
-    0.8e10,  # 1 GB
     1.6e10,  # 2 GB
-    3.2e10,  # 4 GB
     6.4e10,  # 8 GB
     12.8e10,  # 16 GB
+    25.6e10,  # 32 GB
 )
-DEFAULT_TOTAL_DATA_WEIGHTS = (0.10, 0.14, 0.29, 0.32, 0.50)
+DEFAULT_TOTAL_DATA_WEIGHTS = (0.14, 0.29, 0.42, 0.15)
 
 DEFAULT_NOMINAL_DURATION_PRESETS_BINS = (1, 2, 3)
 DEFAULT_NOMINAL_DURATION_WEIGHTS = (0.50, 0.30, 0.20)
@@ -34,6 +40,8 @@ DEFAULT_SYNTHETIC_SESSION_GENERATION_CONFIG = SyntheticSessionGenerationConfig(
 
 
 __all__ = [
+    "DEFAULT_DAY_CYCLE_BIN_WORKERS",
+    "DEFAULT_DAY_CYCLE_LOAD_CURVE_CSV",
     "DEFAULT_DISTANCE_PRESETS_M",
     "DEFAULT_DISTANCE_WEIGHTS",
     "DEFAULT_NOMINAL_DURATION_PRESETS_BINS",

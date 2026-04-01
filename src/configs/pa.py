@@ -94,8 +94,9 @@ def pa_dc_power(pa, p_out):
     curve_pout = getattr(pa, "curve_pout_w", None)
     curve_pdc = getattr(pa, "curve_pdc_w", None)
     if curve_pout is not None and curve_pdc is not None and len(curve_pout) >= 2:
+        minimum_active_dc_w = max(float(curve_pdc[0]), float(pa.p_idle_w))
         if p_out <= float(curve_pout[0]):
-            return pa.p_idle_w
+            return minimum_active_dc_w
         p_out_clip = min(float(p_out), float(curve_pout[-1]))
         return float(np.interp(p_out_clip, curve_pout, curve_pdc))
 
