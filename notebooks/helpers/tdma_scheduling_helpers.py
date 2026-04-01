@@ -337,6 +337,16 @@ def plot_full_frame_candidate_spaces(
     if len(unique_group_rows) == 1:
         axes = [axes]
 
+    max_active_power_w = max(
+        (
+            float(batch_space.user_parameter_spaces[int(user_row.user_id)]["p_dc_active_w"].max())
+            for user_row in unique_group_rows.itertuples(index=False)
+            if not batch_space.user_parameter_spaces[int(user_row.user_id)].empty
+        ),
+        default=0.0,
+    )
+    y_axis_upper_w = max(max_active_power_w * 1.08, 1.0)
+
     for ax, user_row in zip(axes, unique_group_rows.itertuples(index=False), strict=False):
         user_id = int(user_row.user_id)
         candidate_table = batch_space.user_parameter_spaces[user_id].copy()
@@ -374,7 +384,7 @@ def plot_full_frame_candidate_spaces(
         )
         ax.set_xlabel("Full-frame active rate (Mbps)")
         ax.set_xlim(left=0.0)
-        ax.set_ylim(bottom=0.0)
+        ax.set_ylim(0.0, y_axis_upper_w)
 
     axes[0].set_ylabel("Full-frame active PA DC power (W)")
     fig.suptitle("Full-frame operating points that enter the TDMA layer", y=1.04)
