@@ -28,6 +28,7 @@ PA models/**
 # Office temporary lock files
 ~$*
 
-# particulars to this project
+# particulars or helpers to this project and experimentation that are not intended to be shared
 PA models/3.5Ghz_pas/4W_8W_NR_combined_old.csv
 AGENTS.md
+check_peak_bin_schedulability.py
