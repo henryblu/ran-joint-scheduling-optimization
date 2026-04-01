@@ -1,5 +1,4 @@
 """Shared public data models for configs and runtime consumers."""
-
 from .deployment import DeploymentParams, build_deployment
 from .fingerprint import build_resolved_fingerprint
 from .pa import PAParams, PAState, PASwitchPolicy

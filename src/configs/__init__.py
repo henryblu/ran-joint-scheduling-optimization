@@ -1,5 +1,4 @@
 """Shared public configuration presets, defaults, and PA helpers."""
-
 from .pa import (
     DEFAULT_PA_DATA_CSV,
     average_pa_power,
