@@ -3,7 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from single_user_parameter_space.models import BATCH_USER_PARAMETER_SPACE_COLUMNS
+from models import BatchUserParameterSpace
+from models.candidate_table import BATCH_USER_PARAMETER_SPACE_COLUMNS
 
 from .models import PreparedJointScheduleProblem
 
@@ -13,7 +14,6 @@ FULL_FRAME_ACTIVE_COLUMNS = list(BATCH_USER_PARAMETER_SPACE_COLUMNS)
 USER_CANDIDATE_COLUMNS = [
     "user_id",
     "pa_id",
-    "bandwidth_hz",
     "n_prb",
     "layers",
     "mcs",
@@ -25,7 +25,7 @@ USER_CANDIDATE_COLUMNS = [
 
 
 def prepare_joint_schedule_problem(
-    batch_space,
+    batch_space: BatchUserParameterSpace,
     *,
     window_n_frames=None,
     max_window_n_frames=32,
@@ -72,7 +72,7 @@ def prepare_joint_schedule_problem(
 
 
 def resolve_scheduling_window(
-    batch_space,
+    batch_space: BatchUserParameterSpace,
     full_frame_user_spaces,
     *,
     window_n_frames=None,
@@ -125,7 +125,7 @@ def resolve_scheduling_window(
     )
 
 
-def slot_lower_bound(batch_space, full_frame_user_spaces, window_n_slots):
+def slot_lower_bound(batch_space: BatchUserParameterSpace, full_frame_user_spaces, window_n_slots):
     """Return the exact TDMA slot lower bound implied by the fastest user row."""
 
     required_slot_count = 0
@@ -142,7 +142,12 @@ def slot_lower_bound(batch_space, full_frame_user_spaces, window_n_slots):
     return int(required_slot_count)
 
 
-def quantize_user_tdma_spaces(batch_space, full_frame_user_spaces, *, window_n_slots):
+def quantize_user_tdma_spaces(
+    batch_space: BatchUserParameterSpace,
+    full_frame_user_spaces,
+    *,
+    window_n_slots,
+):
     """Quantize each user space onto the exact TDMA slot lattice for one window."""
 
     quantized_user_spaces = {}
@@ -192,8 +197,8 @@ def exact_prune_user_tdma_space(candidate_table):
     """
 
     ranked_rows = candidate_table.sort_values(
-        ["pa_id", "n_slots", "p_dc_avg_frame_w", "rate_avg_frame_bps", "bandwidth_hz", "n_prb", "mcs"],
-        ascending=[True, True, True, False, True, True, True],
+        ["pa_id", "n_slots", "p_dc_avg_frame_w", "rate_avg_frame_bps", "n_prb", "mcs"],
+        ascending=[True, True, True, False, True, True],
     ).to_dict("records")
 
     kept_rows = []

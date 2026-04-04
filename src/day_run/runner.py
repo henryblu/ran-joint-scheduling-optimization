@@ -27,7 +27,7 @@ from day_cycle_simulation.generation import build_scheduler_day_user_table
 from models import PASwitchPolicy
 from models.day_run import BinRunResult, DayRunConfig
 from multi_user_tdma_scheduler.api import run_multi_user_tdma_scheduler
-from single_user_parameter_space.api import build_batch_user_parameter_space
+from single_user_lookup.api import build_batch_user_parameter_space
 from run_reporting import (
     log_bin_result,
     log_run_progress,

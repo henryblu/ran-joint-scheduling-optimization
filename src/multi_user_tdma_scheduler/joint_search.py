@@ -23,7 +23,6 @@ class _JointCandidateRow:
 
     user_id: int
     pa_id: int
-    bandwidth_hz: float
     n_prb: int
     layers: int
     mcs: int
@@ -39,7 +38,6 @@ class _JointCandidateRow:
         return {
             "user_id": int(self.user_id),
             "pa_id": int(self.pa_id),
-            "bandwidth_hz": float(self.bandwidth_hz),
             "n_prb": int(self.n_prb),
             "layers": int(self.layers),
             "mcs": int(self.mcs),
@@ -235,7 +233,6 @@ class ExactJointScheduleSearch:
                 -float(row.rate_avg_frame_bps),
                 float(row.p_dc_avg_frame_w),
                 int(row.pa_id),
-                float(row.bandwidth_hz),
                 int(row.n_prb),
                 int(row.mcs),
             ),
@@ -442,7 +439,6 @@ class ExactJointScheduleSearch:
         return _JointCandidateRow(
             user_id=int(raw_row["user_id"]),
             pa_id=pa_id,
-            bandwidth_hz=float(raw_row["bandwidth_hz"]),
             n_prb=int(raw_row["n_prb"]),
             layers=int(raw_row["layers"]),
             mcs=int(raw_row["mcs"]),
@@ -476,7 +472,6 @@ class ExactJointScheduleSearch:
                 int(row.n_slots),
                 -float(row.rate_avg_frame_bps),
                 int(row.pa_id),
-                float(row.bandwidth_hz),
                 int(row.n_prb),
                 int(row.mcs),
             )
@@ -487,7 +482,6 @@ class ExactJointScheduleSearch:
             float(row.p_dc_avg_frame_w),
             -float(row.rate_avg_frame_bps),
             int(row.pa_id),
-            float(row.bandwidth_hz),
             int(row.n_prb),
             int(row.mcs),
         )

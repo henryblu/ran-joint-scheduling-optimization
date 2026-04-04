@@ -1,4 +1,4 @@
-from models import PASwitchPolicy
+from models import BatchUserParameterSpace, PASwitchPolicy
 
 from .joint_search import run_joint_schedule_search as _run_joint_schedule_search
 from .models import MultiUserTdmaSchedulerResult, PreparedJointScheduleProblem
@@ -6,7 +6,7 @@ from .tdma_space import prepare_joint_schedule_problem as _prepare_joint_schedul
 
 
 def run_multi_user_tdma_scheduler(
-    batch_space,
+    batch_space: BatchUserParameterSpace,
     *,
     window_n_frames=None,
     switch_policy: PASwitchPolicy = PASwitchPolicy.STANDBY,
@@ -24,7 +24,7 @@ def run_multi_user_tdma_scheduler(
 
 
 def prepare_joint_schedule_problem(
-    batch_space,
+    batch_space: BatchUserParameterSpace,
     window_n_frames=None,
     max_window_n_frames=32,
 ) -> PreparedJointScheduleProblem:

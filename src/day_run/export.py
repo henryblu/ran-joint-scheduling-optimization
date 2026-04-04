@@ -115,7 +115,6 @@ def _build_schedule_document(best_schedule: dict[str, object]) -> dict[str, obje
         {
             "user_id": int(row["user_id"]),
             "pa_id": int(row["pa_id"]),
-            "bandwidth_hz": float(row["bandwidth_hz"]),
             "n_prb": int(row["n_prb"]),
             "layers": int(row["layers"]),
             "mcs": int(row["mcs"]),
