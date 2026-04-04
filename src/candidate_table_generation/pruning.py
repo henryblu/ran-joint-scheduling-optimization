@@ -38,28 +38,23 @@ def prune_candidate_frontier(candidate_table: pd.DataFrame) -> pd.DataFrame:
     for row in ranked_rows:
         pa_id = int(row["pa_id"])
         kept_rows_for_pa = kept_rows_by_pa.setdefault(pa_id, [])
-        if any(_frontier_row_dominates(kept_row, row) for kept_row in kept_rows_for_pa):
+        if any(
+            int(kept_row["n_prb"]) <= int(row["n_prb"])
+            and float(kept_row["p_dc_active_w"]) <= float(row["p_dc_active_w"]) + _DOMINANCE_TOL
+            and float(kept_row["rate_active_bps"]) >= float(row["rate_active_bps"]) - _DOMINANCE_TOL
+            and (
+                int(kept_row["n_prb"]) < int(row["n_prb"])
+                or float(kept_row["p_dc_active_w"]) < float(row["p_dc_active_w"]) - _DOMINANCE_TOL
+                or float(kept_row["rate_active_bps"]) > float(row["rate_active_bps"]) + _DOMINANCE_TOL
+            )
+            for kept_row in kept_rows_for_pa
+        ):
             continue
 
         kept_rows_for_pa.append(row)
         kept_rows.append(row)
 
     return pd.DataFrame(kept_rows, columns=BATCH_USER_PARAMETER_SPACE_COLUMNS).reset_index(drop=True)
-
-
-def _frontier_row_dominates(left_row, right_row) -> bool:
-    """Return whether one stored row strictly dominates another on the same PA."""
-
-    return (
-        int(left_row["n_prb"]) <= int(right_row["n_prb"])
-        and float(left_row["p_dc_active_w"]) <= float(right_row["p_dc_active_w"]) + _DOMINANCE_TOL
-        and float(left_row["rate_active_bps"]) >= float(right_row["rate_active_bps"]) - _DOMINANCE_TOL
-        and (
-            int(left_row["n_prb"]) < int(right_row["n_prb"])
-            or float(left_row["p_dc_active_w"]) < float(right_row["p_dc_active_w"]) - _DOMINANCE_TOL
-            or float(left_row["rate_active_bps"]) > float(right_row["rate_active_bps"]) + _DOMINANCE_TOL
-        )
-    )
 
 
 __all__ = [
