@@ -28,16 +28,22 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - **Consumes:** A resolved radio config and search shape, a PA catalog, `models` deployment helpers, and `downlink_candidate_evaluation` models.
 - **Does not own:** Canonical default scenario selection, batch user tables, multi-user reasoning, or notebook-facing study presentation.
 
-### `src/single_user_parameter_space`
+### `src/candidate_table_generation`
 
-- **Owns:** The higher-level single-user study layer: request-table normalization, canonical default single-user engine state, `BatchUserParameterSpace`, and notebook-facing helpers such as `SingleUserScenario` and `SingleUserStudyResult`.
-- **Consumes:** `configs` radio defaults and PA catalog builders, `models` value objects, and `single_user_solver`.
-- **Does not own:** Per-candidate PHY equations, shared radio physics primitives, or joint TDMA scheduling across users.
+- **Owns:** The precomputed distance-binned single-user frontier table, the strict same-PA pruning policy used to store that table, and the fixed-distance candidate-table build workflow.
+- **Consumes:** Canonical single-user defaults from `configs`, shared models from `models`, and active candidate enumeration from `single_user_solver`.
+- **Does not own:** User-table normalization, per-user rate lookup, notebook studies, or joint TDMA scheduling.
+
+### `src/single_user_lookup`
+
+- **Owns:** Scheduler-facing user-table normalization, per-user lookup into the precomputed distance-binned frontier, user-specific rate-feasible filtering, and the `BatchUserParameterSpace` handoff artifact.
+- **Consumes:** Shared defaults and PA catalog loading from `configs`, shared request and PA models from `models`, and the precomputed frontier table from `candidate_table_generation`.
+- **Does not own:** Per-candidate PHY equations, fixed-distance frontier generation, notebook studies, or joint TDMA scheduling across users.
 
 ### `src/multi_user_tdma_scheduler`
 
 - **Owns:** `PreparedJointScheduleProblem`, repeated-window resolution, TDMA-space quantization and exact pruning, and the joint one-row-per-user search that returns `MultiUserTdmaSchedulerResult`.
-- **Consumes:** Trusted `BatchUserParameterSpace` artifacts from `single_user_parameter_space` and PA switching policy from `models`.
+- **Consumes:** Trusted `BatchUserParameterSpace` artifacts from `single_user_lookup` and PA switching policy from `models`.
 - **Does not own:** Canonical single-user defaults, single-user candidate evaluation, or generation of user demand profiles.
 
 ### `src/day_cycle_simulation`
@@ -49,7 +55,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 ### `src/day_run`
 
 - **Owns:** The top-level day simulation workflow: CLI-adjacent run config resolution, day demand assembly, per-bin fan-out, and the authoritative day-run JSON export.
-- **Consumes:** Shared defaults from `configs`, shared run contracts from `models`, demand generation from `day_cycle_simulation`, trusted single-user batch artifacts from `single_user_parameter_space`, and the joint TDMA scheduler in `multi_user_tdma_scheduler`.
+- **Consumes:** Shared defaults from `configs`, shared run contracts from `models`, demand generation from `day_cycle_simulation`, trusted single-user batch artifacts from `single_user_lookup`, and the joint TDMA scheduler in `multi_user_tdma_scheduler`.
 - **Does not own:** User-table sanitization, PHY evaluation, scheduler internals, shared console formatting, or generic logging setup.
 
 ### `src/run_reporting.py`
@@ -63,16 +69,18 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 1. `src/configs` defines the shared radio assumptions, the scheduler user-table column contract, day-cycle presets, PA source paths, and PA catalog behavior.
 2. `src/models` provides the shared value objects and the derived deployment and fingerprint helpers consumed by the solver layers.
 3. `src/single_user_solver` combines `configs`, `models`, and `downlink_candidate_evaluation` to build one prepared single-user context and enumerate candidate rows.
-4. `src/single_user_parameter_space` chooses the canonical shared single-user engine state from `configs`, batches many user requests, and produces trusted per-user parameter-space artifacts.
-5. `src/multi_user_tdma_scheduler` consumes those batch artifacts, resolves the repeated slot window, and solves the joint schedule.
-6. `src/day_cycle_simulation` is an upstream demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
-7. `src/day_run` orchestrates one full synthetic day by composing `day_cycle_simulation`, `single_user_parameter_space`, and `multi_user_tdma_scheduler`, while `src/run_reporting.py` owns the shared console reporting used by that run layer.
+4. `src/candidate_table_generation` consumes that solver output once to build the strict-pruned distance-binned frontier table.
+5. `src/single_user_lookup` looks up one distance frontier per user, filters it by the user's required rate, and packages the trusted batch artifact.
+6. `src/multi_user_tdma_scheduler` consumes those batch artifacts, resolves the repeated slot window, and solves the joint schedule.
+7. `src/day_cycle_simulation` is an upstream demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
+8. `src/day_run` orchestrates one full synthetic day by composing `day_cycle_simulation`, `single_user_lookup`, and `multi_user_tdma_scheduler`, while `src/run_reporting.py` owns the shared console reporting used by that run layer.
 ## Boundary Checks
 
 - If logic evaluates one resolved candidate's rate, SINR, or power, it belongs in `downlink_candidate_evaluation`.
 - If logic builds or searches one user's discrete candidate space from a prepared context, it belongs in `single_user_solver`.
 - If logic defines the shared scheduler user-table column contract, it belongs in `configs`.
-- If logic chooses default single-user settings, batches many requests, or prepares notebook-facing single-user studies, it belongs in `single_user_parameter_space`.
+- If logic builds the precomputed distance-binned frontier table, it belongs in `candidate_table_generation`.
+- If logic normalizes scheduler-facing user tables, looks up per-user feasible spaces, or packages the trusted batch artifact, it belongs in `single_user_lookup`.
 - If logic reasons jointly across users under a shared slot budget, it belongs in `multi_user_tdma_scheduler`.
 - If logic builds shared default configs or PA catalogs, it belongs in `configs`.
 - If logic builds daily load curves or synthetic session demand, it belongs in `day_cycle_simulation`.
