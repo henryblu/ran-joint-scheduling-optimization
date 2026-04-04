@@ -8,10 +8,9 @@ from models import DeploymentParams, PAParams, RadioConfig
 
 @dataclass(frozen=True)
 class Candidate:
-    """One discrete scheduler/RRC/PA candidate."""
+    """One discrete scheduler/channel/PA candidate."""
 
     pa_id: int
-    bwp_idx: int
     n_prb: int
     n_slots_on: int
     layers: int
@@ -20,12 +19,11 @@ class Candidate:
 
 @dataclass(frozen=True)
 class RRCParams:
-    """RRC/BWP envelope for one bandwidth and PA pairing."""
+    """Single-carrier resource envelope for one PA family."""
 
-    bwp_bw_hz: float
-    bwp_index: int
+    channel_bw_hz: float
     delta_f_hz: float
-    prb_max_bwp: int
+    prb_max: int
     max_layers: int
     max_mcs: int
     active_pa_id: int
@@ -36,7 +34,6 @@ class SearchSpace:
     """Single-user search-owned discrete space metadata."""
 
     config: RadioConfig | None = None
-    bandwidth_space_hz: tuple[float, ...] = ()
     n_slots_on_space: tuple[int, ...] = ()
     layers_space: tuple[int, ...] = ()
     mcs_space: tuple[int, ...] = ()
@@ -63,7 +60,7 @@ class SearchCatalog:
     pa_catalog: tuple[PAParams, ...]
     rrc_catalog: tuple[RRCParams, ...]
     search_shape: SearchSpace
-    rrc_lookup: Mapping[tuple[int, int], RRCParams]
+    rrc_lookup: Mapping[int, RRCParams]
 
 
 @dataclass(frozen=True)
@@ -98,7 +95,7 @@ class PreparedSingleUserContext:
         return self.search_catalog.rrc_catalog
 
     @property
-    def rrc_lookup(self) -> Mapping[tuple[int, int], RRCParams]:
+    def rrc_lookup(self) -> Mapping[int, RRCParams]:
         return self.search_catalog.rrc_lookup
 
 

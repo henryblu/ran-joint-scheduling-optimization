@@ -58,7 +58,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--cores",
         type=int,
-        choices=range(1,129)
+        choices=range(1, 129),
         default=DEFAULT_DAY_RUN_CORES,
         help="Total core budget for the run. The bin worker count is capped from this budget.",
     )

@@ -11,8 +11,6 @@ from .models import SingleUserStaticCandidateCatalog, StaticCandidateSpec
 # scheduler-side power terms, and one compact SINR sanity check.
 ACTIVE_RESULT_COLUMNS = [
     "pa_id",
-    "bwp_idx",
-    "bandwidth_hz",
     "n_prb",
     "n_slots_on",
     "layers",
@@ -133,8 +131,6 @@ def _evaluate_active_candidates(context, static_candidates):
         rows.append(
             {
                 "pa_id": candidate.pa_id,
-                "bwp_idx": candidate.bwp_idx,
-                "bandwidth_hz": rrc.bwp_bw_hz,
                 "n_prb": candidate.n_prb,
                 "n_slots_on": candidate.n_slots_on,
                 "layers": candidate.layers,
