@@ -27,19 +27,12 @@ def prepare_single_user_problem(request, model_inputs, search_shape, *, pa_catal
             "pa_catalog": build_resolved_fingerprint(resolved_pa_catalog),
         }
     )
-    active_table_key = build_resolved_fingerprint(
-        {
-            "static_catalog": static_catalog_key,
-            "deployment": deployment,
-        }
-    )
     return PreparedSingleUserContext(
         request=request,
         model_inputs=config,
         deployment=deployment,
         search_catalog=search_catalog,
         static_catalog_key=static_catalog_key,
-        active_table_key=active_table_key,
     )
 
 

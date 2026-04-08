@@ -72,7 +72,6 @@ class PreparedSingleUserContext:
     deployment: DeploymentParams
     search_catalog: SearchCatalog
     static_catalog_key: str
-    active_table_key: str
 
     @property
     def mcs_table(self) -> dict[int, dict[str, float]]:
@@ -107,10 +106,3 @@ class StaticCandidateSpec:
     candidate: Candidate
     rate_ach_bps: float
     gamma_req_lin: float
-
-
-@dataclass(frozen=True)
-class SingleUserStaticCandidateCatalog:
-    """Cached static candidate catalog for one search-space shape."""
-
-    candidates: tuple[StaticCandidateSpec, ...] = ()

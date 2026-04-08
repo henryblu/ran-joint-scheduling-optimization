@@ -52,8 +52,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--switch-policy",
         choices=[policy.value for policy in PASwitchPolicy],
-        default=PASwitchPolicy.STANDBY.value,
-        help="Inactive-PA handling policy used by the TDMA scheduler.",
+        default=PASwitchPolicy.DUAL_SWITCHABLE.value,
+        help="PA switching scenario used by the TDMA scheduler.",
     )
     parser.add_argument(
         "--cores",
@@ -79,7 +79,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def build_day_run_config(
     *,
-    switch_policy: PASwitchPolicy = PASwitchPolicy.STANDBY,
+    switch_policy: PASwitchPolicy = PASwitchPolicy.DUAL_SWITCHABLE,
     cores: int = DEFAULT_DAY_RUN_CORES,
     load_curve_csv: Path | None = None,
     log_level: str | None = None,

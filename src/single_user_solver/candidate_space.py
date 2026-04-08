@@ -1,3 +1,4 @@
+from itertools import product
 from types import MappingProxyType
 
 import numpy as np
@@ -49,17 +50,19 @@ def iter_candidates(search_catalog):
     ss = search_catalog.search_shape
 
     for rrc in search_catalog.rrc_catalog:
-        for n_prb in range(1, rrc.prb_max + 1, ss.prb_step):
-            for n_slots_on in ss.n_slots_on_space:
-                for layers in ss.layers_space:
-                    for mcs in ss.mcs_space:
-                        yield Candidate(
-                            pa_id=rrc.active_pa_id,
-                            n_prb=n_prb,
-                            n_slots_on=n_slots_on,
-                            layers=layers,
-                            mcs=mcs,
-                        )
+        for n_prb, n_slots_on, layers, mcs in product(
+            range(1, rrc.prb_max + 1, ss.prb_step),
+            ss.n_slots_on_space,
+            ss.layers_space,
+            ss.mcs_space,
+        ):
+            yield Candidate(
+                pa_id=rrc.active_pa_id,
+                n_prb=n_prb,
+                n_slots_on=n_slots_on,
+                layers=layers,
+                mcs=mcs,
+            )
 
 
 def resolve_candidate_context(search_catalog, candidate):

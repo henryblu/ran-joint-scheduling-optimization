@@ -14,6 +14,7 @@ import pandas as pd
 
 from configs import SINGLE_USER_SEARCH_CONFIG, build_pa_catalog
 from configs.day_run import DAY_RUN_RESULT_FILENAME
+from models import PASwitchPolicy
 from models.day_run import BinRunResult, DayRunConfig
 
 
@@ -47,6 +48,22 @@ def build_day_run_result_document(
     """Build the hierarchical export document from demand rows and lean bin results."""
 
     result_by_bin = {int(result.bin_index): result for result in bin_results}
+    pa_catalog = build_pa_catalog(SINGLE_USER_SEARCH_CONFIG.pa_data_csv)
+    allowed_pa_ids = set(range(len(pa_catalog)))
+    if config.switch_policy == PASwitchPolicy.BASELINE_8W_ONLY:
+        allowed_pa_ids = {
+            pa_id
+            for pa_id, pa in enumerate(pa_catalog)
+            if str(pa.scenario_label) == "8W PA"
+        }
+        if not allowed_pa_ids and pa_catalog:
+            max_p_max_w = max(float(pa.p_max_w) for pa in pa_catalog)
+            allowed_pa_ids = {
+                pa_id
+                for pa_id, pa in enumerate(pa_catalog)
+                if float(pa.p_max_w) == max_p_max_w
+            }
+
     # Iterate over the projected bin tables so the export preserves the day-run
     # bin ordering even when the worker pool finishes bins out of order.
     bins = [
@@ -66,7 +83,15 @@ def build_day_run_result_document(
             "bin_duration_s": float(config.session_generation_config.bin_duration_s),
             "configured_window_n_frames": None if config.window_n_frames is None else int(config.window_n_frames),
         },
-        "pa_lookup": _build_pa_lookup(),
+        "pa_lookup": [
+            {
+                "pa_id": int(pa_id),
+                "pa_label": str(pa.scenario_label),
+                "pa_name": str(pa.pa_name),
+            }
+            for pa_id, pa in enumerate(pa_catalog)
+            if pa_id in allowed_pa_ids
+        ],
         "bins": bins,
     }
 
@@ -139,21 +164,6 @@ def _build_schedule_document(best_schedule: dict[str, object]) -> dict[str, obje
         },
         "selected_allocations": selected_allocations,
     }
-
-
-def _build_pa_lookup() -> list[dict[str, object]]:
-    """Build one compact PA lookup table shared by every selected allocation."""
-
-    # Keep the PA naming in one shared lookup table so solved rows stay small.
-    pa_catalog = build_pa_catalog(SINGLE_USER_SEARCH_CONFIG.pa_data_csv)
-    return [
-        {
-            "pa_id": int(pa_id),
-            "pa_label": str(pa.scenario_label),
-            "pa_name": str(pa.pa_name),
-        }
-        for pa_id, pa in enumerate(pa_catalog)
-    ]
 
 
 def _serialize_export_path(path: Path) -> str:
