@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 import json
 import logging
@@ -45,6 +46,8 @@ class _SingleUserEngineState:
 
 def load_or_build_distance_binned_candidate_table(
     path: str | Path | None = None,
+    *,
+    max_workers: int | None = None,
 ) -> DistanceBinnedCandidateTable:
     """Load the persisted candidate table when present, otherwise build and save it."""
 
@@ -52,7 +55,7 @@ def load_or_build_distance_binned_candidate_table(
     if artifact_path.exists():
         return load_distance_binned_candidate_table(artifact_path)
 
-    candidate_table = build_distance_binned_candidate_table()
+    candidate_table = build_distance_binned_candidate_table(max_workers=max_workers)
     save_distance_binned_candidate_table(candidate_table, artifact_path)
     return candidate_table
 
@@ -75,28 +78,7 @@ def load_distance_binned_candidate_table(
             .reset_index(drop=True)
         )
 
-    candidate_table = DistanceBinnedCandidateTable(frontiers_by_distance_m=frontiers_by_distance_m)
-    emit_candidate_table_console_log(
-        level=logging.DEBUG,
-        stage="store",
-        event="load",
-        fields=[
-            ("file", artifact_path.name),
-            ("bins", str(int(len(candidate_table.frontiers_by_distance_m)))),
-            (
-                "rows",
-                str(
-                    int(
-                        sum(
-                            len(frontier)
-                            for frontier in candidate_table.frontiers_by_distance_m.values()
-                        )
-                    )
-                ),
-            ),
-        ],
-    )
-    return candidate_table
+    return DistanceBinnedCandidateTable(frontiers_by_distance_m=frontiers_by_distance_m)
 
 
 def save_distance_binned_candidate_table(
@@ -159,7 +141,10 @@ def save_distance_binned_candidate_table(
     return artifact_path
 
 
-def build_distance_binned_candidate_table() -> DistanceBinnedCandidateTable:
+def build_distance_binned_candidate_table(
+    *,
+    max_workers: int | None = None,
+) -> DistanceBinnedCandidateTable:
     """Build the full fixed-grid candidate table used by later user assignment.
 
     Steps:
@@ -185,22 +170,49 @@ def build_distance_binned_candidate_table() -> DistanceBinnedCandidateTable:
         pa_catalog=tuple(build_pa_catalog(model_inputs.pa_data_csv)),
     )
     frontiers_by_distance_m = {}
-    for distance_m in DISTANCE_BIN_GRID_M:
-        frontier = build_candidate_frontier_for_distance(
-            int(distance_m),
-            engine_state=engine_state,
-        )
-        frontiers_by_distance_m[int(distance_m)] = frontier
-        emit_candidate_table_console_log(
-            level=logging.DEBUG,
-            stage="build",
-            event="bin",
-            fields=[
-                ("dist_m", str(int(distance_m))),
-                ("rows", str(int(len(frontier)))),
-            ],
-        )
-    return DistanceBinnedCandidateTable(frontiers_by_distance_m=frontiers_by_distance_m)
+    if max_workers is None or int(max_workers) <= 1:
+        for distance_m in DISTANCE_BIN_GRID_M:
+            frontier = build_candidate_frontier_for_distance(
+                int(distance_m),
+                engine_state=engine_state,
+            )
+            frontiers_by_distance_m[int(distance_m)] = frontier
+            emit_candidate_table_console_log(
+                level=logging.DEBUG,
+                stage="build",
+                event="bin",
+                fields=[
+                    ("dist_m", str(int(distance_m))),
+                    ("rows", str(int(len(frontier)))),
+                ],
+            )
+        return DistanceBinnedCandidateTable(frontiers_by_distance_m=frontiers_by_distance_m)
+
+    with ProcessPoolExecutor(max_workers=min(int(max_workers), len(DISTANCE_BIN_GRID_M))) as executor:
+        future_by_distance = {
+            executor.submit(
+                build_candidate_frontier_for_distance,
+                int(distance_m),
+                engine_state=engine_state,
+            ): int(distance_m)
+            for distance_m in DISTANCE_BIN_GRID_M
+        }
+        for future in as_completed(future_by_distance):
+            distance_m = future_by_distance[future]
+            frontier = future.result()
+            frontiers_by_distance_m[int(distance_m)] = frontier
+            emit_candidate_table_console_log(
+                level=logging.DEBUG,
+                stage="build",
+                event="bin",
+                fields=[
+                    ("dist_m", str(int(distance_m))),
+                    ("rows", str(int(len(frontier)))),
+                ],
+            )
+    return DistanceBinnedCandidateTable(
+        frontiers_by_distance_m=dict(sorted(frontiers_by_distance_m.items()))
+    )
 
 
 def build_candidate_frontier_for_distance(
