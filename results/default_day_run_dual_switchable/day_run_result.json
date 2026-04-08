@@ -1,7 +1,7 @@
 {
   "schema_version": "day_run_result_v1",
   "run": {
-    "switch_policy": "hard_off",
+    "switch_policy": "dual_switchable",
     "load_curve_csv": "data\\half_load_curve.csv",
     "day_bin_count": 96,
     "bin_duration_s": 900.0,
@@ -44,11 +44,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 204.0321576,
-        "joint": 0.5669539999999813,
-        "total": 204.6022836
+        "single_user": 0.4236878000000006,
+        "joint": 0.5343894000000002,
+        "total": 0.9580936000000007
       },
       "schedule": {
         "slot_total": 19,
@@ -64,7 +63,6 @@
           {
             "user_id": 67,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -76,7 +74,6 @@
           {
             "user_id": 194,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -88,7 +85,6 @@
           {
             "user_id": 248,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -144,11 +140,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 306.2172588,
-        "joint": 1.6398029999999721,
-        "total": 307.90646100000004
+        "single_user": 0.8012614000000005,
+        "joint": 0.8872150000000012,
+        "total": 1.6884923
       },
       "schedule": {
         "slot_total": 17,
@@ -164,7 +159,6 @@
           {
             "user_id": 28,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -176,7 +170,6 @@
           {
             "user_id": 164,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -188,7 +181,6 @@
           {
             "user_id": 175,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -200,7 +192,6 @@
           {
             "user_id": 194,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -212,7 +203,6 @@
           {
             "user_id": 195,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -224,7 +214,6 @@
           {
             "user_id": 230,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -236,7 +225,6 @@
           {
             "user_id": 248,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -277,16 +265,15 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 303.1468833,
-        "joint": 0.6252617999999757,
-        "total": 303.77517659999995
+        "single_user": 0.8622532999999999,
+        "joint": 0.4936889999999998,
+        "total": 1.3559554
       },
       "schedule": {
         "slot_total": 16,
         "unused_slots": 4,
-        "delivered_rate_sum_bps": 158776534.08,
+        "delivered_rate_sum_bps": 158776534.07999998,
         "power_w": {
           "dc_total": 4.647632098417896,
           "dc_active": 4.647632098417896,
@@ -297,7 +284,6 @@
           {
             "user_id": 28,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -309,7 +295,6 @@
           {
             "user_id": 83,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -321,7 +306,6 @@
           {
             "user_id": 91,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -333,7 +317,6 @@
           {
             "user_id": 175,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -404,11 +387,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 506.3484619999999,
-        "joint": 2.157976899999994,
-        "total": 508.51070649999997
+        "single_user": 0.5262002999999993,
+        "joint": 1.3245438000000007,
+        "total": 1.8507584999999995
       },
       "schedule": {
         "slot_total": 20,
@@ -424,7 +406,6 @@
           {
             "user_id": 3,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -436,7 +417,6 @@
           {
             "user_id": 83,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -448,7 +428,6 @@
           {
             "user_id": 142,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -460,7 +439,6 @@
           {
             "user_id": 168,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -472,7 +450,6 @@
           {
             "user_id": 175,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -484,7 +461,6 @@
           {
             "user_id": 203,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -496,7 +472,6 @@
           {
             "user_id": 208,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -508,7 +483,6 @@
           {
             "user_id": 218,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -520,7 +494,6 @@
           {
             "user_id": 277,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -532,7 +505,6 @@
           {
             "user_id": 284,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -588,11 +560,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 406.38522290000003,
-        "joint": 1.3207136999999989,
-        "total": 407.70967179999997
+        "single_user": 0.41139809999999954,
+        "joint": 0.4230470000000004,
+        "total": 0.8344588000000002
       },
       "schedule": {
         "slot_total": 13,
@@ -608,7 +579,6 @@
           {
             "user_id": 3,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -620,7 +590,6 @@
           {
             "user_id": 115,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -632,7 +601,6 @@
           {
             "user_id": 142,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -644,7 +612,6 @@
           {
             "user_id": 165,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -656,7 +623,6 @@
           {
             "user_id": 168,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -668,7 +634,6 @@
           {
             "user_id": 203,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -680,7 +645,6 @@
           {
             "user_id": 284,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -736,11 +700,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 306.3740536,
-        "joint": 1.4053767000000335,
-        "total": 307.78291
+        "single_user": 0.4765743000000011,
+        "joint": 0.9005112999999998,
+        "total": 1.3771002
       },
       "schedule": {
         "slot_total": 11,
@@ -756,7 +719,6 @@
           {
             "user_id": 3,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -768,7 +730,6 @@
           {
             "user_id": 115,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -780,7 +741,6 @@
           {
             "user_id": 142,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -792,7 +752,6 @@
           {
             "user_id": 165,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -804,7 +763,6 @@
           {
             "user_id": 168,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -816,7 +774,6 @@
           {
             "user_id": 203,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -828,7 +785,6 @@
           {
             "user_id": 268,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -884,11 +840,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 308.0309931,
-        "joint": 1.5271025000000122,
-        "total": 309.5607382
+        "single_user": 0.6958144999999991,
+        "joint": 0.8593837999999998,
+        "total": 1.555213499999999
       },
       "schedule": {
         "slot_total": 16,
@@ -904,7 +859,6 @@
           {
             "user_id": 64,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 13,
@@ -916,7 +870,6 @@
           {
             "user_id": 86,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -928,7 +881,6 @@
           {
             "user_id": 115,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -940,7 +892,6 @@
           {
             "user_id": 141,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -952,7 +903,6 @@
           {
             "user_id": 165,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -964,7 +914,6 @@
           {
             "user_id": 237,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -976,7 +925,6 @@
           {
             "user_id": 268,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -1037,11 +985,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 306.1094967,
-        "joint": 1.7839435999999864,
-        "total": 307.8968769
+        "single_user": 0.7715604999999996,
+        "joint": 1.4483294999999998,
+        "total": 2.219903499999999
       },
       "schedule": {
         "slot_total": 17,
@@ -1057,7 +1004,6 @@
           {
             "user_id": 13,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -1069,7 +1015,6 @@
           {
             "user_id": 64,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 13,
@@ -1081,7 +1026,6 @@
           {
             "user_id": 86,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1093,7 +1037,6 @@
           {
             "user_id": 201,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1105,7 +1048,6 @@
           {
             "user_id": 237,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1117,7 +1059,6 @@
           {
             "user_id": 239,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1129,7 +1070,6 @@
           {
             "user_id": 268,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -1141,7 +1081,6 @@
           {
             "user_id": 270,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -1187,11 +1126,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 410.1382195,
-        "joint": 1.0386133000000086,
-        "total": 411.2837856
+        "single_user": 0.6795448999999998,
+        "joint": 0.4707676999999997,
+        "total": 1.1503284000000003
       },
       "schedule": {
         "slot_total": 10,
@@ -1207,7 +1145,6 @@
           {
             "user_id": 13,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -1219,7 +1156,6 @@
           {
             "user_id": 29,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
@@ -1231,7 +1167,6 @@
           {
             "user_id": 64,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 13,
@@ -1243,7 +1178,6 @@
           {
             "user_id": 201,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1255,7 +1189,6 @@
           {
             "user_id": 270,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -1296,11 +1229,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 307.11045970000004,
-        "joint": 0.7908886000000166,
-        "total": 307.9796406
+        "single_user": 0.5507514999999996,
+        "joint": 0.2008176000000006,
+        "total": 0.7515837999999997
       },
       "schedule": {
         "slot_total": 7,
@@ -1316,7 +1248,6 @@
           {
             "user_id": 13,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -1328,7 +1259,6 @@
           {
             "user_id": 29,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
@@ -1340,7 +1270,6 @@
           {
             "user_id": 171,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -1352,7 +1281,6 @@
           {
             "user_id": 299,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -1398,11 +1326,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 304.34071190000003,
-        "joint": 0.8821452999999906,
-        "total": 305.33000589999995
+        "single_user": 0.6728749999999994,
+        "joint": 0.40523489999999995,
+        "total": 1.0781332
       },
       "schedule": {
         "slot_total": 8,
@@ -1418,7 +1345,6 @@
           {
             "user_id": 29,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
@@ -1430,7 +1356,6 @@
           {
             "user_id": 72,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -1442,7 +1367,6 @@
           {
             "user_id": 99,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1454,7 +1378,6 @@
           {
             "user_id": 163,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -1466,7 +1389,6 @@
           {
             "user_id": 253,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -1517,11 +1439,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 405.1909318,
-        "joint": 1.0369096000000013,
-        "total": 406.2310572
+        "single_user": 0.3137368000000009,
+        "joint": 0.3279373000000003,
+        "total": 0.6416920000000008
       },
       "schedule": {
         "slot_total": 15,
@@ -1537,7 +1458,6 @@
           {
             "user_id": 48,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1549,7 +1469,6 @@
           {
             "user_id": 72,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -1561,7 +1480,6 @@
           {
             "user_id": 99,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1573,7 +1491,6 @@
           {
             "user_id": 163,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -1585,7 +1502,6 @@
           {
             "user_id": 253,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -1597,7 +1513,6 @@
           {
             "user_id": 254,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -1643,11 +1558,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 303.2094177,
-        "joint": 1.0716759000000025,
-        "total": 304.284333
+        "single_user": 0.7288401999999996,
+        "joint": 0.5113087000000007,
+        "total": 1.240165000000001
       },
       "schedule": {
         "slot_total": 11,
@@ -1663,7 +1577,6 @@
           {
             "user_id": 48,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1675,7 +1588,6 @@
           {
             "user_id": 136,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -1687,7 +1599,6 @@
           {
             "user_id": 163,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -1699,7 +1610,6 @@
           {
             "user_id": 228,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -1711,7 +1621,6 @@
           {
             "user_id": 269,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -1762,11 +1671,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 206.1641669,
-        "joint": 1.364038800000003,
-        "total": 207.5321995
+        "single_user": 0.4478825999999998,
+        "joint": 0.7732899999999994,
+        "total": 1.2211885000000002
       },
       "schedule": {
         "slot_total": 9,
@@ -1782,7 +1690,6 @@
           {
             "user_id": 92,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -1794,7 +1701,6 @@
           {
             "user_id": 136,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -1806,7 +1712,6 @@
           {
             "user_id": 156,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1818,7 +1723,6 @@
           {
             "user_id": 228,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -1830,7 +1734,6 @@
           {
             "user_id": 267,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -1842,7 +1745,6 @@
           {
             "user_id": 269,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -1888,11 +1790,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 204.9739939,
-        "joint": 1.1588994999999898,
-        "total": 206.2834112
+        "single_user": 0.5006439999999994,
+        "joint": 0.8075714999999999,
+        "total": 1.3082344
       },
       "schedule": {
         "slot_total": 6,
@@ -1908,7 +1809,6 @@
           {
             "user_id": 92,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -1920,7 +1820,6 @@
           {
             "user_id": 156,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1932,7 +1831,6 @@
           {
             "user_id": 192,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -1944,7 +1842,6 @@
           {
             "user_id": 228,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -1956,7 +1853,6 @@
           {
             "user_id": 267,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2007,11 +1903,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 409.98671110000004,
-        "joint": 1.3491041000000337,
-        "total": 411.3386628
+        "single_user": 0.3362267000000001,
+        "joint": 0.5485082000000006,
+        "total": 0.8847501999999992
       },
       "schedule": {
         "slot_total": 7,
@@ -2027,7 +1922,6 @@
           {
             "user_id": 55,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -2039,7 +1933,6 @@
           {
             "user_id": 92,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -2051,7 +1944,6 @@
           {
             "user_id": 187,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2063,7 +1955,6 @@
           {
             "user_id": 192,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -2075,7 +1966,6 @@
           {
             "user_id": 206,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -2087,7 +1977,6 @@
           {
             "user_id": 267,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2128,11 +2017,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 405.3810681,
-        "joint": 0.7496276999999623,
-        "total": 406.13435430000004
+        "single_user": 0.3800246000000005,
+        "joint": 0.4487798999999999,
+        "total": 0.8288216000000004
       },
       "schedule": {
         "slot_total": 8,
@@ -2148,7 +2036,6 @@
           {
             "user_id": 17,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 251,
             "layers": 1,
             "mcs": 11,
@@ -2160,7 +2047,6 @@
           {
             "user_id": 55,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -2172,7 +2058,6 @@
           {
             "user_id": 187,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2184,7 +2069,6 @@
           {
             "user_id": 206,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -2225,11 +2109,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 401.882861,
-        "joint": 0.7415042000000085,
-        "total": 402.6319103
+        "single_user": 0.35418219999999945,
+        "joint": 0.44415410000000044,
+        "total": 0.7983535999999996
       },
       "schedule": {
         "slot_total": 8,
@@ -2245,7 +2128,6 @@
           {
             "user_id": 55,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -2257,7 +2139,6 @@
           {
             "user_id": 187,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2269,7 +2150,6 @@
           {
             "user_id": 190,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 251,
             "layers": 1,
             "mcs": 11,
@@ -2281,7 +2161,6 @@
           {
             "user_id": 236,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2317,11 +2196,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 204.8726936,
-        "joint": 0.8516582999999969,
-        "total": 205.743681
+        "single_user": 0.4179376999999995,
+        "joint": 1.028746,
+        "total": 1.4467007999999986
       },
       "schedule": {
         "slot_total": 7,
@@ -2337,7 +2215,6 @@
           {
             "user_id": 154,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2349,7 +2226,6 @@
           {
             "user_id": 236,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2361,7 +2237,6 @@
           {
             "user_id": 285,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2402,11 +2277,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 309.1281344,
-        "joint": 1.008156299999996,
-        "total": 310.1624315
+        "single_user": 0.3983907000000002,
+        "joint": 0.7137313999999986,
+        "total": 1.1121377
       },
       "schedule": {
         "slot_total": 6,
@@ -2422,7 +2296,6 @@
           {
             "user_id": 133,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -2434,7 +2307,6 @@
           {
             "user_id": 154,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2446,7 +2318,6 @@
           {
             "user_id": 236,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2458,7 +2329,6 @@
           {
             "user_id": 260,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -2504,11 +2374,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 309.91120359999996,
-        "joint": 1.367147999999986,
-        "total": 311.30740829999996
+        "single_user": 0.39743139999999855,
+        "joint": 0.8029177000000001,
+        "total": 1.2003626
       },
       "schedule": {
         "slot_total": 7,
@@ -2524,7 +2393,6 @@
           {
             "user_id": 133,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -2536,7 +2404,6 @@
           {
             "user_id": 139,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2548,7 +2415,6 @@
           {
             "user_id": 152,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -2560,7 +2426,6 @@
           {
             "user_id": 169,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2572,7 +2437,6 @@
           {
             "user_id": 294,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2618,11 +2482,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 311.47239579999996,
-        "joint": 1.1626344000000017,
-        "total": 312.64191250000005
+        "single_user": 0.4906239999999986,
+        "joint": 0.8245540000000009,
+        "total": 1.3151927000000008
       },
       "schedule": {
         "slot_total": 9,
@@ -2638,7 +2501,6 @@
           {
             "user_id": 133,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -2650,7 +2512,6 @@
           {
             "user_id": 139,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2662,7 +2523,6 @@
           {
             "user_id": 158,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2674,7 +2534,6 @@
           {
             "user_id": 169,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2686,7 +2545,6 @@
           {
             "user_id": 294,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2722,11 +2580,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 303.7506456,
-        "joint": 0.6374493000000143,
-        "total": 304.39557909999996
+        "single_user": 0.4991247000000012,
+        "joint": 0.6322856000000012,
+        "total": 1.1314238999999997
       },
       "schedule": {
         "slot_total": 3,
@@ -2742,7 +2599,6 @@
           {
             "user_id": 39,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -2754,7 +2610,6 @@
           {
             "user_id": 139,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2766,7 +2621,6 @@
           {
             "user_id": 294,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -2797,11 +2651,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 206.320478,
-        "joint": 0.4147439999999847,
-        "total": 206.7426537
+        "single_user": 0.4796927000000011,
+        "joint": 0.08166450000000047,
+        "total": 0.5613720999999998
       },
       "schedule": {
         "slot_total": 5,
@@ -2817,7 +2670,6 @@
           {
             "user_id": 39,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -2829,7 +2681,6 @@
           {
             "user_id": 112,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2860,11 +2711,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 205.171771,
-        "joint": 0.4922242999999753,
-        "total": 205.7849011
+        "single_user": 0.5440269999999998,
+        "joint": 0.09299700000000044,
+        "total": 0.6370377000000005
       },
       "schedule": {
         "slot_total": 3,
@@ -2880,7 +2730,6 @@
           {
             "user_id": 39,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -2892,7 +2741,6 @@
           {
             "user_id": 265,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -2923,11 +2771,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 104.35252890000001,
-        "joint": 0.34134950000000686,
-        "total": 104.6974738
+        "single_user": 0.7758386000000002,
+        "joint": 0.32938069999999975,
+        "total": 1.1052313999999992
       },
       "schedule": {
         "slot_total": 12,
@@ -2943,7 +2790,6 @@
           {
             "user_id": 5,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2955,7 +2801,6 @@
           {
             "user_id": 110,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -2991,11 +2836,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 307.4589838,
-        "joint": 0.6121428000000151,
-        "total": 308.0810998
+        "single_user": 0.5302703999999991,
+        "joint": 0.4260748000000003,
+        "total": 0.9563602000000007
       },
       "schedule": {
         "slot_total": 10,
@@ -3011,7 +2855,6 @@
           {
             "user_id": 110,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -3023,7 +2866,6 @@
           {
             "user_id": 258,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -3035,7 +2877,6 @@
           {
             "user_id": 295,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3081,11 +2922,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 405.4109537,
-        "joint": 1.1423327999999628,
-        "total": 406.5593016
+        "single_user": 0.009380900000000025,
+        "joint": 1.0514738000000001,
+        "total": 1.0608658999999996
       },
       "schedule": {
         "slot_total": 6,
@@ -3101,7 +2941,6 @@
           {
             "user_id": 118,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -3113,7 +2952,6 @@
           {
             "user_id": 214,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3125,7 +2963,6 @@
           {
             "user_id": 252,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -3137,7 +2974,6 @@
           {
             "user_id": 258,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -3149,7 +2985,6 @@
           {
             "user_id": 295,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3205,11 +3040,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 305.9443926,
-        "joint": 1.5831881000000294,
-        "total": 307.5623189
+        "single_user": 0.012016300000000868,
+        "joint": 0.6135392999999993,
+        "total": 0.6255658999999998
       },
       "schedule": {
         "slot_total": 12,
@@ -3225,7 +3059,6 @@
           {
             "user_id": 105,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -3237,7 +3070,6 @@
           {
             "user_id": 118,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -3249,7 +3081,6 @@
           {
             "user_id": 176,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -3261,7 +3092,6 @@
           {
             "user_id": 213,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -3273,7 +3103,6 @@
           {
             "user_id": 214,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3285,7 +3114,6 @@
           {
             "user_id": 231,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -3297,7 +3125,6 @@
           {
             "user_id": 258,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -3338,11 +3165,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 403.5162757,
-        "joint": 0.6175849999999627,
-        "total": 404.13915049999997
+        "single_user": 0.007941600000000548,
+        "joint": 0.17168009999999967,
+        "total": 0.17963280000000026
       },
       "schedule": {
         "slot_total": 15,
@@ -3358,7 +3184,6 @@
           {
             "user_id": 46,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 251,
             "layers": 1,
             "mcs": 11,
@@ -3370,7 +3195,6 @@
           {
             "user_id": 105,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -3382,7 +3206,6 @@
           {
             "user_id": 135,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -3394,7 +3217,6 @@
           {
             "user_id": 213,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -3440,11 +3262,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 405.37556329999995,
-        "joint": 0.9162024999999971,
-        "total": 406.2964445
+        "single_user": 0.009147099999999853,
+        "joint": 0.24923379999999895,
+        "total": 0.25839139999999894
       },
       "schedule": {
         "slot_total": 19,
@@ -3460,7 +3281,6 @@
           {
             "user_id": 46,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 251,
             "layers": 1,
             "mcs": 11,
@@ -3472,7 +3292,6 @@
           {
             "user_id": 135,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -3484,7 +3303,6 @@
           {
             "user_id": 288,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -3496,7 +3314,6 @@
           {
             "user_id": 300,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3508,7 +3325,6 @@
           {
             "user_id": 302,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -3544,11 +3360,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 308.8216321,
-        "joint": 0.49986360000002605,
-        "total": 309.36341999999996
+        "single_user": 0.022781199999998947,
+        "joint": 0.12371030000000083,
+        "total": 0.14650150000000117
       },
       "schedule": {
         "slot_total": 7,
@@ -3564,7 +3379,6 @@
           {
             "user_id": 95,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -3576,7 +3390,6 @@
           {
             "user_id": 135,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -3588,7 +3401,6 @@
           {
             "user_id": 288,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -3614,11 +3426,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.5148325000000114,
-        "joint": 0.041503399999996304,
-        "total": 0.6057594999999907
+        "single_user": 1.3036397999999991,
+        "joint": 0.025896300000001204,
+        "total": 1.3295504000000005
       },
       "schedule": {
         "slot_total": 19,
@@ -3634,7 +3445,6 @@
           {
             "user_id": 43,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 11,
@@ -3660,11 +3470,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 101.35074219999998,
-        "joint": 0.11222619999998074,
-        "total": 101.4814987
+        "single_user": 0.0039058000000000703,
+        "joint": 0.500262300000001,
+        "total": 0.5041787000000006
       },
       "schedule": {
         "slot_total": 7,
@@ -3680,7 +3489,6 @@
           {
             "user_id": 138,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -3706,11 +3514,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.5307336000000191,
-        "joint": 0.08788260000000037,
-        "total": 0.6232495000000142
+        "single_user": 0.0037237000000001075,
+        "joint": 0.03616330000000012,
+        "total": 0.03989620000000116
       },
       "schedule": {
         "slot_total": 7,
@@ -3726,7 +3533,6 @@
           {
             "user_id": 50,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -3757,11 +3563,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 101.45087749999999,
-        "joint": 0.3312800999999581,
-        "total": 101.78766619999999
+        "single_user": 0.005266000000000659,
+        "joint": 0.2930799000000004,
+        "total": 0.29835609999999946
       },
       "schedule": {
         "slot_total": 12,
@@ -3777,7 +3582,6 @@
           {
             "user_id": 149,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -3789,7 +3593,6 @@
           {
             "user_id": 160,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3840,11 +3643,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 100.21132319999998,
-        "joint": 1.3629430999999954,
-        "total": 101.66973009999998
+        "single_user": 0.010311699999999036,
+        "joint": 0.6006768000000005,
+        "total": 0.6109981999999992
       },
       "schedule": {
         "slot_total": 17,
@@ -3860,7 +3662,6 @@
           {
             "user_id": 15,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3872,7 +3673,6 @@
           {
             "user_id": 149,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -3884,7 +3684,6 @@
           {
             "user_id": 223,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -3896,7 +3695,6 @@
           {
             "user_id": 227,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -3908,7 +3706,6 @@
           {
             "user_id": 262,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3920,7 +3717,6 @@
           {
             "user_id": 281,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -3951,11 +3747,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.2243507999999963,
-        "joint": 0.31441800000001763,
-        "total": 0.5950032000000078
+        "single_user": 0.00541400000000003,
+        "joint": 0.31924689999999956,
+        "total": 0.3246715000000009
       },
       "schedule": {
         "slot_total": 16,
@@ -3971,7 +3766,6 @@
           {
             "user_id": 170,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -3983,7 +3777,6 @@
           {
             "user_id": 281,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4014,27 +3807,25 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 98.6566578,
-        "joint": 0.23870660000000044,
-        "total": 98.98363320000001
+        "single_user": 0.004940599999999407,
+        "joint": 0.08974809999999955,
+        "total": 0.09469819999999984
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 150967583.99999997,
+        "delivered_rate_sum_bps": 149313764.15999997,
         "power_w": {
-          "dc_total": 44.91677284041831,
-          "dc_active": 44.91677284041831,
+          "dc_total": 44.23601740011217,
+          "dc_active": 44.23601740011217,
           "dc_inactive": 0.0,
-          "rf_total": 14.201043100175363
+          "rf_total": 14.155495572301893
         },
         "selected_allocations": [
           {
             "user_id": 25,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 11,
@@ -4045,15 +3836,14 @@
           },
           {
             "user_id": 184,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 271,
-            "layers": 2,
-            "mcs": 11,
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 1,
+            "mcs": 15,
             "n_slots": 1,
-            "delivered_rate_bps": 7683045.120000001,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12447925421956628
+            "delivered_rate_bps": 6029225.279999999,
+            "p_dc_avg_frame_w": 0.3671692075212565,
+            "p_out_avg_frame_w": 0.07893172634609562
           }
         ]
       }
@@ -4082,11 +3872,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 99.38096180000002,
-        "joint": 0.564709100000016,
-        "total": 100.10730180000002
+        "single_user": 0.006606500000000182,
+        "joint": 0.2343162999999997,
+        "total": 0.24093419999999988
       },
       "schedule": {
         "slot_total": 20,
@@ -4102,7 +3891,6 @@
           {
             "user_id": 109,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 17,
@@ -4114,7 +3902,6 @@
           {
             "user_id": 147,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4126,7 +3913,6 @@
           {
             "user_id": 184,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -4162,11 +3948,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 203.6457964,
-        "joint": 0.4885856000000217,
-        "total": 204.139609
+        "single_user": 0.006617199999999102,
+        "joint": 0.45731379999999966,
+        "total": 0.46394109999999955
       },
       "schedule": {
         "slot_total": 12,
@@ -4182,7 +3967,6 @@
           {
             "user_id": 31,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -4194,7 +3978,6 @@
           {
             "user_id": 182,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4206,7 +3989,6 @@
           {
             "user_id": 184,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -4267,11 +4049,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 198.8780123,
-        "joint": 2.9307719000000247,
-        "total": 201.8268051
+        "single_user": 0.013411100000000786,
+        "joint": 3.791724800000001,
+        "total": 3.8051475999999997
       },
       "schedule": {
         "slot_total": 20,
@@ -4287,7 +4068,6 @@
           {
             "user_id": 45,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -4299,7 +4079,6 @@
           {
             "user_id": 79,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4311,7 +4090,6 @@
           {
             "user_id": 114,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -4323,7 +4101,6 @@
           {
             "user_id": 119,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -4335,7 +4112,6 @@
           {
             "user_id": 144,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -4347,7 +4123,6 @@
           {
             "user_id": 182,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -4359,7 +4134,6 @@
           {
             "user_id": 207,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -4371,7 +4145,6 @@
           {
             "user_id": 293,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -4442,11 +4215,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 200.68144570000004,
-        "joint": 4.024973499999987,
-        "total": 204.7119272
+        "single_user": 0.015320499999999626,
+        "joint": 5.863675200000001,
+        "total": 5.879006200000001
       },
       "schedule": {
         "slot_total": 20,
@@ -4462,7 +4234,6 @@
           {
             "user_id": 45,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 19,
@@ -4474,7 +4245,6 @@
           {
             "user_id": 79,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4486,7 +4256,6 @@
           {
             "user_id": 114,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 19,
@@ -4498,7 +4267,6 @@
           {
             "user_id": 119,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -4510,7 +4278,6 @@
           {
             "user_id": 143,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -4522,7 +4289,6 @@
           {
             "user_id": 144,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -4534,7 +4300,6 @@
           {
             "user_id": 205,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4546,7 +4311,6 @@
           {
             "user_id": 207,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -4558,7 +4322,6 @@
           {
             "user_id": 234,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4570,7 +4333,6 @@
           {
             "user_id": 293,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -4641,11 +4403,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 100.61671340000004,
-        "joint": 7.401470200000006,
-        "total": 108.03631470000005
+        "single_user": 0.12368950000000112,
+        "joint": 3.6898429000000004,
+        "total": 3.8135423
       },
       "schedule": {
         "slot_total": 20,
@@ -4661,7 +4422,6 @@
           {
             "user_id": 45,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 13,
@@ -4673,7 +4433,6 @@
           {
             "user_id": 81,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4685,7 +4444,6 @@
           {
             "user_id": 113,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -4697,7 +4455,6 @@
           {
             "user_id": 114,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -4709,7 +4466,6 @@
           {
             "user_id": 119,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -4721,7 +4477,6 @@
           {
             "user_id": 144,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -4733,7 +4488,6 @@
           {
             "user_id": 197,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -4745,7 +4499,6 @@
           {
             "user_id": 205,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4757,7 +4510,6 @@
           {
             "user_id": 207,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -4769,7 +4521,6 @@
           {
             "user_id": 293,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -4815,11 +4566,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 100.3667307,
-        "joint": 0.8739479999999844,
-        "total": 101.2462468
+        "single_user": 0.008707499999999868,
+        "joint": 0.4368724999999998,
+        "total": 0.4455901999999998
       },
       "schedule": {
         "slot_total": 20,
@@ -4835,7 +4585,6 @@
           {
             "user_id": 0,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -4847,7 +4596,6 @@
           {
             "user_id": 32,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 17,
@@ -4859,7 +4607,6 @@
           {
             "user_id": 77,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -4871,7 +4618,6 @@
           {
             "user_id": 81,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -4883,7 +4629,6 @@
           {
             "user_id": 113,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -4934,11 +4679,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 102.8631459,
-        "joint": 1.070944700000041,
-        "total": 103.98886390000001
+        "single_user": 0.010626399999999592,
+        "joint": 0.43362130000000043,
+        "total": 0.44426029999999983
       },
       "schedule": {
         "slot_total": 16,
@@ -4954,7 +4698,6 @@
           {
             "user_id": 0,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -4966,7 +4709,6 @@
           {
             "user_id": 77,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -4978,7 +4720,6 @@
           {
             "user_id": 82,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -4990,7 +4731,6 @@
           {
             "user_id": 189,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -5002,7 +4742,6 @@
           {
             "user_id": 233,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -5014,7 +4753,6 @@
           {
             "user_id": 276,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -5065,11 +4803,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 102.1477898,
-        "joint": 1.030458499999952,
-        "total": 103.32161859999997
+        "single_user": 0.01061840000000025,
+        "joint": 0.6710840999999999,
+        "total": 0.6817127999999997
       },
       "schedule": {
         "slot_total": 20,
@@ -5085,7 +4822,6 @@
           {
             "user_id": 41,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -5097,7 +4833,6 @@
           {
             "user_id": 57,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -5109,7 +4844,6 @@
           {
             "user_id": 77,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -5121,7 +4855,6 @@
           {
             "user_id": 94,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -5133,7 +4866,6 @@
           {
             "user_id": 233,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -5145,7 +4877,6 @@
           {
             "user_id": 276,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -5191,11 +4922,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 100.40678029999998,
-        "joint": 0.8475107000000435,
-        "total": 101.25841590000005
+        "single_user": 0.009213599999998934,
+        "joint": 0.5005213000000008,
+        "total": 0.5097453999999999
       },
       "schedule": {
         "slot_total": 20,
@@ -5211,7 +4941,6 @@
           {
             "user_id": 10,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -5223,7 +4952,6 @@
           {
             "user_id": 41,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 246,
             "layers": 1,
             "mcs": 14,
@@ -5235,7 +4963,6 @@
           {
             "user_id": 57,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -5247,7 +4974,6 @@
           {
             "user_id": 65,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -5259,7 +4985,6 @@
           {
             "user_id": 276,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -5310,11 +5035,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.5007446999999843,
-        "joint": 1.3009737999999516,
-        "total": 1.8200749000000087
+        "single_user": 0.010621399999999781,
+        "joint": 0.7977115000000001,
+        "total": 0.8083448999999998
       },
       "schedule": {
         "slot_total": 20,
@@ -5330,7 +5054,6 @@
           {
             "user_id": 10,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -5342,7 +5065,6 @@
           {
             "user_id": 65,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -5354,7 +5076,6 @@
           {
             "user_id": 148,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -5366,7 +5087,6 @@
           {
             "user_id": 155,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -5378,7 +5098,6 @@
           {
             "user_id": 162,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -5390,7 +5109,6 @@
           {
             "user_id": 303,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -5431,11 +5149,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.52661599999999,
-        "joint": 0.7438970999999697,
-        "total": 1.5562269000000128
+        "single_user": 0.007937199999998867,
+        "joint": 0.4407015000000012,
+        "total": 0.44864940000000075
       },
       "schedule": {
         "slot_total": 20,
@@ -5451,7 +5168,6 @@
           {
             "user_id": 132,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -5463,7 +5179,6 @@
           {
             "user_id": 148,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 256,
             "layers": 3,
             "mcs": 14,
@@ -5475,7 +5190,6 @@
           {
             "user_id": 155,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -5487,7 +5201,6 @@
           {
             "user_id": 225,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -5528,11 +5241,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.29721840000001976,
-        "joint": 0.7107434999999782,
-        "total": 1.010962500000005
+        "single_user": 0.007651199999999747,
+        "joint": 0.3969471999999996,
+        "total": 0.4046086000000013
       },
       "schedule": {
         "slot_total": 20,
@@ -5548,7 +5260,6 @@
           {
             "user_id": 132,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -5560,7 +5271,6 @@
           {
             "user_id": 148,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 256,
             "layers": 3,
             "mcs": 14,
@@ -5572,7 +5282,6 @@
           {
             "user_id": 225,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -5584,7 +5293,6 @@
           {
             "user_id": 238,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -5640,27 +5348,25 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 194.76603239999997,
-        "joint": 1.3024672999999893,
-        "total": 196.0761533
+        "single_user": 0.01183439999999969,
+        "joint": 0.7830604000000001,
+        "total": 0.7949058000000004
       },
       "schedule": {
-        "slot_total": 18,
-        "unused_slots": 2,
-        "delivered_rate_sum_bps": 220656714.24,
+        "slot_total": 20,
+        "unused_slots": 0,
+        "delivered_rate_sum_bps": 204371480.64,
         "power_w": {
-          "dc_total": 29.369532312554973,
-          "dc_active": 29.369532312554973,
+          "dc_total": 24.549804869251805,
+          "dc_active": 24.549804869251805,
           "dc_inactive": 0.0,
-          "rf_total": 6.905782716467739
+          "rf_total": 6.488236486961575
         },
         "selected_allocations": [
           {
             "user_id": 126,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 17,
@@ -5671,75 +5377,69 @@
           },
           {
             "user_id": 166,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 4,
-            "mcs": 21,
-            "n_slots": 2,
-            "delivered_rate_bps": 72349701.11999999,
-            "p_dc_avg_frame_w": 2.2979946798801767,
-            "p_out_avg_frame_w": 0.32382570879185635
+            "mcs": 15,
+            "n_slots": 3,
+            "delivered_rate_bps": 72350703.35999998,
+            "p_dc_avg_frame_w": 0.9288340643952706,
+            "p_out_avg_frame_w": 0.17348754983584375
           },
           {
             "user_id": 196,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
             "n_slots": 1,
             "delivered_rate_bps": 17967467.52,
-            "p_dc_avg_frame_w": 1.1405955046079865,
-            "p_out_avg_frame_w": 0.15917182249331377
+            "p_dc_avg_frame_w": 0.5617233532349669,
+            "p_out_avg_frame_w": 0.15918143010531371
           },
           {
             "user_id": 225,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 1,
+            "mcs": 15,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 6029225.279999999,
+            "p_dc_avg_frame_w": 0.18642340715537162,
+            "p_out_avg_frame_w": 0.018898078399080604
           },
           {
             "user_id": 238,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
+            "n_prb": 276,
+            "layers": 1,
+            "mcs": 12,
+            "n_slots": 2,
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.5229482163667504,
+            "p_out_avg_frame_w": 0.08310676365555791
+          },
+          {
+            "user_id": 249,
+            "pa_id": 1,
+            "n_prb": 276,
+            "layers": 4,
+            "mcs": 12,
+            "n_slots": 1,
+            "delivered_rate_bps": 17967467.52,
+            "p_dc_avg_frame_w": 0.5617233532349669,
+            "p_out_avg_frame_w": 0.15918143010531371
+          },
+          {
+            "user_id": 296,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
             "n_slots": 1,
             "delivered_rate_bps": 8983733.76,
-            "p_dc_avg_frame_w": 1.1622310590124323,
-            "p_out_avg_frame_w": 0.16620349526731215
-          },
-          {
-            "user_id": 249,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 4,
-            "mcs": 12,
-            "n_slots": 1,
-            "delivered_rate_bps": 17967467.52,
-            "p_dc_avg_frame_w": 1.1405955046079865,
-            "p_out_avg_frame_w": 0.15917182249331377
-          },
-          {
-            "user_id": 296,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
-            "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           }
         ]
       }
@@ -5773,11 +5473,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.3529743999999937,
-        "joint": 0.6110709000000156,
-        "total": 0.9694369000000052
+        "single_user": 0.008221199999999484,
+        "joint": 0.21958139999999915,
+        "total": 0.22781379999999984
       },
       "schedule": {
         "slot_total": 20,
@@ -5793,7 +5492,6 @@
           {
             "user_id": 66,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -5805,7 +5503,6 @@
           {
             "user_id": 134,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -5817,7 +5514,6 @@
           {
             "user_id": 153,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -5829,7 +5525,6 @@
           {
             "user_id": 296,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -5865,11 +5560,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 197.98679840000005,
-        "joint": 0.20961420000003272,
-        "total": 198.20257319999996
+        "single_user": 0.006389400000001544,
+        "joint": 0.29745179999999927,
+        "total": 0.3038515000000004
       },
       "schedule": {
         "slot_total": 20,
@@ -5885,7 +5579,6 @@
           {
             "user_id": 6,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -5897,7 +5590,6 @@
           {
             "user_id": 69,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 19,
@@ -5909,7 +5601,6 @@
           {
             "user_id": 73,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -5960,27 +5651,25 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 98.94085029999997,
-        "joint": 1.0893138999999792,
-        "total": 100.11349310000003
+        "single_user": 0.010773499999999103,
+        "joint": 0.6781686999999987,
+        "total": 0.6889518999999993
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 285362480.64,
+        "delivered_rate_sum_bps": 239372624.64000005,
         "power_w": {
-          "dc_total": 61.418670924241574,
-          "dc_active": 61.418670924241574,
+          "dc_total": 58.95659875268499,
+          "dc_active": 58.95659875268499,
           "dc_inactive": 0.0,
-          "rf_total": 23.797782674388348
+          "rf_total": 23.515195481699003
         },
         "selected_allocations": [
           {
             "user_id": 6,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 14,
@@ -5992,7 +5681,6 @@
           {
             "user_id": 69,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 19,
@@ -6003,20 +5691,18 @@
           },
           {
             "user_id": 256,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
+            "pa_id": 1,
+            "n_prb": 276,
             "layers": 4,
-            "mcs": 20,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
+            "delivered_rate_bps": 17967467.52,
+            "p_dc_avg_frame_w": 0.2272339239752077,
+            "p_out_avg_frame_w": 0.03044400831965012
           },
           {
             "user_id": 271,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -6027,27 +5713,25 @@
           },
           {
             "user_id": 289,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
+            "pa_id": 1,
+            "n_prb": 276,
             "layers": 4,
-            "mcs": 20,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
+            "delivered_rate_bps": 17967467.52,
+            "p_dc_avg_frame_w": 0.2272339239752077,
+            "p_out_avg_frame_w": 0.03044400831965012
           },
           {
             "user_id": 298,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
+            "pa_id": 1,
+            "n_prb": 276,
             "layers": 4,
-            "mcs": 20,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
+            "delivered_rate_bps": 17967467.52,
+            "p_dc_avg_frame_w": 0.2272339239752077,
+            "p_out_avg_frame_w": 0.03044400831965012
           }
         ]
       }
@@ -6076,58 +5760,54 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 197.79868910000005,
-        "joint": 0.16986740000004374,
-        "total": 198.068102
+        "single_user": 0.0064712999999994025,
+        "joint": 0.09393009999999968,
+        "total": 0.10041280000000086
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 240900706.56,
+        "delivered_rate_sum_bps": 238648317.11999995,
         "power_w": {
-          "dc_total": 37.73218427687433,
-          "dc_active": 37.73218427687433,
+          "dc_total": 30.834842184510862,
+          "dc_active": 30.834842184510862,
           "dc_inactive": 0.0,
-          "rf_total": 9.921627464652966
+          "rf_total": 10.861691797650833
         },
         "selected_allocations": [
           {
             "user_id": 30,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 18,
-            "n_slots": 5,
-            "delivered_rate_bps": 144694656.0,
-            "p_dc_avg_frame_w": 8.797304320464637,
-            "p_out_avg_frame_w": 2.1528033914372378
+            "layers": 3,
+            "mcs": 17,
+            "n_slots": 7,
+            "delivered_rate_bps": 142798602.23999995,
+            "p_dc_avg_frame_w": 4.552675592458002,
+            "p_out_avg_frame_w": 1.3738985379840694
           },
           {
             "user_id": 40,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 266,
-            "layers": 1,
-            "mcs": 17,
-            "n_slots": 11,
-            "delivered_rate_bps": 72089149.44,
-            "p_dc_avg_frame_w": 21.53226626879159,
-            "p_out_avg_frame_w": 5.854585877334137
+            "n_prb": 276,
+            "layers": 2,
+            "mcs": 12,
+            "n_slots": 8,
+            "delivered_rate_bps": 71869870.08,
+            "p_dc_avg_frame_w": 22.02533120439616,
+            "p_out_avg_frame_w": 8.06236795436891
           },
           {
             "user_id": 69,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 1,
-            "mcs": 15,
-            "n_slots": 4,
-            "delivered_rate_bps": 24116901.119999997,
-            "p_dc_avg_frame_w": 7.402613687618099,
-            "p_out_avg_frame_w": 1.9142381958815904
+            "mcs": 13,
+            "n_slots": 5,
+            "delivered_rate_bps": 23979844.799999997,
+            "p_dc_avg_frame_w": 4.256835387656698,
+            "p_out_avg_frame_w": 1.425425305297855
           }
         ]
       }
@@ -6166,11 +5846,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 200.0053987,
-        "joint": 0.545948199999998,
-        "total": 200.55659390000005
+        "single_user": 0.00935639999999971,
+        "joint": 0.4000640999999998,
+        "total": 0.40943289999999877
       },
       "schedule": {
         "slot_total": 20,
@@ -6186,7 +5865,6 @@
           {
             "user_id": 78,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -6198,7 +5876,6 @@
           {
             "user_id": 103,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -6210,7 +5887,6 @@
           {
             "user_id": 167,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -6222,7 +5898,6 @@
           {
             "user_id": 199,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -6234,7 +5909,6 @@
           {
             "user_id": 229,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -6280,11 +5954,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 100.5462814,
-        "joint": 0.6563151999999945,
-        "total": 101.2827474
+        "single_user": 0.008947499999999664,
+        "joint": 0.5484837000000002,
+        "total": 0.5574427000000011
       },
       "schedule": {
         "slot_total": 20,
@@ -6300,7 +5973,6 @@
           {
             "user_id": 54,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -6312,7 +5984,6 @@
           {
             "user_id": 78,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -6324,7 +5995,6 @@
           {
             "user_id": 103,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -6336,7 +6006,6 @@
           {
             "user_id": 106,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -6348,7 +6017,6 @@
           {
             "user_id": 130,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -6394,11 +6062,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.3642527999999743,
-        "joint": 0.7922963999999979,
-        "total": 1.163498299999958
+        "single_user": 0.009262199999998444,
+        "joint": 0.535857,
+        "total": 0.5451309000000002
       },
       "schedule": {
         "slot_total": 20,
@@ -6414,7 +6081,6 @@
           {
             "user_id": 54,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -6426,7 +6092,6 @@
           {
             "user_id": 80,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -6438,7 +6103,6 @@
           {
             "user_id": 103,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -6450,7 +6114,6 @@
           {
             "user_id": 106,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -6462,7 +6125,6 @@
           {
             "user_id": 286,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -6513,27 +6175,25 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.4339667000000418,
-        "joint": 1.0334316999999942,
-        "total": 1.6136796000000118
+        "single_user": 0.010631899999999916,
+        "joint": 1.2060089000000005,
+        "total": 1.2166516000000005
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 292115903.0399999,
+        "delivered_rate_sum_bps": 292115903.03999996,
         "power_w": {
           "dc_total": 15.876384193853955,
           "dc_active": 15.876384193853955,
           "dc_inactive": 0.0,
-          "rf_total": 5.247571207489571
+          "rf_total": 5.247571207489572
         },
         "selected_allocations": [
           {
             "user_id": 20,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -6545,7 +6205,6 @@
           {
             "user_id": 54,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -6557,7 +6216,6 @@
           {
             "user_id": 80,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -6569,7 +6227,6 @@
           {
             "user_id": 159,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -6581,7 +6238,6 @@
           {
             "user_id": 174,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -6593,7 +6249,6 @@
           {
             "user_id": 286,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -6664,39 +6319,36 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 98.1113211,
-        "joint": 1.706180599999982,
-        "total": 99.8212021
+        "single_user": 0.016104399999999686,
+        "joint": 4.8139354999999995,
+        "total": 4.8300512000000015
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 325851171.84,
+        "delivered_rate_sum_bps": 309805853.75999993,
         "power_w": {
-          "dc_total": 46.45354159781995,
-          "dc_active": 46.45354159781994,
-          "dc_inactive": 7.105427357601002e-15,
-          "rf_total": 15.387689487033825
+          "dc_total": 43.309312702863245,
+          "dc_active": 43.309312702863245,
+          "dc_inactive": 0.0,
+          "rf_total": 15.804401696005112
         },
         "selected_allocations": [
           {
             "user_id": 20,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
+            "n_prb": 261,
             "layers": 4,
-            "mcs": 12,
-            "n_slots": 4,
-            "delivered_rate_bps": 71869870.08,
-            "p_dc_avg_frame_w": 8.650430882569191,
-            "p_out_avg_frame_w": 2.6592559242769944
+            "mcs": 15,
+            "n_slots": 3,
+            "delivered_rate_bps": 72350703.35999998,
+            "p_dc_avg_frame_w": 9.70571451838766,
+            "p_out_avg_frame_w": 3.7883033558027828
           },
           {
             "user_id": 42,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 19,
@@ -6708,7 +6360,6 @@
           {
             "user_id": 122,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -6719,32 +6370,29 @@
           },
           {
             "user_id": 159,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
             "n_slots": 1,
             "delivered_rate_bps": 8983733.76,
-            "p_dc_avg_frame_w": 1.1622310590124323,
-            "p_out_avg_frame_w": 0.16620349526731215
+            "p_dc_avg_frame_w": 0.5785131568734306,
+            "p_out_avg_frame_w": 0.16621352731111583
           },
           {
             "user_id": 174,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
+            "pa_id": 1,
+            "n_prb": 276,
             "layers": 4,
-            "mcs": 21,
-            "n_slots": 1,
-            "delivered_rate_bps": 36174850.559999995,
-            "p_dc_avg_frame_w": 2.501983750540552,
-            "p_out_avg_frame_w": 0.8465875926903399
+            "mcs": 12,
+            "n_slots": 2,
+            "delivered_rate_bps": 35934935.04,
+            "p_dc_avg_frame_w": 1.1234467064699338,
+            "p_out_avg_frame_w": 0.31836286021062743
           },
           {
             "user_id": 221,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -6756,7 +6404,6 @@
           {
             "user_id": 224,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -6767,39 +6414,36 @@
           },
           {
             "user_id": 255,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
             "n_slots": 1,
             "delivered_rate_bps": 8983733.76,
-            "p_dc_avg_frame_w": 1.1622310590124323,
-            "p_out_avg_frame_w": 0.16620349526731215
+            "p_dc_avg_frame_w": 0.5785131568734306,
+            "p_out_avg_frame_w": 0.16621352731111583
           },
           {
             "user_id": 257,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 286,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 1,
+            "mcs": 15,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 6029225.279999999,
+            "p_dc_avg_frame_w": 0.18642340715537162,
+            "p_out_avg_frame_w": 0.018898078399080604
           }
         ]
       }
@@ -6853,11 +6497,10 @@
         ]
       },
       "status": "infeasible",
-      "outcome_code": "joint_budget_exceeded",
       "timings_s": {
-        "single_user": 98.7908175,
-        "joint": 0.012829599999975017,
-        "total": 98.87974159999999
+        "single_user": 0.01247039999999977,
+        "joint": 0.007349200000000167,
+        "total": 0.019829399999998998
       },
       "schedule": null
     },
@@ -6920,87 +6563,80 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 98.12341799999996,
-        "joint": 1.8629139000000237,
-        "total": 100.1007414
+        "single_user": 0.017126100000000477,
+        "joint": 1.3082320000000003,
+        "total": 1.3253711
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 345250474.55999994,
+        "delivered_rate_sum_bps": 309907209.5999999,
         "power_w": {
-          "dc_total": 36.032593023903026,
-          "dc_active": 36.032593023903026,
-          "dc_inactive": 0.0,
-          "rf_total": 9.591308720500418
+          "dc_total": 28.827961467636293,
+          "dc_active": 28.82796146763629,
+          "dc_inactive": 3.552713678800501e-15,
+          "rf_total": 9.33942635062803
         },
         "selected_allocations": [
           {
             "user_id": 4,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
             "n_slots": 1,
             "delivered_rate_bps": 24116901.119999997,
-            "p_dc_avg_frame_w": 1.4979289729626188,
-            "p_out_avg_frame_w": 0.3023357743524232
+            "p_dc_avg_frame_w": 0.8885301180394791,
+            "p_out_avg_frame_w": 0.30236925438528967
           },
           {
             "user_id": 42,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 1,
-            "mcs": 15,
-            "n_slots": 4,
-            "delivered_rate_bps": 24116901.119999997,
-            "p_dc_avg_frame_w": 7.402613687618099,
-            "p_out_avg_frame_w": 1.9142381958815904
+            "mcs": 13,
+            "n_slots": 5,
+            "delivered_rate_bps": 23979844.799999997,
+            "p_dc_avg_frame_w": 4.256835387656698,
+            "p_out_avg_frame_w": 1.425425305297855
           },
           {
             "user_id": 75,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 271,
-            "layers": 2,
-            "mcs": 11,
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 1,
+            "mcs": 15,
             "n_slots": 1,
-            "delivered_rate_bps": 7683045.120000001,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12447925421956628
+            "delivered_rate_bps": 6029225.279999999,
+            "p_dc_avg_frame_w": 0.3671692075212565,
+            "p_out_avg_frame_w": 0.07893172634609562
           },
           {
             "user_id": 84,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
+            "n_prb": 261,
             "layers": 4,
-            "mcs": 12,
-            "n_slots": 2,
-            "delivered_rate_bps": 35934935.04,
-            "p_dc_avg_frame_w": 2.281191009215973,
-            "p_out_avg_frame_w": 0.31834364498662754
+            "mcs": 21,
+            "n_slots": 1,
+            "delivered_rate_bps": 36174850.559999995,
+            "p_dc_avg_frame_w": 2.501983750540552,
+            "p_out_avg_frame_w": 0.8465875926903399
           },
           {
             "user_id": 90,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
             "n_slots": 1,
             "delivered_rate_bps": 47940802.559999995,
-            "p_dc_avg_frame_w": 1.5835010428732392,
-            "p_out_avg_frame_w": 0.34513830803004764
+            "p_dc_avg_frame_w": 0.9864934586755327,
+            "p_out_avg_frame_w": 0.34533743411107065
           },
           {
             "user_id": 102,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -7011,20 +6647,18 @@
           },
           {
             "user_id": 108,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 128,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -7035,27 +6669,25 @@
           },
           {
             "user_id": 172,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
-            "layers": 4,
-            "mcs": 20,
-            "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
-          },
-          {
-            "user_id": 178,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 271,
+            "pa_id": 1,
+            "n_prb": 276,
             "layers": 2,
             "mcs": 11,
             "n_slots": 1,
-            "delivered_rate_bps": 7683045.120000001,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12447925421956628
+            "delivered_rate_bps": 7824798.719999999,
+            "p_dc_avg_frame_w": 0.12823441168514,
+            "p_out_avg_frame_w": 0.0058053993743606685
+          },
+          {
+            "user_id": 178,
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 1,
+            "mcs": 15,
+            "n_slots": 1,
+            "delivered_rate_bps": 6029225.279999999,
+            "p_dc_avg_frame_w": 0.3671692075212565,
+            "p_out_avg_frame_w": 0.07893172634609562
           }
         ]
       }
@@ -7119,11 +6751,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 199.60769630000004,
-        "joint": 5.528656100000035,
-        "total": 205.17026920000006
+        "single_user": 0.015759600000000873,
+        "joint": 4.727599700000001,
+        "total": 4.7433707
       },
       "schedule": {
         "slot_total": 20,
@@ -7139,7 +6770,6 @@
           {
             "user_id": 4,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -7151,7 +6781,6 @@
           {
             "user_id": 33,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -7163,7 +6792,6 @@
           {
             "user_id": 75,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -7175,7 +6803,6 @@
           {
             "user_id": 84,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -7187,7 +6814,6 @@
           {
             "user_id": 90,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -7199,7 +6825,6 @@
           {
             "user_id": 108,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -7211,7 +6836,6 @@
           {
             "user_id": 120,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -7223,7 +6847,6 @@
           {
             "user_id": 128,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -7235,7 +6858,6 @@
           {
             "user_id": 172,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -7247,7 +6869,6 @@
           {
             "user_id": 178,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -7318,11 +6939,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 99.9183544,
-        "joint": 11.26998679999997,
-        "total": 111.284877
+        "single_user": 0.015352100000001201,
+        "joint": 14.2934669,
+        "total": 14.3088282
       },
       "schedule": {
         "slot_total": 20,
@@ -7332,13 +6952,12 @@
           "dc_total": 12.457425463062153,
           "dc_active": 12.457425463062153,
           "dc_inactive": 0.0,
-          "rf_total": 3.7415458786504705
+          "rf_total": 3.74154587865047
         },
         "selected_allocations": [
           {
             "user_id": 4,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -7350,7 +6969,6 @@
           {
             "user_id": 33,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -7362,7 +6980,6 @@
           {
             "user_id": 35,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -7374,7 +6991,6 @@
           {
             "user_id": 47,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -7386,7 +7002,6 @@
           {
             "user_id": 75,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -7398,7 +7013,6 @@
           {
             "user_id": 128,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -7410,7 +7024,6 @@
           {
             "user_id": 172,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -7422,7 +7035,6 @@
           {
             "user_id": 209,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -7434,7 +7046,6 @@
           {
             "user_id": 210,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -7446,7 +7057,6 @@
           {
             "user_id": 279,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 246,
             "layers": 2,
             "mcs": 14,
@@ -7492,11 +7102,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 101.14072099999998,
-        "joint": 0.8138347999999951,
-        "total": 101.9637452
+        "single_user": 0.009090099999999879,
+        "joint": 0.45634010000000025,
+        "total": 0.46544130000000017
       },
       "schedule": {
         "slot_total": 14,
@@ -7512,7 +7121,6 @@
           {
             "user_id": 33,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -7524,7 +7132,6 @@
           {
             "user_id": 35,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -7536,7 +7143,6 @@
           {
             "user_id": 47,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -7548,7 +7154,6 @@
           {
             "user_id": 51,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
@@ -7560,7 +7165,6 @@
           {
             "user_id": 123,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -7606,11 +7210,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 102.78365450000001,
-        "joint": 0.9334838999999988,
-        "total": 103.72243050000003
+        "single_user": 0.009209600000000151,
+        "joint": 0.6490796000000003,
+        "total": 0.6583006999999998
       },
       "schedule": {
         "slot_total": 17,
@@ -7626,7 +7229,6 @@
           {
             "user_id": 34,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -7638,7 +7240,6 @@
           {
             "user_id": 51,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
@@ -7650,7 +7251,6 @@
           {
             "user_id": 107,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -7662,7 +7262,6 @@
           {
             "user_id": 123,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -7674,7 +7273,6 @@
           {
             "user_id": 261,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -7730,11 +7328,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 200.96378400000003,
-        "joint": 1.068823899999984,
-        "total": 202.03804290000005
+        "single_user": 0.011959000000000941,
+        "joint": 0.5055344999999996,
+        "total": 0.5175058000000003
       },
       "schedule": {
         "slot_total": 20,
@@ -7750,7 +7347,6 @@
           {
             "user_id": 34,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -7762,7 +7358,6 @@
           {
             "user_id": 61,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 13,
@@ -7774,7 +7369,6 @@
           {
             "user_id": 116,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -7786,7 +7380,6 @@
           {
             "user_id": 185,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -7798,7 +7391,6 @@
           {
             "user_id": 259,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -7810,7 +7402,6 @@
           {
             "user_id": 261,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -7822,7 +7413,6 @@
           {
             "user_id": 283,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 20,
@@ -7888,130 +7478,120 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 97.16380830000003,
-        "joint": 1.3553640999999743,
-        "total": 98.52680869999995
+        "single_user": 0.014100100000000282,
+        "joint": 0.7389413000000005,
+        "total": 0.7530503999999993
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 375116820.47999996,
+        "delivered_rate_sum_bps": 338664902.3999999,
         "power_w": {
-          "dc_total": 33.015280848125116,
-          "dc_active": 33.015280848125116,
+          "dc_total": 24.463067303488838,
+          "dc_active": 24.463067303488838,
           "dc_inactive": 0.0,
-          "rf_total": 7.6863786494380975
+          "rf_total": 8.609606820519277
         },
         "selected_allocations": [
           {
             "user_id": 34,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
             "n_slots": 4,
             "delivered_rate_bps": 96467604.47999999,
-            "p_dc_avg_frame_w": 5.991715891850475,
-            "p_out_avg_frame_w": 1.2093430974096928
+            "p_dc_avg_frame_w": 3.5541204721579165,
+            "p_out_avg_frame_w": 1.2094770175411587
           },
           {
             "user_id": 56,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
             "n_slots": 1,
             "delivered_rate_bps": 47940802.559999995,
-            "p_dc_avg_frame_w": 1.5835010428732392,
-            "p_out_avg_frame_w": 0.34513830803004764
+            "p_dc_avg_frame_w": 0.9864934586755327,
+            "p_out_avg_frame_w": 0.34533743411107065
           },
           {
             "user_id": 61,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 1,
-            "mcs": 17,
-            "n_slots": 7,
-            "delivered_rate_bps": 47599534.07999999,
-            "p_dc_avg_frame_w": 13.987719495590255,
-            "p_out_avg_frame_w": 3.865685482770188
+            "n_prb": 261,
+            "layers": 2,
+            "mcs": 13,
+            "n_slots": 5,
+            "delivered_rate_bps": 47959689.599999994,
+            "p_dc_avg_frame_w": 14.981817330266328,
+            "p_out_avg_frame_w": 5.701301145104354
           },
           {
             "user_id": 97,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 256,
-            "layers": 3,
-            "mcs": 14,
-            "n_slots": 3,
-            "delivered_rate_bps": 47780167.68,
-            "p_dc_avg_frame_w": 5.997342075376427,
-            "p_out_avg_frame_w": 1.6580007850694545
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 2,
+            "mcs": 13,
+            "n_slots": 5,
+            "delivered_rate_bps": 47959689.599999994,
+            "p_dc_avg_frame_w": 3.1537731691222888,
+            "p_out_avg_frame_w": 0.9403120049051087
           },
           {
             "user_id": 116,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
             "n_slots": 1,
             "delivered_rate_bps": 36174850.559999995,
-            "p_dc_avg_frame_w": 1.1489973399400883,
-            "p_out_avg_frame_w": 0.16191285439592817
+            "p_dc_avg_frame_w": 0.5683428925624296,
+            "p_out_avg_frame_w": 0.161960033093697
           },
           {
             "user_id": 151,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
             "n_slots": 1,
             "delivered_rate_bps": 8983733.76,
-            "p_dc_avg_frame_w": 1.1622310590124323,
-            "p_out_avg_frame_w": 0.16620349526731215
+            "p_dc_avg_frame_w": 0.5785131568734306,
+            "p_out_avg_frame_w": 0.16621352731111583
           },
           {
             "user_id": 183,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 240,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 283,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
-            "mcs": 28,
+            "mcs": 20,
             "n_slots": 1,
-            "delivered_rate_bps": 58870932.48000001,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.03727063640766955
+            "delivered_rate_bps": 35211064.32,
+            "p_dc_avg_frame_w": 0.12823441168514,
+            "p_out_avg_frame_w": 0.005414943400114145
           }
         ]
       }
@@ -8075,63 +7655,58 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 99.33721839999998,
-        "joint": 1.5942552999999862,
-        "total": 101.1054853
+        "single_user": 0.015302700000001224,
+        "joint": 1.1119602000000004,
+        "total": 1.1272727000000007
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 396036092.15999997,
+        "delivered_rate_sum_bps": 344555533.43999994,
         "power_w": {
-          "dc_total": 37.629558459819734,
-          "dc_active": 37.629558459819734,
+          "dc_total": 30.37874098570173,
+          "dc_active": 30.37874098570173,
           "dc_inactive": 0.0,
-          "rf_total": 10.311691454621355
+          "rf_total": 11.093536210251516
         },
         "selected_allocations": [
           {
             "user_id": 38,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 4,
-            "mcs": 12,
-            "n_slots": 4,
-            "delivered_rate_bps": 71869870.08,
-            "p_dc_avg_frame_w": 8.650430882569191,
-            "p_out_avg_frame_w": 2.6592559242769944
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 2,
+            "mcs": 15,
+            "n_slots": 6,
+            "delivered_rate_bps": 72350703.35999998,
+            "p_dc_avg_frame_w": 5.50770648781301,
+            "p_out_avg_frame_w": 1.8943614323062945
           },
           {
             "user_id": 56,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
             "n_slots": 1,
             "delivered_rate_bps": 47940802.559999995,
-            "p_dc_avg_frame_w": 1.5835010428732392,
-            "p_out_avg_frame_w": 0.34513830803004764
+            "p_dc_avg_frame_w": 0.9864934586755327,
+            "p_out_avg_frame_w": 0.34533743411107065
           },
           {
             "user_id": 61,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 1,
-            "mcs": 17,
-            "n_slots": 7,
-            "delivered_rate_bps": 47599534.07999999,
-            "p_dc_avg_frame_w": 13.987719495590255,
-            "p_out_avg_frame_w": 3.865685482770188
+            "n_prb": 261,
+            "layers": 2,
+            "mcs": 13,
+            "n_slots": 5,
+            "delivered_rate_bps": 47959689.599999994,
+            "p_dc_avg_frame_w": 14.981817330266328,
+            "p_out_avg_frame_w": 5.701301145104354
           },
           {
             "user_id": 97,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -8142,75 +7717,69 @@
           },
           {
             "user_id": 151,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
             "n_slots": 1,
             "delivered_rate_bps": 8983733.76,
-            "p_dc_avg_frame_w": 1.1622310590124323,
-            "p_out_avg_frame_w": 0.16620349526731215
+            "p_dc_avg_frame_w": 0.5785131568734306,
+            "p_out_avg_frame_w": 0.16621352731111583
           },
           {
             "user_id": 161,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
             "n_slots": 1,
             "delivered_rate_bps": 47940802.559999995,
-            "p_dc_avg_frame_w": 1.5835010428732392,
-            "p_out_avg_frame_w": 0.34513830803004764
+            "p_dc_avg_frame_w": 0.9864934586755327,
+            "p_out_avg_frame_w": 0.34533743411107065
           },
           {
             "user_id": 183,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 240,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 275,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
+            "pa_id": 1,
+            "n_prb": 276,
             "layers": 4,
-            "mcs": 20,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
+            "delivered_rate_bps": 17967467.52,
+            "p_dc_avg_frame_w": 0.2272339239752077,
+            "p_out_avg_frame_w": 0.03044400831965012
           },
           {
             "user_id": 283,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
-            "mcs": 28,
+            "mcs": 20,
             "n_slots": 1,
-            "delivered_rate_bps": 58870932.48000001,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.03727063640766955
+            "delivered_rate_bps": 35211064.32,
+            "p_dc_avg_frame_w": 0.12823441168514,
+            "p_out_avg_frame_w": 0.005414943400114145
           }
         ]
       }
@@ -8259,11 +7828,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 98.09451630000001,
-        "joint": 1.6356140000000323,
-        "total": 99.73671990000003
+        "single_user": 0.011850500000001318,
+        "joint": 1.211712200000001,
+        "total": 1.2235745999999992
       },
       "schedule": {
         "slot_total": 20,
@@ -8279,7 +7847,6 @@
           {
             "user_id": 7,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -8291,7 +7858,6 @@
           {
             "user_id": 56,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -8303,7 +7869,6 @@
           {
             "user_id": 97,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -8315,7 +7880,6 @@
           {
             "user_id": 121,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -8327,7 +7891,6 @@
           {
             "user_id": 145,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -8339,7 +7902,6 @@
           {
             "user_id": 161,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -8351,7 +7913,6 @@
           {
             "user_id": 215,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -8412,39 +7973,36 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 97.70145050000002,
-        "joint": 1.216096499999935,
-        "total": 98.92433880000004
+        "single_user": 0.012976000000000099,
+        "joint": 1.2344198000000013,
+        "total": 1.2474065000000003
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 335577772.79999995,
+        "delivered_rate_sum_bps": 315580181.75999993,
         "power_w": {
-          "dc_total": 38.78941225062209,
-          "dc_active": 38.78941225062209,
+          "dc_total": 30.946566152131563,
+          "dc_active": 30.946566152131563,
           "dc_inactive": 0.0,
-          "rf_total": 11.217140786279005
+          "rf_total": 10.972760798139468
         },
         "selected_allocations": [
           {
             "user_id": 7,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
             "n_slots": 3,
             "delivered_rate_bps": 72350703.35999998,
-            "p_dc_avg_frame_w": 4.4937869188878565,
-            "p_out_avg_frame_w": 0.9070073230572695
+            "p_dc_avg_frame_w": 2.665590354118437,
+            "p_out_avg_frame_w": 0.9071077631558689
           },
           {
             "user_id": 16,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -8455,75 +8013,69 @@
           },
           {
             "user_id": 71,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
             "n_slots": 2,
             "delivered_rate_bps": 24116901.119999997,
-            "p_dc_avg_frame_w": 3.0492322220947776,
-            "p_out_avg_frame_w": 0.6313838926337971
+            "p_dc_avg_frame_w": 1.835902162604337,
+            "p_out_avg_frame_w": 0.631453810768765
           },
           {
             "user_id": 88,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 121,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
             "n_slots": 3,
             "delivered_rate_bps": 72350703.35999998,
-            "p_dc_avg_frame_w": 4.4937869188878565,
-            "p_out_avg_frame_w": 0.9070073230572695
+            "p_dc_avg_frame_w": 2.665590354118437,
+            "p_out_avg_frame_w": 0.9071077631558689
           },
           {
             "user_id": 145,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 161,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
             "n_slots": 1,
             "delivered_rate_bps": 47940802.559999995,
-            "p_dc_avg_frame_w": 1.5835010428732392,
-            "p_out_avg_frame_w": 0.34513830803004764
+            "p_dc_avg_frame_w": 0.9864934586755327,
+            "p_out_avg_frame_w": 0.34533743411107065
           },
           {
             "user_id": 290,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           }
         ]
       }
@@ -8567,11 +8119,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 100.37474529999997,
-        "joint": 1.0165504000000283,
-        "total": 101.39704360000002
+        "single_user": 0.30483769999999843,
+        "joint": 0.7689421000000003,
+        "total": 1.0737915000000005
       },
       "schedule": {
         "slot_total": 20,
@@ -8587,7 +8138,6 @@
           {
             "user_id": 27,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 24,
@@ -8599,7 +8149,6 @@
           {
             "user_id": 71,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 19,
@@ -8611,7 +8160,6 @@
           {
             "user_id": 88,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -8623,7 +8171,6 @@
           {
             "user_id": 180,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -8635,7 +8182,6 @@
           {
             "user_id": 280,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 17,
@@ -8647,7 +8193,6 @@
           {
             "user_id": 290,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -8693,11 +8238,10 @@
         ]
       },
       "status": "infeasible",
-      "outcome_code": "joint_budget_exceeded",
       "timings_s": {
-        "single_user": 0.3968975999999884,
-        "joint": 0.008050299999979416,
-        "total": 0.44544270000000097
+        "single_user": 0.009126600000000096,
+        "joint": 0.004709200000000635,
+        "total": 0.01384739999999951
       },
       "schedule": null
     },
@@ -8735,27 +8279,25 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.4424926000000369,
-        "joint": 0.7697117999999818,
-        "total": 1.2160428999999908
+        "single_user": 0.44621260000000085,
+        "joint": 0.5153780000000001,
+        "total": 0.9616024999999997
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 302733062.4,
+        "delivered_rate_sum_bps": 277501359.36,
         "power_w": {
-          "dc_total": 61.79277236575796,
-          "dc_active": 61.79277236575796,
+          "dc_total": 59.970956569990534,
+          "dc_active": 59.970956569990534,
           "dc_inactive": 0.0,
-          "rf_total": 23.90816449058107
+          "rf_total": 24.390162457397402
         },
         "selected_allocations": [
           {
             "user_id": 21,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 14,
@@ -8766,51 +8308,47 @@
           },
           {
             "user_id": 53,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
             "n_slots": 1,
             "delivered_rate_bps": 17967467.52,
-            "p_dc_avg_frame_w": 1.1405955046079865,
-            "p_out_avg_frame_w": 0.15917182249331377
+            "p_dc_avg_frame_w": 0.5617233532349669,
+            "p_out_avg_frame_w": 0.15918143010531371
           },
           {
             "user_id": 85,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
+            "n_prb": 261,
             "layers": 4,
-            "mcs": 12,
-            "n_slots": 4,
-            "delivered_rate_bps": 71869870.08,
-            "p_dc_avg_frame_w": 8.650430882569191,
-            "p_out_avg_frame_w": 2.6592559242769944
+            "mcs": 15,
+            "n_slots": 3,
+            "delivered_rate_bps": 72350703.35999998,
+            "p_dc_avg_frame_w": 9.70571451838766,
+            "p_out_avg_frame_w": 3.7883033558027828
           },
           {
             "user_id": 177,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
+            "pa_id": 1,
+            "n_prb": 276,
             "layers": 4,
-            "mcs": 21,
-            "n_slots": 1,
-            "delivered_rate_bps": 36174850.559999995,
-            "p_dc_avg_frame_w": 2.501983750540552,
-            "p_out_avg_frame_w": 0.8465875926903399
+            "mcs": 12,
+            "n_slots": 2,
+            "delivered_rate_bps": 35934935.04,
+            "p_dc_avg_frame_w": 1.1234467064699338,
+            "p_out_avg_frame_w": 0.31836286021062743
           },
           {
             "user_id": 278,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
-            "layers": 4,
-            "mcs": 20,
+            "pa_id": 1,
+            "n_prb": 276,
+            "layers": 2,
+            "mcs": 11,
             "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
+            "delivered_rate_bps": 7824798.719999999,
+            "p_dc_avg_frame_w": 0.12823441168514,
+            "p_out_avg_frame_w": 0.0058053993743606685
           }
         ]
       }
@@ -8854,11 +8392,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 97.54073960000005,
-        "joint": 0.962578399999984,
-        "total": 98.5631421
+        "single_user": 0.009796400000000816,
+        "joint": 0.9251117999999998,
+        "total": 0.9349162
       },
       "schedule": {
         "slot_total": 20,
@@ -8874,7 +8411,6 @@
           {
             "user_id": 8,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -8886,7 +8422,6 @@
           {
             "user_id": 131,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -8898,7 +8433,6 @@
           {
             "user_id": 157,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -8910,7 +8444,6 @@
           {
             "user_id": 177,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -8922,7 +8455,6 @@
           {
             "user_id": 200,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -8934,7 +8466,6 @@
           {
             "user_id": 278,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -8995,16 +8526,15 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 99.57366400000001,
-        "joint": 1.613675300000068,
-        "total": 101.36197220000003
+        "single_user": 0.15141979999999933,
+        "joint": 1.0047680999999997,
+        "total": 1.1561980999999992
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 223720310.4,
+        "delivered_rate_sum_bps": 223720310.40000004,
         "power_w": {
           "dc_total": 6.530801782253013,
           "dc_active": 6.530801782253013,
@@ -9015,7 +8545,6 @@
           {
             "user_id": 52,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -9027,7 +8556,6 @@
           {
             "user_id": 63,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -9039,7 +8567,6 @@
           {
             "user_id": 129,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -9051,7 +8578,6 @@
           {
             "user_id": 150,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -9063,7 +8589,6 @@
           {
             "user_id": 157,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -9075,7 +8600,6 @@
           {
             "user_id": 200,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -9087,7 +8611,6 @@
           {
             "user_id": 278,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -9099,7 +8622,6 @@
           {
             "user_id": 301,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -9150,11 +8672,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 101.62766080000006,
-        "joint": 0.949003800000014,
-        "total": 102.58059910000003
+        "single_user": 0.3072571999999987,
+        "joint": 0.8142517999999992,
+        "total": 1.1215214000000007
       },
       "schedule": {
         "slot_total": 20,
@@ -9170,7 +8691,6 @@
           {
             "user_id": 49,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 17,
@@ -9182,7 +8702,6 @@
           {
             "user_id": 63,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -9194,7 +8713,6 @@
           {
             "user_id": 70,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -9206,7 +8724,6 @@
           {
             "user_id": 157,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -9218,7 +8735,6 @@
           {
             "user_id": 200,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -9230,7 +8746,6 @@
           {
             "user_id": 273,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -9281,11 +8796,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.4981661000000486,
-        "joint": 1.128556500000002,
-        "total": 1.665836200000001
+        "single_user": 0.2514757000000003,
+        "joint": 0.6658512999999999,
+        "total": 0.9173393000000001
       },
       "schedule": {
         "slot_total": 20,
@@ -9301,7 +8815,6 @@
           {
             "user_id": 63,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -9313,7 +8826,6 @@
           {
             "user_id": 70,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -9325,7 +8837,6 @@
           {
             "user_id": 93,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 14,
@@ -9337,7 +8848,6 @@
           {
             "user_id": 146,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9349,7 +8859,6 @@
           {
             "user_id": 202,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9361,7 +8870,6 @@
           {
             "user_id": 220,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9417,11 +8925,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 98.78371140000002,
-        "joint": 1.314091699999949,
-        "total": 100.10376189999994
+        "single_user": 0.011580000000000368,
+        "joint": 0.7321332999999992,
+        "total": 0.7437258
       },
       "schedule": {
         "slot_total": 14,
@@ -9437,7 +8944,6 @@
           {
             "user_id": 58,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9449,7 +8955,6 @@
           {
             "user_id": 117,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -9461,7 +8966,6 @@
           {
             "user_id": 146,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9473,7 +8977,6 @@
           {
             "user_id": 193,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -9485,7 +8988,6 @@
           {
             "user_id": 202,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9497,7 +8999,6 @@
           {
             "user_id": 220,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -9509,7 +9010,6 @@
           {
             "user_id": 245,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -9565,11 +9065,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 97.42554360000003,
-        "joint": 1.2901434000000336,
-        "total": 98.72238630000004
+        "single_user": 0.0116259000000003,
+        "joint": 0.5446252999999999,
+        "total": 0.5562640999999999
       },
       "schedule": {
         "slot_total": 11,
@@ -9585,7 +9084,6 @@
           {
             "user_id": 14,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -9597,7 +9095,6 @@
           {
             "user_id": 58,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9609,7 +9106,6 @@
           {
             "user_id": 117,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -9621,7 +9117,6 @@
           {
             "user_id": 181,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -9633,7 +9128,6 @@
           {
             "user_id": 226,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9645,7 +9139,6 @@
           {
             "user_id": 245,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -9657,7 +9150,6 @@
           {
             "user_id": 247,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9718,118 +9210,109 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.5967360000000212,
-        "joint": 1.6099257000000193,
-        "total": 2.2140731000000073
+        "single_user": 0.013050899999999643,
+        "joint": 0.9503545000000013,
+        "total": 0.9634166999999998
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 299525552.6399999,
+        "delivered_rate_sum_bps": 212097208.31999996,
         "power_w": {
-          "dc_total": 37.26936234982478,
-          "dc_active": 37.26936234982478,
+          "dc_total": 29.329949098332577,
+          "dc_active": 29.329949098332577,
           "dc_inactive": 0.0,
-          "rf_total": 10.393569539017522
+          "rf_total": 10.359716759647334
         },
         "selected_allocations": [
           {
             "user_id": 59,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
-            "layers": 1,
-            "mcs": 18,
-            "n_slots": 10,
-            "delivered_rate_bps": 72347328.0,
-            "p_dc_avg_frame_w": 21.881379255155966,
-            "p_out_avg_frame_w": 6.815234632651996
+            "layers": 2,
+            "mcs": 12,
+            "n_slots": 8,
+            "delivered_rate_bps": 71869870.08,
+            "p_dc_avg_frame_w": 22.02533120439616,
+            "p_out_avg_frame_w": 8.06236795436891
           },
           {
             "user_id": 76,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 4,
-            "mcs": 12,
-            "n_slots": 4,
-            "delivered_rate_bps": 71869870.08,
-            "p_dc_avg_frame_w": 8.650430882569191,
-            "p_out_avg_frame_w": 2.6592559242769944
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 2,
+            "mcs": 15,
+            "n_slots": 6,
+            "delivered_rate_bps": 72350703.35999998,
+            "p_dc_avg_frame_w": 5.50770648781301,
+            "p_out_avg_frame_w": 1.8943614323062945
           },
           {
             "user_id": 96,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
             "n_slots": 1,
             "delivered_rate_bps": 24116901.119999997,
-            "p_dc_avg_frame_w": 1.4979289729626188,
-            "p_out_avg_frame_w": 0.3023357743524232
+            "p_dc_avg_frame_w": 0.8885301180394791,
+            "p_out_avg_frame_w": 0.30236925438528967
           },
           {
             "user_id": 226,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
-            "layers": 4,
-            "mcs": 20,
+            "pa_id": 1,
+            "n_prb": 276,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.1341872321265089,
+            "p_out_avg_frame_w": 0.00761100207991253
           },
           {
             "user_id": 235,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
-            "layers": 4,
-            "mcs": 20,
+            "pa_id": 1,
+            "n_prb": 276,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.1341872321265089,
+            "p_out_avg_frame_w": 0.00761100207991253
           },
           {
             "user_id": 243,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           },
           {
             "user_id": 245,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 261,
-            "layers": 4,
-            "mcs": 20,
+            "pa_id": 1,
+            "n_prb": 276,
+            "layers": 2,
+            "mcs": 11,
             "n_slots": 1,
-            "delivered_rate_bps": 33297419.519999996,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12463973921610086
+            "delivered_rate_bps": 7824798.719999999,
+            "p_dc_avg_frame_w": 0.12823441168514,
+            "p_out_avg_frame_w": 0.0058053993743606685
           },
           {
             "user_id": 247,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "layers": 2,
+            "mcs": 12,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 8983733.76,
+            "p_dc_avg_frame_w": 0.25588620607288637,
+            "p_out_avg_frame_w": 0.03979535752632843
           }
         ]
       }
@@ -9878,11 +9361,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 97.91659919999995,
-        "joint": 1.320633399999906,
-        "total": 99.24338950000003
+        "single_user": 0.011600800000000078,
+        "joint": 0.9815666000000007,
+        "total": 0.9931785000000009
       },
       "schedule": {
         "slot_total": 20,
@@ -9898,7 +9380,6 @@
           {
             "user_id": 37,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9910,7 +9391,6 @@
           {
             "user_id": 62,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -9922,7 +9402,6 @@
           {
             "user_id": 76,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9934,7 +9413,6 @@
           {
             "user_id": 96,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -9946,7 +9424,6 @@
           {
             "user_id": 219,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -9958,7 +9435,6 @@
           {
             "user_id": 235,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -9970,7 +9446,6 @@
           {
             "user_id": 243,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10011,11 +9486,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.6458931999999891,
-        "joint": 0.8719637000000375,
-        "total": 1.669972400000006
+        "single_user": 0.007945799999999892,
+        "joint": 0.4971841999999995,
+        "total": 0.5051415000000006
       },
       "schedule": {
         "slot_total": 14,
@@ -10031,7 +9505,6 @@
           {
             "user_id": 12,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -10043,7 +9516,6 @@
           {
             "user_id": 96,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -10055,7 +9527,6 @@
           {
             "user_id": 111,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10067,7 +9538,6 @@
           {
             "user_id": 219,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -10123,27 +9593,25 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 96.83355020000005,
-        "joint": 1.0847066999999697,
-        "total": 97.92176979999999
+        "single_user": 0.011950500000001085,
+        "joint": 1.1748192999999993,
+        "total": 1.1867809999999999
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 308021237.76000005,
+        "delivered_rate_sum_bps": 274740997.44000006,
         "power_w": {
-          "dc_total": 62.88121886879183,
-          "dc_active": 62.88121886879183,
+          "dc_total": 61.10002739197754,
+          "dc_active": 61.10002739197754,
           "dc_inactive": 0.0,
-          "rf_total": 24.468999586776956
+          "rf_total": 24.334629977124578
         },
         "selected_allocations": [
           {
             "user_id": 23,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 14,
@@ -10155,7 +9623,6 @@
           {
             "user_id": 111,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -10167,7 +9634,6 @@
           {
             "user_id": 191,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10179,7 +9645,6 @@
           {
             "user_id": 217,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -10190,32 +9655,29 @@
           },
           {
             "user_id": 219,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 4,
-            "mcs": 11,
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 1,
+            "mcs": 15,
             "n_slots": 1,
-            "delivered_rate_bps": 15649597.439999998,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.12141199504390293
+            "delivered_rate_bps": 6029225.279999999,
+            "p_dc_avg_frame_w": 0.18642340715537162,
+            "p_out_avg_frame_w": 0.018898078399080604
           },
           {
             "user_id": 246,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
-            "mcs": 28,
+            "mcs": 20,
             "n_slots": 1,
-            "delivered_rate_bps": 58870932.48000001,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.03727063640766955
+            "delivered_rate_bps": 35211064.32,
+            "p_dc_avg_frame_w": 0.12823441168514,
+            "p_out_avg_frame_w": 0.005414943400114145
           },
           {
             "user_id": 292,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -10261,11 +9723,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.506871799999999,
-        "joint": 0.9573366999999848,
-        "total": 1.4702958000000308
+        "single_user": 0.00922009999999851,
+        "joint": 0.7729281999999991,
+        "total": 0.7821598000000005
       },
       "schedule": {
         "slot_total": 19,
@@ -10281,7 +9742,6 @@
           {
             "user_id": 104,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -10293,7 +9753,6 @@
           {
             "user_id": 125,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -10305,7 +9764,6 @@
           {
             "user_id": 140,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10317,7 +9775,6 @@
           {
             "user_id": 211,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 1,
             "mcs": 12,
@@ -10329,7 +9786,6 @@
           {
             "user_id": 250,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10375,11 +9831,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.47105349999998225,
-        "joint": 0.9075073999999859,
-        "total": 1.3889924000000065
+        "single_user": 0.009230399999999861,
+        "joint": 0.6826343999999995,
+        "total": 0.6918777000000009
       },
       "schedule": {
         "slot_total": 19,
@@ -10395,7 +9850,6 @@
           {
             "user_id": 89,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -10407,7 +9861,6 @@
           {
             "user_id": 104,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10419,7 +9872,6 @@
           {
             "user_id": 140,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10431,7 +9883,6 @@
           {
             "user_id": 173,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 3,
             "mcs": 17,
@@ -10443,7 +9894,6 @@
           {
             "user_id": 216,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -10489,11 +9939,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.429175999999984,
-        "joint": 0.8195987999999943,
-        "total": 1.2690024999999991
+        "single_user": 0.009302400000001043,
+        "joint": 0.5225688000000002,
+        "total": 0.5318842999999998
       },
       "schedule": {
         "slot_total": 20,
@@ -10509,7 +9958,6 @@
           {
             "user_id": 9,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 14,
@@ -10521,7 +9969,6 @@
           {
             "user_id": 89,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -10533,7 +9980,6 @@
           {
             "user_id": 98,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -10545,7 +9991,6 @@
           {
             "user_id": 137,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10557,7 +10002,6 @@
           {
             "user_id": 216,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -10628,11 +10072,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.7610357999999451,
-        "joint": 3.8575968000000103,
-        "total": 4.783385399999986
+        "single_user": 0.01550169999999973,
+        "joint": 1324.0998479,
+        "total": 1324.1153601
       },
       "schedule": {
         "slot_total": 20,
@@ -10648,7 +10091,6 @@
           {
             "user_id": 1,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 15,
@@ -10660,7 +10102,6 @@
           {
             "user_id": 11,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -10672,7 +10113,6 @@
           {
             "user_id": 36,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10684,7 +10124,6 @@
           {
             "user_id": 98,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -10696,7 +10135,6 @@
           {
             "user_id": 137,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10708,7 +10146,6 @@
           {
             "user_id": 188,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10720,7 +10157,6 @@
           {
             "user_id": 212,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10732,7 +10168,6 @@
           {
             "user_id": 216,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -10744,7 +10179,6 @@
           {
             "user_id": 232,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10756,7 +10190,6 @@
           {
             "user_id": 282,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10802,75 +10235,69 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 96.21244940000003,
-        "joint": 0.5289309999999432,
-        "total": 96.80359650000003
+        "single_user": 0.00899279999999969,
+        "joint": 0.39605970000000035,
+        "total": 0.4050627999999996
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 330303306.23999995,
+        "delivered_rate_sum_bps": 308999877.11999995,
         "power_w": {
-          "dc_total": 47.45783528463138,
-          "dc_active": 47.457835284631386,
-          "dc_inactive": 0.0,
-          "rf_total": 15.661525876693544
+          "dc_total": 45.81531213493873,
+          "dc_active": 45.81531213493872,
+          "dc_inactive": 7.105427357601002e-15,
+          "rf_total": 17.073510758223236
         },
         "selected_allocations": [
           {
             "user_id": 1,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 256,
-            "layers": 3,
-            "mcs": 14,
-            "n_slots": 3,
-            "delivered_rate_bps": 47780167.68,
-            "p_dc_avg_frame_w": 5.997342075376427,
-            "p_out_avg_frame_w": 1.6580007850694545
+            "pa_id": 1,
+            "n_prb": 261,
+            "layers": 2,
+            "mcs": 15,
+            "n_slots": 4,
+            "delivered_rate_bps": 48233802.239999995,
+            "p_dc_avg_frame_w": 3.671804325208674,
+            "p_out_avg_frame_w": 1.26290762153753
           },
           {
             "user_id": 74,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
-            "n_prb": 276,
-            "layers": 3,
-            "mcs": 17,
-            "n_slots": 7,
-            "delivered_rate_bps": 142798602.23999995,
-            "p_dc_avg_frame_w": 17.225006298018965,
-            "p_out_avg_frame_w": 5.737683005580198
+            "n_prb": 261,
+            "layers": 4,
+            "mcs": 15,
+            "n_slots": 6,
+            "delivered_rate_bps": 144701406.71999997,
+            "p_dc_avg_frame_w": 19.41142903677532,
+            "p_out_avg_frame_w": 7.5766067116055655
           },
           {
             "user_id": 100,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 4,
-            "mcs": 28,
+            "mcs": 20,
             "n_slots": 1,
-            "delivered_rate_bps": 58870932.48000001,
-            "p_dc_avg_frame_w": 1.0479246478274005,
-            "p_out_avg_frame_w": 0.03727063640766955
+            "delivered_rate_bps": 35211064.32,
+            "p_dc_avg_frame_w": 0.12823441168514,
+            "p_out_avg_frame_w": 0.005414943400114145
           },
           {
             "user_id": 188,
-            "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
+            "pa_id": 1,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
             "n_slots": 1,
             "delivered_rate_bps": 8983733.76,
-            "p_dc_avg_frame_w": 1.1622310590124323,
-            "p_out_avg_frame_w": 0.16620349526731215
+            "p_dc_avg_frame_w": 0.5785131568734306,
+            "p_out_avg_frame_w": 0.16621352731111583
           },
           {
             "user_id": 204,
             "pa_id": 0,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -10916,11 +10343,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 96.8324187,
-        "joint": 0.6524928000000045,
-        "total": 97.48855469999995
+        "single_user": 0.15052060000000012,
+        "joint": 0.3767408999999997,
+        "total": 0.5272737000000003
       },
       "schedule": {
         "slot_total": 20,
@@ -10936,7 +10362,6 @@
           {
             "user_id": 1,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 2,
             "mcs": 13,
@@ -10948,7 +10373,6 @@
           {
             "user_id": 2,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -10960,7 +10384,6 @@
           {
             "user_id": 44,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 17,
@@ -10972,7 +10395,6 @@
           {
             "user_id": 222,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -10984,7 +10406,6 @@
           {
             "user_id": 251,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11040,27 +10461,25 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 95.61023870000002,
-        "joint": 1.3787972999999738,
-        "total": 96.99281910000002
+        "single_user": 0.011795700000000409,
+        "joint": 0.998545,
+        "total": 1.0103518999999999
       },
       "schedule": {
         "slot_total": 20,
         "unused_slots": 0,
-        "delivered_rate_sum_bps": 291568615.67999995,
+        "delivered_rate_sum_bps": 291568615.68,
         "power_w": {
           "dc_total": 15.003671400840375,
           "dc_active": 15.003671400840375,
           "dc_inactive": 0.0,
-          "rf_total": 4.943233684095445
+          "rf_total": 4.9432336840954445
         },
         "selected_allocations": [
           {
             "user_id": 2,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -11072,7 +10491,6 @@
           {
             "user_id": 44,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 17,
@@ -11084,7 +10502,6 @@
           {
             "user_id": 127,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -11096,7 +10513,6 @@
           {
             "user_id": 251,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11108,7 +10524,6 @@
           {
             "user_id": 263,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11120,7 +10535,6 @@
           {
             "user_id": 274,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -11132,7 +10546,6 @@
           {
             "user_id": 291,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -11183,11 +10596,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.5586278999999763,
-        "joint": 1.0478425999999672,
-        "total": 1.6669087000000218
+        "single_user": 0.010344699999999207,
+        "joint": 0.518148,
+        "total": 0.528504100000001
       },
       "schedule": {
         "slot_total": 20,
@@ -11203,7 +10615,6 @@
           {
             "user_id": 24,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 17,
@@ -11215,7 +10626,6 @@
           {
             "user_id": 60,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -11227,7 +10637,6 @@
           {
             "user_id": 127,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -11239,7 +10648,6 @@
           {
             "user_id": 179,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -11251,7 +10659,6 @@
           {
             "user_id": 266,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -11263,7 +10670,6 @@
           {
             "user_id": 291,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -11339,11 +10745,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 96.16914070000007,
-        "joint": 2.774694699999941,
-        "total": 98.947584
+        "single_user": 0.017056000000000182,
+        "joint": 8.017254199999998,
+        "total": 8.034320500000002
       },
       "schedule": {
         "slot_total": 20,
@@ -11359,7 +10764,6 @@
           {
             "user_id": 18,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -11371,7 +10775,6 @@
           {
             "user_id": 124,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11383,7 +10786,6 @@
           {
             "user_id": 127,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 15,
@@ -11395,7 +10797,6 @@
           {
             "user_id": 179,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -11407,7 +10808,6 @@
           {
             "user_id": 242,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -11419,7 +10819,6 @@
           {
             "user_id": 244,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11431,7 +10830,6 @@
           {
             "user_id": 264,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11443,7 +10841,6 @@
           {
             "user_id": 266,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -11455,7 +10852,6 @@
           {
             "user_id": 272,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11467,7 +10863,6 @@
           {
             "user_id": 287,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -11479,7 +10874,6 @@
           {
             "user_id": 291,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 1,
             "mcs": 8,
@@ -11535,11 +10929,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.7777970999999866,
-        "joint": 1.339126799999974,
-        "total": 2.2132310000000075
+        "single_user": 0.012458199999999309,
+        "joint": 0.5544443000000001,
+        "total": 0.5669138
       },
       "schedule": {
         "slot_total": 20,
@@ -11555,7 +10948,6 @@
           {
             "user_id": 19,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 3,
             "mcs": 13,
@@ -11567,7 +10959,6 @@
           {
             "user_id": 101,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11579,7 +10970,6 @@
           {
             "user_id": 124,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11591,7 +10981,6 @@
           {
             "user_id": 179,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 11,
@@ -11603,7 +10992,6 @@
           {
             "user_id": 242,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 4,
             "mcs": 21,
@@ -11615,7 +11003,6 @@
           {
             "user_id": 244,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
@@ -11627,7 +11014,6 @@
           {
             "user_id": 266,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 261,
             "layers": 1,
             "mcs": 15,
@@ -11668,11 +11054,10 @@
         ]
       },
       "status": "solved",
-      "outcome_code": "solved",
       "timings_s": {
-        "single_user": 0.4755665999999792,
-        "joint": 0.7014045999999894,
-        "total": 1.18100179999999
+        "single_user": 0.007719099999999202,
+        "joint": 0.3733444000000006,
+        "total": 0.3810739999999999
       },
       "schedule": {
         "slot_total": 20,
@@ -11688,7 +11073,6 @@
           {
             "user_id": 19,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 266,
             "layers": 2,
             "mcs": 14,
@@ -11700,7 +11084,6 @@
           {
             "user_id": 87,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -11712,7 +11095,6 @@
           {
             "user_id": 186,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 4,
             "mcs": 12,
@@ -11724,7 +11106,6 @@
           {
             "user_id": 297,
             "pa_id": 1,
-            "bandwidth_hz": 100000000.0,
             "n_prb": 276,
             "layers": 2,
             "mcs": 12,
