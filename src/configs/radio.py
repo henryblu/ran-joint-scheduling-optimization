@@ -68,8 +68,7 @@ COMMON_RADIO_CONFIG = RadioConfig(
     delta_f_hz=30e3,
     n_slots_win=20,
 
-    # Spaces for parameter sweeps.
-    bandwidth_space_hz=(100e6, 50e6),
+    # Spaces for parameter sweeps inside one fixed 100 MHz carrier.
     layers_space=(1, 2, 3, 4),
     mcs_space=tuple(range(0, 29)),
     prb_step=5,

@@ -40,7 +40,6 @@ class RadioConfig:
     psd_max_w_per_hz: float
     delta_f_hz: float
     n_slots_win: int
-    bandwidth_space_hz: tuple[float, ...]
     layers_space: tuple[int, ...]
     mcs_space: tuple[int, ...]
     prb_step: int

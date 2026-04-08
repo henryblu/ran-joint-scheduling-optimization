@@ -1,4 +1,4 @@
-from models import PASwitchPolicy
+from models import BatchUserParameterSpace, PASwitchPolicy
 
 from .joint_search import run_joint_schedule_search as _run_joint_schedule_search
 from .models import MultiUserTdmaSchedulerResult, PreparedJointScheduleProblem
@@ -6,10 +6,10 @@ from .tdma_space import prepare_joint_schedule_problem as _prepare_joint_schedul
 
 
 def run_multi_user_tdma_scheduler(
-    batch_space,
+    batch_space: BatchUserParameterSpace,
     *,
     window_n_frames=None,
-    switch_policy: PASwitchPolicy = PASwitchPolicy.STANDBY,
+    switch_policy: PASwitchPolicy = PASwitchPolicy.DUAL_SWITCHABLE,
 ) -> MultiUserTdmaSchedulerResult:
     """Prepare and run the exact TDMA scheduler from one trusted batch artifact."""
 
@@ -24,7 +24,7 @@ def run_multi_user_tdma_scheduler(
 
 
 def prepare_joint_schedule_problem(
-    batch_space,
+    batch_space: BatchUserParameterSpace,
     window_n_frames=None,
     max_window_n_frames=32,
 ) -> PreparedJointScheduleProblem:
@@ -46,7 +46,7 @@ def prepare_joint_schedule_problem(
 
 def run_joint_schedule_search(
     problem,
-    switch_policy: PASwitchPolicy = PASwitchPolicy.STANDBY,
+    switch_policy: PASwitchPolicy = PASwitchPolicy.DUAL_SWITCHABLE,
 ) -> MultiUserTdmaSchedulerResult:
     """Run the exact joint TDMA scheduler on one prepared scheduling problem."""
 
@@ -57,6 +57,7 @@ def run_joint_schedule_search(
     if result.best_schedule is None:
         raise RuntimeError("No feasible joint TDMA schedule was found for the prepared user spaces.")
     return result
+
 __all__ = [
     "run_multi_user_tdma_scheduler",
     "prepare_joint_schedule_problem",

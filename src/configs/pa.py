@@ -109,7 +109,7 @@ def inactive_pa_bank_power(pa, state, n_tx_chains):
     """Instantaneous inactive DC power for one PA bank across all TX chains."""
 
     if isinstance(state, PASwitchPolicy):
-        state = PAState.IDLE if state == PASwitchPolicy.STANDBY else PAState.OFF
+        state = PAState.OFF
     if not isinstance(state, PAState):
         state = PAState(str(state))
 

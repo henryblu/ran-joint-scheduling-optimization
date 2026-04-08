@@ -82,7 +82,7 @@ class CandidatePowerModel:
             return False, "invalid_mcs"
         if not 1 <= candidate.n_slots_on <= deployment.n_slots_win:
             return False, "invalid_slot_count"
-        if not 1 <= candidate.n_prb <= rrc.prb_max_bwp:
+        if not 1 <= candidate.n_prb <= rrc.prb_max:
             return False, "insufficient_res"
         return True, "ok"
 

@@ -15,8 +15,9 @@ class PAState(Enum):
 
 
 class PASwitchPolicy(Enum):
-    STANDBY = "standby"
+    BASELINE_8W_ONLY = "baseline_8w_only"
     HARD_OFF = "hard_off"
+    DUAL_SWITCHABLE = "dual_switchable"
 
 
 @dataclass(frozen=True)
