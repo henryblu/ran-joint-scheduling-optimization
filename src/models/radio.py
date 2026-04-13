@@ -39,7 +39,7 @@ class RadioConfig:
     use_psd_constraint: bool
     psd_max_w_per_hz: float
     delta_f_hz: float
-    n_slots_win: int
+    frame_n_slots: int
     layers_space: tuple[int, ...]
     mcs_space: tuple[int, ...]
     prb_step: int

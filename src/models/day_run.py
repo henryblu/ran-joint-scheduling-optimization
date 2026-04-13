@@ -17,7 +17,6 @@ class DayRunConfig:
 
     load_curve_csv: Path
     session_generation_config: SyntheticSessionGenerationConfig
-    window_n_frames: int | None
     switch_policy: PASwitchPolicy
     cores: int
     output_dir: Path

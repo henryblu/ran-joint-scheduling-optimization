@@ -23,7 +23,7 @@ class DeploymentParams:
     n_guard_sym: int
     n_ul_sym: int
     dft_size_N: int
-    n_slots_win: int
+    frame_n_slots: int
     t_slot_s: float
     n_sym_data: int
     n_sym_total: int
@@ -64,7 +64,7 @@ def build_deployment(config, distance_m):
         n_guard_sym=config.n_guard_sym,
         n_ul_sym=config.n_ul_sym,
         dft_size_N=config.dft_size_N,
-        n_slots_win=config.n_slots_win,
+        frame_n_slots=config.frame_n_slots,
         t_slot_s=config.t_slot_s,
         n_sym_data=config.n_sym_data,
         n_sym_total=config.n_sym_total,

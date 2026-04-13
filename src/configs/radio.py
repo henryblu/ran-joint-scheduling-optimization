@@ -66,7 +66,7 @@ COMMON_RADIO_CONFIG = RadioConfig(
     use_psd_constraint=True,
     psd_max_w_per_hz=8e-6,
     delta_f_hz=30e3,
-    n_slots_win=20,
+    frame_n_slots=20,
 
     # Spaces for parameter sweeps inside one fixed 100 MHz carrier.
     layers_space=(1, 2, 3, 4),
