@@ -93,7 +93,6 @@ def build_day_run_config(
     return DayRunConfig(
         load_curve_csv=DEFAULT_DAY_RUN_LOAD_CURVE_CSV if load_curve_csv is None else Path(load_curve_csv),
         session_generation_config=DEFAULT_DAY_RUN_SESSION_GENERATION_CONFIG,
-        window_n_frames=None,
         switch_policy=switch_policy,
         cores=int(cores),
         output_dir=REPO_ROOT / "outputs" / f"default_day_run_{switch_policy.value}",

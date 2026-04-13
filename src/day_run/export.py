@@ -81,7 +81,6 @@ def build_day_run_result_document(
             "load_curve_csv": _serialize_export_path(config.load_curve_csv),
             "day_bin_count": int(config.session_generation_config.day_bin_count),
             "bin_duration_s": float(config.session_generation_config.bin_duration_s),
-            "configured_window_n_frames": None if config.window_n_frames is None else int(config.window_n_frames),
         },
         "pa_lookup": [
             {
@@ -137,17 +136,7 @@ def _build_schedule_document(best_schedule: dict[str, object]) -> dict[str, obje
     # Re-map the scheduler row names onto the slightly more descriptive export
     # names without widening the scheduler's own public contract.
     selected_allocations = [
-        {
-            "user_id": int(row["user_id"]),
-            "pa_id": int(row["pa_id"]),
-            "n_prb": int(row["n_prb"]),
-            "layers": int(row["layers"]),
-            "mcs": int(row["mcs"]),
-            "n_slots": int(row["n_slots"]),
-            "delivered_rate_bps": float(row["rate_avg_frame_bps"]),
-            "p_dc_avg_frame_w": float(row["p_dc_avg_frame_w"]),
-            "p_out_avg_frame_w": float(row["p_out_avg_frame_w"]),
-        }
+        _build_selected_allocation(row)
         for row in best_schedule["rows"]
     ]
     active_dc_total_w = float(sum(allocation["p_dc_avg_frame_w"] for allocation in selected_allocations))
@@ -163,6 +152,24 @@ def _build_schedule_document(best_schedule: dict[str, object]) -> dict[str, obje
             "rf_total": float(best_schedule["schedule_p_out_total_avg_frame_w"]),
         },
         "selected_allocations": selected_allocations,
+    }
+
+
+def _build_selected_allocation(row: dict[str, object]) -> dict[str, object]:
+    """Derive one export allocation block from the selected active row and slot count."""
+
+    n_slots = int(row["n_slots"])
+    slot_share = float(n_slots) / float(SINGLE_USER_SEARCH_CONFIG.frame_n_slots)
+    return {
+        "user_id": int(row["user_id"]),
+        "pa_id": int(row["pa_id"]),
+        "n_prb": int(row["n_prb"]),
+        "layers": int(row["layers"]),
+        "mcs": int(row["mcs"]),
+        "n_slots": n_slots,
+        "delivered_rate_bps": float(slot_share * float(row["rate_active_bps"])),
+        "p_dc_avg_frame_w": float(slot_share * float(row["p_dc_active_w"])),
+        "p_out_avg_frame_w": float(slot_share * float(row["p_out_total_w"])),
     }
 
 

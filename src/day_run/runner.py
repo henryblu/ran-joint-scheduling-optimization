@@ -99,16 +99,15 @@ def run_day_bins(
     """
 
     total_bins = int(len(user_tables_by_bin))
+    if total_bins == 0:
+        return []
+
     bin_workers = min(int(config.cores), total_bins)
-    # Prevent BLAS/OpenMP libraries from multiplying threads inside each worker.
     threads_per_worker = max(1, int(config.cores) // max(1, int(bin_workers)))
     for env_var in THREAD_LIMIT_ENV_VARS:
         os.environ[env_var] = str(threads_per_worker)
 
     started_at = perf_counter() if run_started_at is None else float(run_started_at)
-
-    # Keep progress accounting local to this function; it is only used to emit
-    # the sparse parent-owned run summary lines.
     completed_bins = 0
     solved_bins = 0
     infeasible_bins = 0
@@ -119,7 +118,6 @@ def run_day_bins(
                 run_bin,
                 bin_index,
                 user_table,
-                config.window_n_frames,
                 config.switch_policy,
             )
             for bin_index, user_table in user_tables_by_bin.items()
@@ -129,19 +127,24 @@ def run_day_bins(
             result = future.result()
             results.append(result)
             completed_bins += 1
-            solved_bins += int(result.status == "solved")
-            infeasible_bins += int(result.status == "infeasible")
-            empty_bins += int(result.status == "empty")
+            if result.status == "solved":
+                solved_bins += 1
+            elif result.status == "infeasible":
+                infeasible_bins += 1
+            else:
+                empty_bins += 1
             log_bin_result(result)
-            if completed_bins == total_bins or completed_bins % PROGRESS_LOG_INTERVAL == 0:
-                log_run_progress(
-                    total_bins=total_bins,
-                    completed_bins=completed_bins,
-                    solved_bins=solved_bins,
-                    infeasible_bins=infeasible_bins,
-                    empty_bins=empty_bins,
-                    elapsed_s=float(perf_counter() - started_at),
-                )
+            if completed_bins != total_bins and completed_bins % PROGRESS_LOG_INTERVAL != 0:
+                continue
+
+            log_run_progress(
+                total_bins=total_bins,
+                completed_bins=completed_bins,
+                solved_bins=solved_bins,
+                infeasible_bins=infeasible_bins,
+                empty_bins=empty_bins,
+                elapsed_s=float(perf_counter() - started_at),
+            )
 
     return sorted(results, key=lambda result: int(result.bin_index))
 
@@ -149,7 +152,6 @@ def run_day_bins(
 def run_bin(
     bin_index: int,
     user_table: pd.DataFrame,
-    window_n_frames: int | None,
     switch_policy: PASwitchPolicy,
 ) -> BinRunResult:
     """Run one bin: build the user spaces, solve the joint scheduler, and return the lean result.
@@ -178,30 +180,25 @@ def run_bin(
         batch_space = build_batch_user_parameter_space(user_table)
         single_user_elapsed_s = float(perf_counter() - single_user_started_at)
         joint_started_at = perf_counter()
+        best_schedule = None
+        status = "solved"
         try:
             scheduler_result = run_multi_user_tdma_scheduler(
                 batch_space,
-                window_n_frames=window_n_frames,
                 switch_policy=switch_policy,
             )
+            best_schedule = scheduler_result.best_schedule
         except RuntimeError:
-            return BinRunResult(
-                bin_index=int(bin_index),
-                status="infeasible",
-                user_count=user_count,
-                single_user_elapsed_s=single_user_elapsed_s,
-                joint_elapsed_s=float(perf_counter() - joint_started_at),
-                total_elapsed_s=float(perf_counter() - total_started_at),
-            )
+            status = "infeasible"
 
         return BinRunResult(
             bin_index=int(bin_index),
-            status="solved",
+            status=status,
             user_count=user_count,
             single_user_elapsed_s=single_user_elapsed_s,
             joint_elapsed_s=float(perf_counter() - joint_started_at),
             total_elapsed_s=float(perf_counter() - total_started_at),
-            best_schedule=scheduler_result.best_schedule,
+            best_schedule=best_schedule,
         )
 
 
@@ -223,8 +220,9 @@ def _worker_logging_scope(bin_index: int):
     finally:
         if previous_scope is None:
             os.environ.pop(ACTIVE_BIN_SCOPE_ENV_VAR, None)
-        else:
-            os.environ[ACTIVE_BIN_SCOPE_ENV_VAR] = previous_scope
+            return
+
+        os.environ[ACTIVE_BIN_SCOPE_ENV_VAR] = previous_scope
 
 
 __all__ = [
