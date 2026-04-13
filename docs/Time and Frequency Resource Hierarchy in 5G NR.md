@@ -339,4 +339,3 @@ This expression links
     
 
 to the **achievable throughput per scheduling interval**.
-''
