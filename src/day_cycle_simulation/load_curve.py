@@ -22,15 +22,15 @@ def build_15_minute_target_load_table(hourly_load_table: pd.DataFrame) -> pd.Dat
         total_load_gbph = float(hour_row.total_load_gbph)
         target_bits_in_bin = total_load_gbph * BITS_PER_GB / float(BINS_PER_HOUR)
 
-        for quarter_index in range(BINS_PER_HOUR):
-            rows.append(
-                {
-                    "bin_index": BINS_PER_HOUR * (hour - 1) + quarter_index,
-                    "hour": hour,
-                    "total_load_gbph": total_load_gbph,
-                    "target_bits_in_bin": target_bits_in_bin,
-                }
-            )
+        rows.extend(
+            {
+                "bin_index": BINS_PER_HOUR * (hour - 1) + quarter_index,
+                "hour": hour,
+                "total_load_gbph": total_load_gbph,
+                "target_bits_in_bin": target_bits_in_bin,
+            }
+            for quarter_index in range(BINS_PER_HOUR)
+        )
 
     return pd.DataFrame(
         rows,

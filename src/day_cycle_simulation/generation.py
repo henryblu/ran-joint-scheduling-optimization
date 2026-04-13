@@ -129,15 +129,15 @@ def _build_scheduler_day_user_table_from_sessions(
             / float(bin_duration_s)
         )
         stop_bin = int(session.start_bin) + int(session.nominal_duration_bins)
-        for bin_index in range(int(session.start_bin), stop_bin):
-            rows.append(
-                {
-                    "bin_index": int(bin_index),
-                    "user_id": int(session.session_id),
-                    "distance_m": float(session.distance_m),
-                    "required_rate_bps": float(required_rate_bps),
-                }
-            )
+        rows.extend(
+            {
+                "bin_index": int(bin_index),
+                "user_id": int(session.session_id),
+                "distance_m": float(session.distance_m),
+                "required_rate_bps": float(required_rate_bps),
+            }
+            for bin_index in range(int(session.start_bin), stop_bin)
+        )
 
     return pd.DataFrame(rows, columns=SCHEDULER_DAY_USER_COLUMNS)
 
@@ -149,23 +149,21 @@ def _sample_nominal_duration_bins(
 ) -> int:
     """Choose one duration preset that still supports at least one preset-sized session."""
 
-    feasible_durations = []
-    feasible_weights = []
     smallest_total_data_bits = float(min(config.total_data_presets_bits))
-
-    for duration_bins, weight in zip(
-        config.nominal_duration_presets_bins,
-        config.nominal_duration_weights,
-    ):
+    feasible_duration_presets = [
+        (int(duration_bins), float(weight))
+        for duration_bins, weight in zip(
+            config.nominal_duration_presets_bins,
+            config.nominal_duration_weights,
+        )
         if _duration_has_preset_feasible_window(
             remaining_bits=remaining_bits,
             duration_bins=int(duration_bins),
             smallest_total_data_bits=smallest_total_data_bits,
-        ):
-            feasible_durations.append(int(duration_bins))
-            feasible_weights.append(float(weight))
-
-    if feasible_durations:
+        )
+    ]
+    if feasible_duration_presets:
+        feasible_durations, feasible_weights = zip(*feasible_duration_presets)
         return int(_weighted_choice(feasible_durations, feasible_weights, rng))
 
     raise RuntimeError("Could not find a duration that can host a preset-sized session.")
@@ -209,18 +207,16 @@ def _sample_total_data_bits(
 
     window_remaining_bits = remaining_bits[start_bin : start_bin + nominal_duration_bins]
     max_total_data_bits = _max_total_data_bits_for_window(window_remaining_bits)
-
-    feasible_total_data_bits = []
-    feasible_weights = []
-    for total_data_bits, weight in zip(
-        config.total_data_presets_bits,
-        config.total_data_weights,
-    ):
-        if float(total_data_bits) <= float(max_total_data_bits) + RESIDUAL_TOL:
-            feasible_total_data_bits.append(float(total_data_bits))
-            feasible_weights.append(float(weight))
-
-    if feasible_total_data_bits:
+    feasible_total_data_presets = [
+        (float(total_data_bits), float(weight))
+        for total_data_bits, weight in zip(
+            config.total_data_presets_bits,
+            config.total_data_weights,
+        )
+        if float(total_data_bits) <= float(max_total_data_bits) + RESIDUAL_TOL
+    ]
+    if feasible_total_data_presets:
+        feasible_total_data_bits, feasible_weights = zip(*feasible_total_data_presets)
         return float(_weighted_choice(feasible_total_data_bits, feasible_weights, rng))
 
     raise RuntimeError("Selected session window could not host any total-data preset.")
@@ -243,11 +239,14 @@ def _duration_has_preset_feasible_window(
     """Return whether any window of this duration can still host one preset-sized session."""
 
     max_start_bin = len(remaining_bits) - int(duration_bins)
-    for start_bin in range(max_start_bin + 1):
-        window_remaining_bits = remaining_bits[start_bin : start_bin + duration_bins]
-        if _max_total_data_bits_for_window(window_remaining_bits) + RESIDUAL_TOL >= smallest_total_data_bits:
-            return True
-    return False
+    return any(
+        _max_total_data_bits_for_window(
+            remaining_bits[start_bin : start_bin + duration_bins]
+        )
+        + RESIDUAL_TOL
+        >= smallest_total_data_bits
+        for start_bin in range(max_start_bin + 1)
+    )
 
 
 def _max_total_data_bits_for_window(window_remaining_bits: np.ndarray) -> float:
@@ -264,9 +263,7 @@ def _apply_nominal_session_to_remaining_bits(
 
     nominal_bits_per_bin = float(session.total_data_bits) / float(session.nominal_duration_bins)
     stop_bin = int(session.start_bin) + int(session.nominal_duration_bins)
-
-    for bin_index in range(int(session.start_bin), stop_bin):
-        remaining_bits[bin_index] -= nominal_bits_per_bin
+    remaining_bits[int(session.start_bin) : stop_bin] -= nominal_bits_per_bin
 
 
 def _has_remaining_demand(
