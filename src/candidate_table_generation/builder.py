@@ -155,7 +155,7 @@ def build_distance_binned_candidate_table(
     """
 
     model_inputs = SINGLE_USER_SEARCH_CONFIG
-    n_slots_on_space = tuple(range(1, int(model_inputs.n_slots_win) + 1))
+    n_slots_on_space = tuple(range(1, int(model_inputs.frame_n_slots) + 1))
     engine_state = _SingleUserEngineState(
         model_inputs=model_inputs,
         search_shape=SearchSpace(
@@ -236,7 +236,7 @@ def build_candidate_frontier_for_distance(
         return pd.DataFrame(columns=BATCH_USER_PARAMETER_SPACE_COLUMNS)
 
     full_frame_table = active_table.loc[
-        active_table["n_slots_on"].astype(int) == int(engine_state.model_inputs.n_slots_win)
+        active_table["n_slots_on"].astype(int) == int(engine_state.model_inputs.frame_n_slots)
     ].copy()
     if full_frame_table.empty:
         return pd.DataFrame(columns=BATCH_USER_PARAMETER_SPACE_COLUMNS)

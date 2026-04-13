@@ -42,7 +42,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 
 ### `src/multi_user_tdma_scheduler`
 
-- **Owns:** `PreparedJointScheduleProblem`, repeated-window resolution, TDMA-space quantization and exact pruning, and the joint one-row-per-user search that returns `MultiUserTdmaSchedulerResult`.
+- **Owns:** `PreparedJointScheduleProblem`, single-frame TDMA-space quantization and exact pruning, and the joint one-row-per-user search that returns `MultiUserTdmaSchedulerResult`.
 - **Consumes:** Trusted `BatchUserParameterSpace` artifacts from `single_user_lookup` and PA switching policy from `models`.
 - **Does not own:** Canonical single-user defaults, single-user candidate evaluation, or generation of user demand profiles.
 
@@ -71,7 +71,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 3. `src/single_user_solver` combines `configs`, `models`, and `downlink_candidate_evaluation` to build one prepared single-user context and enumerate candidate rows.
 4. `src/candidate_table_generation` consumes that solver output once to build the strict-pruned distance-binned frontier table.
 5. `src/single_user_lookup` loads the persisted frontier artifact through `candidate_table_generation`, snaps each user upward to the next supported distance bin, filters by the user's required rate, and packages the trusted batch artifact.
-6. `src/multi_user_tdma_scheduler` consumes those batch artifacts, resolves the repeated slot window, and solves the joint schedule.
+6. `src/multi_user_tdma_scheduler` consumes those batch artifacts, converts them onto one shared frame slot lattice, and solves the joint schedule.
 7. `src/day_cycle_simulation` is an upstream demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
 8. `src/day_run` orchestrates one full synthetic day by composing `day_cycle_simulation`, `single_user_lookup`, and `multi_user_tdma_scheduler`, while `src/run_reporting.py` owns the shared console reporting used by that run layer.
 ## Boundary Checks

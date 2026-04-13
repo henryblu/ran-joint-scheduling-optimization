@@ -10,6 +10,7 @@ The goal here is not rich telemetry. These helpers keep the console output:
 
 import logging
 import os
+from configs import SINGLE_USER_SEARCH_CONFIG
 from configs.day_run import (
     WORKER_LOG_LEVEL_ENV_VAR,
 )
@@ -68,7 +69,7 @@ def log_run_setup(config: DayRunConfig) -> None:
             ("curve", config.load_curve_csv.stem),
             ("bins", str(int(config.session_generation_config.day_bin_count))),
             ("workers", str(int(planned_workers))),
-            ("window", "auto" if config.window_n_frames is None else str(int(config.window_n_frames))),
+            ("frame_slots", str(int(SINGLE_USER_SEARCH_CONFIG.frame_n_slots))),
             ("policy", str(config.switch_policy.value)),
         ],
     )
