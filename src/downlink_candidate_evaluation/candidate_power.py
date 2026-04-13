@@ -80,7 +80,7 @@ class CandidatePowerModel:
             return False, "invalid_layer_count"
         if candidate.mcs > rrc.max_mcs:
             return False, "invalid_mcs"
-        if not 1 <= candidate.n_slots_on <= deployment.n_slots_win:
+        if not 1 <= candidate.n_slots_on <= deployment.frame_n_slots:
             return False, "invalid_slot_count"
         if not 1 <= candidate.n_prb <= rrc.prb_max:
             return False, "insufficient_res"
@@ -128,5 +128,5 @@ class CandidatePowerModel:
     def _compute_average_dc_power(deployment, pa, candidate, p_out_ant_w):
         """Compute average PA DC draw including idle chains."""
 
-        alpha_t = candidate.n_slots_on / deployment.n_slots_win
+        alpha_t = candidate.n_slots_on / deployment.frame_n_slots
         return deployment.n_tx_chains * average_pa_power(pa, p_out_ant_w, alpha_t)
