@@ -86,7 +86,7 @@ def build_batch_user_parameter_space(user_table) -> BatchUserParameterSpace:
             )
             for user_row in users.itertuples(index=False)
         },
-        frame_n_slots=int(SINGLE_USER_SEARCH_CONFIG.n_slots_win),
+        frame_n_slots=int(SINGLE_USER_SEARCH_CONFIG.frame_n_slots),
         n_tx_chains=int(SINGLE_USER_SEARCH_CONFIG.n_tx_chains),
         pa_catalog=PA_CATALOG,
     )

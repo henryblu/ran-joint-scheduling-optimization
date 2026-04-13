@@ -26,7 +26,10 @@ class _JointCandidateRow:
     layers: int
     mcs: int
     n_slots: int
-    rate_avg_frame_bps: float
+    rate_active_bps: float
+    p_dc_active_w: float
+    p_out_total_w: float
+    delivered_rate_bps: float
     p_dc_avg_frame_w: float
     p_out_avg_frame_w: float
     schedule_cost: float
@@ -41,9 +44,9 @@ class _JointCandidateRow:
             "layers": int(self.layers),
             "mcs": int(self.mcs),
             "n_slots": int(self.n_slots),
-            "rate_avg_frame_bps": float(self.rate_avg_frame_bps),
-            "p_dc_avg_frame_w": float(self.p_dc_avg_frame_w),
-            "p_out_avg_frame_w": float(self.p_out_avg_frame_w),
+            "rate_active_bps": float(self.rate_active_bps),
+            "p_dc_active_w": float(self.p_dc_active_w),
+            "p_out_total_w": float(self.p_out_total_w),
         }
 
 
@@ -89,8 +92,7 @@ def run_joint_schedule_search(
         }
         candidate_result = ExactJointScheduleSearch(
             PreparedJointScheduleProblem(
-                window_n_frames=int(problem.window_n_frames),
-                window_n_slots=int(problem.window_n_slots),
+                frame_n_slots=int(problem.frame_n_slots),
                 n_tx_chains=int(problem.n_tx_chains),
                 pa_catalog=tuple(problem.pa_catalog),
                 user_candidate_spaces=filtered_user_candidate_spaces,
@@ -125,7 +127,7 @@ class ExactJointScheduleSearch:
         problem: PreparedJointScheduleProblem,
     ):
         self.problem = problem
-        self.window_n_slots = int(problem.window_n_slots)
+        self.frame_n_slots = int(problem.frame_n_slots)
         self.user_candidate_spaces = {
             int(user_id): candidate_table.copy()
             for user_id, candidate_table in problem.user_candidate_spaces.items()
@@ -142,7 +144,7 @@ class ExactJointScheduleSearch:
         self.user_order = []
         self.suffix_min_slots = []
         self.suffix_min_schedule_cost = []
-        self.suffix_max_rate_avg_frame_bps = []
+        self.suffix_max_delivered_rate_bps = []
         self.search_stats = {}
         self.search_started_at = 0.0
         self.last_progress_logged_at = 0.0
@@ -187,7 +189,7 @@ class ExactJointScheduleSearch:
         min_slots = {}
         first_sort_cost = {}
         min_schedule_cost = {}
-        max_rate_avg_frame_bps = {}
+        max_delivered_rate_bps = {}
 
         for user_id, candidate_table in self.user_candidate_spaces.items():
             rows = [self._build_candidate_row(raw_row) for raw_row in candidate_table.to_dict("records")]
@@ -197,7 +199,7 @@ class ExactJointScheduleSearch:
                     float(row.schedule_cost),
                     int(row.n_slots),
                     float(row.p_dc_avg_frame_w),
-                    -float(row.rate_avg_frame_bps),
+                    -float(row.delivered_rate_bps),
                     int(row.pa_id),
                     int(row.n_prb),
                     int(row.mcs),
@@ -211,7 +213,7 @@ class ExactJointScheduleSearch:
             min_slots[int(user_id)] = min(row.n_slots for row in rows)
             first_sort_cost[int(user_id)] = float(rows[0].schedule_cost)
             min_schedule_cost[int(user_id)] = min(row.schedule_cost for row in rows)
-            max_rate_avg_frame_bps[int(user_id)] = max(row.rate_avg_frame_bps for row in rows)
+            max_delivered_rate_bps[int(user_id)] = max(row.delivered_rate_bps for row in rows)
 
         # Search the most slot-constraining users first so infeasible branches
         # are rejected earlier in the recursion.
@@ -234,15 +236,15 @@ class ExactJointScheduleSearch:
 
         self.suffix_min_slots = [0] * (len(self.user_order) + 1)
         self.suffix_min_schedule_cost = [0.0] * (len(self.user_order) + 1)
-        self.suffix_max_rate_avg_frame_bps = [0.0] * (len(self.user_order) + 1)
+        self.suffix_max_delivered_rate_bps = [0.0] * (len(self.user_order) + 1)
         for depth in range(len(self.user_order) - 1, -1, -1):
             user_id = self.user_order[depth]
             self.suffix_min_slots[depth] = self.suffix_min_slots[depth + 1] + min_slots.get(user_id, 0)
             self.suffix_min_schedule_cost[depth] = (
                 self.suffix_min_schedule_cost[depth + 1] + min_schedule_cost.get(user_id, 0.0)
             )
-            self.suffix_max_rate_avg_frame_bps[depth] = (
-                self.suffix_max_rate_avg_frame_bps[depth + 1] + max_rate_avg_frame_bps.get(user_id, 0.0)
+            self.suffix_max_delivered_rate_bps[depth] = (
+                self.suffix_max_delivered_rate_bps[depth + 1] + max_delivered_rate_bps.get(user_id, 0.0)
             )
 
     def _exact_prune_rows(self, rows):
@@ -253,7 +255,7 @@ class ExactJointScheduleSearch:
             key=lambda row: (
                 float(row.schedule_cost),
                 int(row.n_slots),
-                -float(row.rate_avg_frame_bps),
+                -float(row.delivered_rate_bps),
                 float(row.p_dc_avg_frame_w),
                 int(row.pa_id),
                 int(row.n_prb),
@@ -265,7 +267,7 @@ class ExactJointScheduleSearch:
             if any(
                 float(kept_row.schedule_cost) <= float(row.schedule_cost) + self.TOL
                 and int(kept_row.n_slots) <= int(row.n_slots)
-                and float(kept_row.rate_avg_frame_bps) >= float(row.rate_avg_frame_bps) - self.TOL
+                and float(kept_row.delivered_rate_bps) >= float(row.delivered_rate_bps) - self.TOL
                 for kept_row in kept_rows
             ):
                 continue
@@ -289,7 +291,7 @@ class ExactJointScheduleSearch:
                 ("rows_prepared", str(int(self.prepared_rows_total))),
                 ("rows_search", str(int(search_rows_total))),
                 ("slot_lb", str(int(self.suffix_min_slots[0]))),
-                ("slot_slack", str(int(self.window_n_slots - self.suffix_min_slots[0]))),
+                ("slot_slack", str(int(self.frame_n_slots - self.suffix_min_slots[0]))),
             ],
         )
 
@@ -337,7 +339,7 @@ class ExactJointScheduleSearch:
         best_total_rate_bps = float(-self.best_rank[2]) if incumbent_exists else None
         for row in self.ranked_user_rows[user_id]:
             next_slot_sum = int(slot_sum + row.n_slots)
-            if next_slot_sum > self.window_n_slots:
+            if next_slot_sum > self.frame_n_slots:
                 self.search_stats["pruned_time_direct"] += 1
                 continue
 
@@ -349,7 +351,7 @@ class ExactJointScheduleSearch:
             # Even before picking concrete rows for the rest of the users, the
             # suffix minimum-slot bound can rule out the whole branch.
             slot_lb = int(next_slot_sum + remaining_slots_lb)
-            if slot_lb > self.window_n_slots:
+            if slot_lb > self.frame_n_slots:
                 self.search_stats["pruned_time_bound"] += 1
                 continue
 
@@ -358,8 +360,8 @@ class ExactJointScheduleSearch:
                 self.search_stats["pruned_power_bound"] += 1
                 continue
 
-            next_rate_sum = float(rate_sum + row.rate_avg_frame_bps)
-            max_rate_ub = float(next_rate_sum + self.suffix_max_rate_avg_frame_bps[depth + 1])
+            next_rate_sum = float(rate_sum + row.delivered_rate_bps)
+            max_rate_ub = float(next_rate_sum + self.suffix_max_delivered_rate_bps[depth + 1])
             if (
                 incumbent_exists
                 and np.isfinite(best_schedule_power)
@@ -421,7 +423,7 @@ class ExactJointScheduleSearch:
             selected_row = None
             for row in self.ranked_user_rows[user_id]:
                 next_slot_sum = int(slot_sum + row.n_slots)
-                if next_slot_sum + remaining_slots_lb <= self.window_n_slots:
+                if next_slot_sum + remaining_slots_lb <= self.frame_n_slots:
                     selected_row = row
                     slot_sum = next_slot_sum
                     selected_rows.append(row)
@@ -435,14 +437,14 @@ class ExactJointScheduleSearch:
         """Evaluate one complete schedule from already-valid user candidate rows."""
 
         slot_total = int(sum(row.n_slots for row in selected_rows))
-        total_rate_bps = float(sum(row.rate_avg_frame_bps for row in selected_rows))
+        total_rate_bps = float(sum(row.delivered_rate_bps for row in selected_rows))
         schedule_p_out_total_avg_frame_w = float(sum(row.p_out_avg_frame_w for row in selected_rows))
         schedule_p_dc_total_avg_frame_w = float(sum(row.schedule_cost for row in selected_rows))
 
         return {
             "rows": [row.to_public_row() for row in sorted(selected_rows, key=lambda row: row.user_id)],
             "slot_total": int(slot_total),
-            "unused_slots": int(self.window_n_slots - slot_total),
+            "unused_slots": int(self.frame_n_slots - slot_total),
             "total_rate_bps": float(total_rate_bps),
             "schedule_p_dc_total_avg_frame_w": float(schedule_p_dc_total_avg_frame_w),
             "schedule_p_out_total_avg_frame_w": float(schedule_p_out_total_avg_frame_w),
@@ -451,7 +453,13 @@ class ExactJointScheduleSearch:
     def _build_candidate_row(self, raw_row):
         """Normalize one candidate-table record into the typed search row shape."""
 
-        p_dc_avg_frame_w = float(raw_row["p_dc_avg_frame_w"])
+        slot_share = float(raw_row["n_slots"]) / float(self.frame_n_slots)
+        rate_active_bps = float(raw_row["rate_active_bps"])
+        p_dc_active_w = float(raw_row["p_dc_active_w"])
+        p_out_total_w = float(raw_row["p_out_total_w"])
+        delivered_rate_bps = float(slot_share * rate_active_bps)
+        p_dc_avg_frame_w = float(slot_share * p_dc_active_w)
+        p_out_avg_frame_w = float(slot_share * p_out_total_w)
         return _JointCandidateRow(
             user_id=int(raw_row["user_id"]),
             pa_id=int(raw_row["pa_id"]),
@@ -459,9 +467,12 @@ class ExactJointScheduleSearch:
             layers=int(raw_row["layers"]),
             mcs=int(raw_row["mcs"]),
             n_slots=int(raw_row["n_slots"]),
-            rate_avg_frame_bps=float(raw_row["rate_avg_frame_bps"]),
+            rate_active_bps=rate_active_bps,
+            p_dc_active_w=p_dc_active_w,
+            p_out_total_w=p_out_total_w,
+            delivered_rate_bps=delivered_rate_bps,
             p_dc_avg_frame_w=p_dc_avg_frame_w,
-            p_out_avg_frame_w=float(raw_row["p_out_avg_frame_w"]),
+            p_out_avg_frame_w=p_out_avg_frame_w,
             schedule_cost=p_dc_avg_frame_w,
         )
 

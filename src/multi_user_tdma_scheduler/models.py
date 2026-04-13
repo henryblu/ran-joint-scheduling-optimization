@@ -15,9 +15,9 @@ USER_CANDIDATE_COLUMNS = [
     "layers",
     "mcs",
     "n_slots",
-    "rate_avg_frame_bps",
-    "p_dc_avg_frame_w",
-    "p_out_avg_frame_w",
+    "rate_active_bps",
+    "p_dc_active_w",
+    "p_out_total_w",
 ]
 
 
@@ -25,8 +25,7 @@ USER_CANDIDATE_COLUMNS = [
 class PreparedJointScheduleProblem:
     """Prepared TDMA scheduling problem passed from space prep to exact joint search."""
 
-    window_n_frames: int
-    window_n_slots: int
+    frame_n_slots: int
     n_tx_chains: int
     pa_catalog: tuple[PAParams, ...]
     user_candidate_spaces: dict[int, pd.DataFrame]

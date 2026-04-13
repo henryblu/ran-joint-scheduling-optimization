@@ -8,15 +8,11 @@ from .tdma_space import prepare_joint_schedule_problem as _prepare_joint_schedul
 def run_multi_user_tdma_scheduler(
     batch_space: BatchUserParameterSpace,
     *,
-    window_n_frames=None,
     switch_policy: PASwitchPolicy = PASwitchPolicy.DUAL_SWITCHABLE,
 ) -> MultiUserTdmaSchedulerResult:
     """Prepare and run the exact TDMA scheduler from one trusted batch artifact."""
 
-    problem = prepare_joint_schedule_problem(
-        batch_space,
-        window_n_frames=window_n_frames,
-    )
+    problem = prepare_joint_schedule_problem(batch_space)
     return run_joint_schedule_search(
         problem,
         switch_policy=switch_policy,
@@ -25,23 +21,17 @@ def run_multi_user_tdma_scheduler(
 
 def prepare_joint_schedule_problem(
     batch_space: BatchUserParameterSpace,
-    window_n_frames=None,
-    max_window_n_frames=32,
 ) -> PreparedJointScheduleProblem:
     """Prepare the exact TDMA scheduler problem from a trusted batch parameter-space artifact.
 
     Steps:
     1. Read the trusted per-user parameter spaces and user requirements from the batch artifact.
     2. Select the full-frame active operating points the TDMA scheduler owns.
-    3. Resolve the repeated scheduling window in whole frames.
+    3. Check whether those rows fit inside one shared frame.
     4. Quantize and exact-prune the per-user TDMA spaces passed to the joint search.
     """
 
-    return _prepare_joint_schedule_problem(
-        batch_space,
-        window_n_frames=window_n_frames,
-        max_window_n_frames=max_window_n_frames,
-    )
+    return _prepare_joint_schedule_problem(batch_space)
 
 
 def run_joint_schedule_search(
