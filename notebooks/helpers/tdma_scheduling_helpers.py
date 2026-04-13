@@ -25,15 +25,15 @@ if str(SRC_PATH) not in sys.path:
 
 from multi_user_tdma_scheduler.api import prepare_joint_schedule_problem, run_joint_schedule_search
 
-from .DayCycleSimulationHelpers import build_day_cycle_discussion_artifacts
-from .candidate_space_helpers import export_doc_figure
-from .table_lookup_helpers import (
+from support.day_cycle import build_day_cycle_discussion_artifacts
+from support.candidate_space import export_doc_figure
+from support.table_lookup import (
     build_cached_batch_user_parameter_space,
     build_table_lookup_artifacts,
     load_cached_distance_binned_table,
     pick_example_scheduler_bin,
 )
-from .visual_identity import (
+from support.theme import (
     NotebookTheme,
     apply_3d_axis_style,
     build_color_cycle,
@@ -768,7 +768,7 @@ class TdmaSchedulingHelpers:
             user_table,
             lookup_artifacts=lookup_artifacts,
         )
-        from .tdma_walkthrough_helpers import (
+        from support.tdma_walkthrough import (
             build_joint_allocation_examples,
             build_joint_search_trace,
             build_tdma_preparation_artifacts,

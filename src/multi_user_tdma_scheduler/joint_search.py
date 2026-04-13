@@ -321,6 +321,15 @@ class ExactJointScheduleSearch:
             ],
         )
 
+    def _on_depth_row_considered(self, *, depth: int) -> None:
+        """Hook for subclasses that need per-depth search instrumentation."""
+
+    def _on_depth_prune(self, *, depth: int, reason: str) -> None:
+        """Hook for subclasses that need per-depth prune instrumentation."""
+
+    def _on_depth_recurse(self, *, depth: int) -> None:
+        """Hook for subclasses that need per-depth recurse instrumentation."""
+
     def _search_from(self, *, depth, slot_sum, exact_cost_sum, rate_sum, selected_rows):
         """Search the remaining user suffix with exact slot and power bounds."""
 
@@ -338,14 +347,17 @@ class ExactJointScheduleSearch:
         best_slot_total = int(self.best_rank[1]) if incumbent_exists else None
         best_total_rate_bps = float(-self.best_rank[2]) if incumbent_exists else None
         for row in self.ranked_user_rows[user_id]:
+            self._on_depth_row_considered(depth=int(depth))
             next_slot_sum = int(slot_sum + row.n_slots)
             if next_slot_sum > self.frame_n_slots:
                 self.search_stats["pruned_time_direct"] += 1
+                self._on_depth_prune(depth=int(depth), reason="pruned_time_direct")
                 continue
 
             next_exact_cost_sum = float(exact_cost_sum + row.schedule_cost)
             if incumbent_exists and next_exact_cost_sum > best_schedule_power + self.TOL:
                 self.search_stats["pruned_power_direct"] += 1
+                self._on_depth_prune(depth=int(depth), reason="pruned_power_direct")
                 continue
 
             # Even before picking concrete rows for the rest of the users, the
@@ -353,11 +365,13 @@ class ExactJointScheduleSearch:
             slot_lb = int(next_slot_sum + remaining_slots_lb)
             if slot_lb > self.frame_n_slots:
                 self.search_stats["pruned_time_bound"] += 1
+                self._on_depth_prune(depth=int(depth), reason="pruned_time_bound")
                 continue
 
             power_lb = float(next_exact_cost_sum + self.suffix_min_schedule_cost[depth + 1])
             if incumbent_exists and power_lb > best_schedule_power + self.TOL:
                 self.search_stats["pruned_power_bound"] += 1
+                self._on_depth_prune(depth=int(depth), reason="pruned_power_bound")
                 continue
 
             next_rate_sum = float(rate_sum + row.delivered_rate_bps)
@@ -377,8 +391,10 @@ class ExactJointScheduleSearch:
                 # When objective lower bounds tie, prune branches that cannot
                 # beat the incumbent on slot count or delivered rate.
                 self.search_stats["pruned_rank_bound"] += 1
+                self._on_depth_prune(depth=int(depth), reason="pruned_rank_bound")
                 continue
 
+            self._on_depth_recurse(depth=int(depth))
             selected_rows.append(row)
             self._search_from(
                 depth=depth + 1,

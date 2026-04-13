@@ -19,13 +19,13 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from day_cycle_simulation.models import SyntheticSessionGenerationConfig
-from .DayCycleSimulationHelpers import (
+from support.day_cycle import (
     BITS_PER_GB,
     bin_index_to_clock,
     build_day_cycle_discussion_artifacts,
     export_doc_figure,
 )
-from .visual_identity import (
+from support.theme import (
     NotebookTheme,
     apply_axis_style,
     create_themed_figure,

@@ -42,6 +42,10 @@ def prepare_joint_schedule_problem(
         )
         for user_row in batch_space.user_requirements.itertuples(index=False)
     }
+    user_candidate_spaces = prune_jointly_infeasible_user_rows(
+        user_candidate_spaces,
+        frame_n_slots=frame_n_slots,
+    )
     return PreparedJointScheduleProblem(
         frame_n_slots=int(frame_n_slots),
         n_tx_chains=int(batch_space.n_tx_chains),
@@ -178,6 +182,49 @@ def exact_prune_user_tdma_space(
         kept_rows.append(row)
 
     return pd.DataFrame(kept_rows, columns=USER_CANDIDATE_COLUMNS).reset_index(drop=True)
+
+
+def prune_jointly_infeasible_user_rows(
+    user_candidate_spaces: dict[int, pd.DataFrame],
+    *,
+    frame_n_slots: int,
+) -> dict[int, pd.DataFrame]:
+    """Drop per-user rows that can never fit once the other users get their minimum slots.
+
+    Steps:
+    1. Read the minimum feasible slot count of each user after local per-user pruning.
+    2. Reserve that minimum for every other user.
+    3. Keep only the rows that can still fit inside the remaining slot budget.
+    """
+
+    minimum_slots_by_user = {
+        int(user_id): int(candidate_table["n_slots"].astype(int).min())
+        for user_id, candidate_table in user_candidate_spaces.items()
+    }
+    total_minimum_slots = int(sum(minimum_slots_by_user.values()))
+
+    pruned_spaces = {}
+    for user_id, candidate_table in user_candidate_spaces.items():
+        user_id = int(user_id)
+        max_jointly_feasible_slots = (
+            int(frame_n_slots)
+            - int(total_minimum_slots)
+            + int(minimum_slots_by_user[user_id])
+        )
+        pruned_table = (
+            candidate_table.loc[
+                candidate_table["n_slots"].astype(int).le(int(max_jointly_feasible_slots))
+            ]
+            .copy()
+            .reset_index(drop=True)
+        )
+        if pruned_table.empty:
+            raise RuntimeError(
+                "The prepared TDMA rows became jointly infeasible after slot-budget pruning."
+            )
+        pruned_spaces[user_id] = pruned_table
+
+    return pruned_spaces
 
 
 def _row_schedule_power(row, *, frame_n_slots: int) -> float:

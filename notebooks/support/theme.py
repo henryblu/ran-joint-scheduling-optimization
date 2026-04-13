@@ -20,6 +20,7 @@ from html import escape
 from typing import Mapping, Sequence
 
 import matplotlib.pyplot as plt
+from matplotlib import colors
 import pandas as pd
 
 
@@ -248,6 +249,41 @@ def style_legend(legend_or_ax, *, theme: str | NotebookTheme):
     return legend
 
 
+def style_colorbar(colorbar, *, theme: str | NotebookTheme):
+    """Apply the shared notebook theme to an existing colorbar."""
+
+    resolved_theme = get_notebook_theme(theme)
+    colorbar.outline.set_edgecolor(resolved_theme.neutral_dark)
+    colorbar.outline.set_linewidth(0.9)
+    colorbar.ax.tick_params(
+        colors=resolved_theme.neutral_dark,
+        labelcolor=resolved_theme.neutral_dark,
+    )
+    colorbar.ax.xaxis.label.set_color(resolved_theme.text)
+    colorbar.ax.yaxis.label.set_color(resolved_theme.text)
+    return colorbar
+
+
+def apply_3d_axis_style(ax, *, theme: str | NotebookTheme) -> None:
+    """Apply the shared notebook colors to one 3D matplotlib axis."""
+
+    resolved_theme = get_notebook_theme(theme)
+    background_rgba = colors.to_rgba(resolved_theme.background, 1.0)
+    grid_rgba = colors.to_rgba(resolved_theme.grid, 1.0)
+
+    ax.set_facecolor(resolved_theme.background)
+    ax.tick_params(colors=resolved_theme.neutral_dark, labelcolor=resolved_theme.neutral_dark)
+    for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
+        axis.set_pane_color(background_rgba)
+        axis._axinfo["grid"]["color"] = grid_rgba
+        axis._axinfo["grid"]["linewidth"] = 0.8
+        axis.line.set_color(resolved_theme.neutral_dark)
+
+    ax.xaxis.label.set_color(resolved_theme.text)
+    ax.yaxis.label.set_color(resolved_theme.text)
+    ax.zaxis.label.set_color(resolved_theme.text)
+
+
 def format_table_for_display(
     df: pd.DataFrame,
     *,
@@ -393,6 +429,7 @@ def _build_table_style_tokens(theme: NotebookTheme) -> dict[str, str]:
 __all__ = [
     "NOTEBOOK_THEMES",
     "NotebookTheme",
+    "apply_3d_axis_style",
     "apply_axis_style",
     "build_color_cycle",
     "create_themed_figure",
@@ -400,5 +437,6 @@ __all__ = [
     "get_notebook_theme",
     "list_notebook_themes",
     "render_html_table",
+    "style_colorbar",
     "style_legend",
 ]

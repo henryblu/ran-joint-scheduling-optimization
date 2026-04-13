@@ -21,7 +21,7 @@ if str(SRC_PATH) not in sys.path:
 from configs import pa_dc_power
 from candidate_table_generation.pruning import prune_candidate_frontier
 from day_cycle_simulation.models import SyntheticSessionGenerationConfig
-from .candidate_space_helpers import (
+from support.candidate_space import (
     _draw_candidate_allocation_axis,
     annotate_same_pa_dominance,
     export_doc_figure,
@@ -29,25 +29,27 @@ from .candidate_space_helpers import (
     select_dominated_example_pair,
     select_slice_rows,
 )
-from .candidate_table_generation_helpers import (
+from support.candidate_table_generation import (
     _build_full_frame_candidate_table,
     _resolve_candidate_table_engine_state,
     _select_distance_bin,
 )
-from .DayCycleSimulationHelpers import bin_index_to_clock, build_day_cycle_discussion_artifacts
-from .single_user_study_helpers import (
+from support.day_cycle import bin_index_to_clock, build_day_cycle_discussion_artifacts
+from support.single_user_study import (
     build_single_user_scenario,
     run_single_user_scenario,
     summarize_single_user_scenario,
 )
-from .table_lookup_helpers import (
+from support.table_lookup import (
     build_cached_batch_user_parameter_space,
     build_table_lookup_artifacts,
     load_cached_distance_binned_table,
     pick_example_scheduler_bin,
 )
-from .tdma_walkthrough_helpers import plot_scheduler_input_spaces as plot_lookup_scheduler_input_spaces
-from .visual_identity import (
+from support.tdma_walkthrough import (
+    plot_scheduler_input_spaces as plot_lookup_scheduler_input_spaces,
+)
+from support.theme import (
     NotebookTheme,
     apply_axis_style,
     build_color_cycle,

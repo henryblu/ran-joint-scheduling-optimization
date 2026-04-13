@@ -22,12 +22,12 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from models.candidate_table import BATCH_USER_PARAMETER_SPACE_COLUMNS
-from .single_user_study_helpers import (
+from support.single_user_study import (
     build_single_user_pa_curve_table,
     build_single_user_scenario,
     summarize_single_user_scenario,
 )
-from .visual_identity import (
+from support.theme import (
     NotebookTheme,
     apply_axis_style,
     create_themed_figure,
