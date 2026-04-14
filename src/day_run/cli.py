@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Build the small CLI surface for one synthetic day TDMA simulation run.
+"""Build the small CLI surface for one synthetic day multi-user scheduler run.
 
 This module does only three things:
 1. Parse the handful of supported command-line flags.
@@ -17,7 +17,7 @@ from configs.day_run import (
     DEFAULT_DAY_RUN_SESSION_GENERATION_CONFIG,
     LOG_LEVEL_CHOICES,
 )
-from models import PASwitchPolicy
+from models import PASwitchPolicy, SchedulerMode
 from models.day_run import DayRunConfig
 from run_reporting import configure_run_logging
 
@@ -32,6 +32,7 @@ def run_from_cli(argv: list[str] | None = None):
 
     args = parse_args(argv)
     config = build_day_run_config(
+        scheduler_mode=SchedulerMode(args.scheduler_mode),
         switch_policy=PASwitchPolicy(args.switch_policy),
         cores=args.cores,
         load_curve_csv=args.load_curve_csv,
@@ -44,16 +45,22 @@ def run_from_cli(argv: list[str] | None = None):
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse the small CLI surface for one TDMA day simulation run."""
+    """Parse the small CLI surface for one day-run scheduler invocation."""
 
     parser = argparse.ArgumentParser(
-        description="Thin orchestration entry point for one synthetic day TDMA simulation run."
+        description="Thin orchestration entry point for one synthetic day scheduler run."
+    )
+    parser.add_argument(
+        "--scheduler-mode",
+        choices=[mode.value for mode in SchedulerMode],
+        default=SchedulerMode.TDMA.value,
+        help="Shared scheduler backend to run. Only TDMA is implemented today.",
     )
     parser.add_argument(
         "--switch-policy",
         choices=[policy.value for policy in PASwitchPolicy],
         default=PASwitchPolicy.DUAL_SWITCHABLE.value,
-        help="PA switching scenario used by the TDMA scheduler.",
+        help="PA switching scenario passed to the selected scheduler backend.",
     )
     parser.add_argument(
         "--cores",
@@ -79,6 +86,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def build_day_run_config(
     *,
+    scheduler_mode: SchedulerMode = SchedulerMode.TDMA,
     switch_policy: PASwitchPolicy = PASwitchPolicy.DUAL_SWITCHABLE,
     cores: int = DEFAULT_DAY_RUN_CORES,
     load_curve_csv: Path | None = None,
@@ -97,6 +105,7 @@ def build_day_run_config(
         cores=int(cores),
         output_dir=REPO_ROOT / "outputs" / f"default_day_run_{switch_policy.value}",
         log_level=None if log_level is None else str(log_level).upper(),
+        scheduler_mode=scheduler_mode,
     )
 
 

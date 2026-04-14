@@ -34,6 +34,7 @@ A good rule of thumb is:
 - `src/single_user_solver`: single-user problem setup and candidate enumeration or search
 - `src/candidate_table_generation`: build, load, save, and prune the distance-binned candidate table
 - `src/single_user_lookup`: user normalization and lookup into the precomputed table
+- `src/multi_user_scheduler`: shared scheduler dispatch and mode selection
 - `src/multi_user_tdma_scheduler`: TDMA problem setup, pruning, and joint search
 - `src/day_cycle_simulation`: synthetic demand generation
 - `src/day_run`: full-day orchestration and JSON export
@@ -54,11 +55,12 @@ flowchart LR
     B --> C["single_user_solver"]
     C --> D["candidate_table_generation"]
     D --> E["single_user_lookup"]
-    E --> F["multi_user_tdma_scheduler"]
-    G["day_cycle_simulation"] --> H["day_run"]
-    E --> H
-    F --> H
-    H --> I["day_run_result.json"]
+    E --> F["multi_user_scheduler"]
+    F --> G["multi_user_tdma_scheduler"]
+    H["day_cycle_simulation"] --> I["day_run"]
+    E --> I
+    F --> I
+    I --> J["day_run_result.json"]
 ```
 
 The main flow is:
@@ -68,9 +70,10 @@ The main flow is:
 3. `single_user_solver` prepares one user problem and evaluates feasible active candidates.
 4. `candidate_table_generation` stores a pruned frontier over fixed distance bins.
 5. `single_user_lookup` maps each user to the nearest supported distance bin and filters the table by required rate.
-6. `multi_user_tdma_scheduler` converts those per-user spaces to a shared slot grid and solves the joint schedule.
-7. `day_cycle_simulation` can generate a full day of demand.
-8. `day_run` runs the full pipeline and writes the JSON export.
+6. `multi_user_scheduler` selects the concrete scheduler backend behind a shared public contract.
+7. `multi_user_tdma_scheduler` currently provides the implemented backend and solves the joint TDMA schedule.
+8. `day_cycle_simulation` can generate a full day of demand.
+9. `day_run` runs the full pipeline and writes the JSON export.
 
 For a full worked walk through of this flow, see the notebooks. The notebooks are the clearest way to follow the steps in order.
 
@@ -155,8 +158,11 @@ Scheduler-facing user-table contract:
 Key entry points:
 
 - `single_user_lookup.build_batch_user_parameter_space`
-- `multi_user_tdma_scheduler.prepare_joint_schedule_problem`
+- `multi_user_scheduler.run_multi_user_scheduler`
 - `multi_user_tdma_scheduler.run_multi_user_tdma_scheduler`
+- `multi_user_tdma_scheduler.prepare_joint_schedule_problem`
+
+`prepare_joint_schedule_problem` is the advanced TDMA-specific staged entry point used by notebooks and tests. The usual orchestration path should call the one-step scheduler runner instead.
 
 ### Full synthetic day run
 

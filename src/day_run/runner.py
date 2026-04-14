@@ -5,7 +5,7 @@ from __future__ import annotations
 The runner owns only top-level orchestration. Lower layers still own:
 - generating valid scheduler-ready demand rows,
 - validating and preparing single-user spaces,
-- preparing and solving the joint TDMA problem.
+- selecting and executing the concrete joint scheduler backend.
 """
 
 import logging
@@ -25,9 +25,9 @@ from configs.day_run import (
     WORKER_LOG_LEVEL_ENV_VAR,
 )
 from day_cycle_simulation.generation import build_scheduler_day_user_table
-from models import PASwitchPolicy
+from models import PASwitchPolicy, SchedulerMode
 from models.day_run import BinRunResult, DayRunConfig
-from multi_user_tdma_scheduler.api import run_multi_user_tdma_scheduler
+from multi_user_scheduler.api import run_multi_user_scheduler
 from single_user_lookup.api import build_batch_user_parameter_space
 from run_reporting import (
     log_bin_result,
@@ -119,6 +119,7 @@ def run_day_bins(
                 bin_index,
                 user_table,
                 config.switch_policy,
+                scheduler_mode=config.scheduler_mode,
             )
             for bin_index, user_table in user_tables_by_bin.items()
         ]
@@ -153,13 +154,15 @@ def run_bin(
     bin_index: int,
     user_table: pd.DataFrame,
     switch_policy: PASwitchPolicy,
+    *,
+    scheduler_mode: SchedulerMode = SchedulerMode.TDMA,
 ) -> BinRunResult:
-    """Run one bin: build the user spaces, solve the joint scheduler, and return the lean result.
+    """Run one bin: build the user spaces, solve the selected scheduler, and return the lean result.
 
     Steps:
     1. Reuse the scheduler-facing user table built earlier in the day run.
     2. Let the single-user batch layer own all user-table validation and space building.
-    3. Run the joint TDMA scheduler on that trusted batch artifact.
+    3. Run the shared multi-user scheduler on that trusted batch artifact.
     4. Collapse the result to the small fields the day-run layer actually exports.
     """
 
@@ -183,11 +186,14 @@ def run_bin(
         best_schedule = None
         status = "solved"
         try:
-            scheduler_result = run_multi_user_tdma_scheduler(
+            scheduler_result = run_multi_user_scheduler(
                 batch_space,
+                scheduler_mode=scheduler_mode,
                 switch_policy=switch_policy,
             )
             best_schedule = scheduler_result.best_schedule
+        except NotImplementedError:
+            raise
         except RuntimeError:
             status = "infeasible"
 
@@ -220,9 +226,8 @@ def _worker_logging_scope(bin_index: int):
     finally:
         if previous_scope is None:
             os.environ.pop(ACTIVE_BIN_SCOPE_ENV_VAR, None)
-            return
-
-        os.environ[ACTIVE_BIN_SCOPE_ENV_VAR] = previous_scope
+        else:
+            os.environ[ACTIVE_BIN_SCOPE_ENV_VAR] = previous_scope
 
 
 __all__ = [

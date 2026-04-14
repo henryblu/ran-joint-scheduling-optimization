@@ -40,6 +40,12 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - **Consumes:** Shared defaults and PA catalog loading from `configs`, shared request and PA models from `models`, and the precomputed frontier table from `candidate_table_generation`.
 - **Does not own:** Per-candidate PHY equations, fixed-distance frontier generation, notebook studies, or joint TDMA scheduling across users.
 
+### `src/multi_user_scheduler`
+
+- **Owns:** Shared scheduler mode selection and the public dispatch contract that routes one trusted batch artifact to a concrete multi-user scheduler backend.
+- **Consumes:** Shared scheduler enums from `models`, trusted `BatchUserParameterSpace` artifacts from `single_user_lookup`, and concrete backend packages such as `multi_user_tdma_scheduler`.
+- **Does not own:** TDMA prepared-problem models, TDMA pruning or search logic, or future OFDMA solver internals.
+
 ### `src/multi_user_tdma_scheduler`
 
 - **Owns:** `PreparedJointScheduleProblem`, single-frame TDMA-space quantization and exact pruning, and the joint one-row-per-user search that returns `MultiUserTdmaSchedulerResult`.
@@ -55,7 +61,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 ### `src/day_run`
 
 - **Owns:** The top-level day simulation workflow: CLI-adjacent run config resolution, day demand assembly, per-bin fan-out, and the authoritative day-run JSON export.
-- **Consumes:** Shared defaults from `configs`, shared run contracts from `models`, demand generation from `day_cycle_simulation`, trusted single-user batch artifacts from `single_user_lookup`, and the joint TDMA scheduler in `multi_user_tdma_scheduler`.
+- **Consumes:** Shared defaults from `configs`, shared run contracts from `models`, demand generation from `day_cycle_simulation`, trusted single-user batch artifacts from `single_user_lookup`, and the shared scheduler dispatcher in `multi_user_scheduler`.
 - **Does not own:** User-table sanitization, PHY evaluation, scheduler internals, shared console formatting, or generic logging setup.
 
 ### `src/run_reporting.py`
@@ -71,9 +77,10 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 3. `src/single_user_solver` combines `configs`, `models`, and `downlink_candidate_evaluation` to build one prepared single-user context and enumerate candidate rows.
 4. `src/candidate_table_generation` consumes that solver output once to build the strict-pruned distance-binned frontier table.
 5. `src/single_user_lookup` loads the persisted frontier artifact through `candidate_table_generation`, snaps each user upward to the next supported distance bin, filters by the user's required rate, and packages the trusted batch artifact.
-6. `src/multi_user_tdma_scheduler` consumes those batch artifacts, converts them onto one shared frame slot lattice, and solves the joint schedule.
-7. `src/day_cycle_simulation` is an upstream demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
-8. `src/day_run` orchestrates one full synthetic day by composing `day_cycle_simulation`, `single_user_lookup`, and `multi_user_tdma_scheduler`, while `src/run_reporting.py` owns the shared console reporting used by that run layer.
+6. `src/multi_user_scheduler` owns the shared scheduler mode selection and dispatches the trusted batch artifact to the selected backend.
+7. `src/multi_user_tdma_scheduler` currently provides the only concrete backend: it converts those batch artifacts onto one shared frame slot lattice and solves the TDMA joint schedule.
+8. `src/day_cycle_simulation` is an upstream demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
+9. `src/day_run` orchestrates one full synthetic day by composing `day_cycle_simulation`, `single_user_lookup`, and `multi_user_scheduler`, while `src/run_reporting.py` owns the shared console reporting used by that run layer.
 ## Boundary Checks
 
 - If logic evaluates one resolved candidate's rate, SINR, or power, it belongs in `downlink_candidate_evaluation`.
@@ -81,6 +88,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - If logic defines the shared scheduler user-table column contract, it belongs in `configs`.
 - If logic builds, saves, or loads the precomputed distance-binned frontier table, it belongs in `candidate_table_generation`.
 - If logic normalizes scheduler-facing user tables, looks up per-user feasible spaces, or packages the trusted batch artifact, it belongs in `single_user_lookup`.
+- If logic selects a concrete scheduler backend behind the shared public contract, it belongs in `multi_user_scheduler`.
 - If logic reasons jointly across users under a shared slot budget, it belongs in `multi_user_tdma_scheduler`.
 - If logic builds shared default configs or PA catalogs, it belongs in `configs`.
 - If logic builds daily load curves or synthetic session demand, it belongs in `day_cycle_simulation`.

@@ -9,11 +9,12 @@ from typing import Any
 from day_cycle_simulation.models import SyntheticSessionGenerationConfig
 
 from .pa import PASwitchPolicy
+from .scheduler import SchedulerMode
 
 
 @dataclass(frozen=True)
 class DayRunConfig:
-    """Resolved inputs for one full-day TDMA simulation run."""
+    """Resolved inputs for one full-day multi-user scheduler run."""
 
     load_curve_csv: Path
     session_generation_config: SyntheticSessionGenerationConfig
@@ -21,6 +22,7 @@ class DayRunConfig:
     cores: int
     output_dir: Path
     log_level: str | None
+    scheduler_mode: SchedulerMode = SchedulerMode.TDMA
 
 
 @dataclass
