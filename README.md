@@ -1,10 +1,14 @@
-# Master's Thesis Codebase: PA-Aware 5G NR TDMA Optimization
+# Master's Thesis Codebase: Joint Scheduling and Resource Allocation for PA Energy Optimization in Multi-PA 5G NR Downlink Systems 
 
-This repository contains the code for my master’s thesis on Joint Scheduling and Resource Allocation for PA Energy Optimization in 5G NR Downlink Systems.
+The goal of this project is to study how downlink scheduling and PHY resource allocation can be used to reduce PA DC energy consumption in a multi-PA 5G NR base station. The implementation follows 3GPP-compliant assumptions and focuses on PDSCH transmission. It models link adaptation, PRB allocation, and PA operating behaviour, and shows how scheduler decisions map to PA operating points and overall energy use.
 
-This README is meant to help a reader find their way around the repository and identify the main code paths. It stays fairly technical on purpose. For the worked examples, the actual flow of the code, and the step-by-step story, the best place to start is the notebooks. For the model logic and narrative explanation, see the docs.
+This README is meant to help a reader find their way around the repository and identify the main code paths. It stays fairly technical on purpose. For worked examples and the step-by-step flow of the code, the best place to start is the notebooks. For the model logic and narrative explanation, see `docs/`. 
 
-At a high level, the repository does four things:
+## Current status
+
+The current implementation uses a TDMA scheduler to prove feasibility. Ongoing work is extending this to a full OFDMA scheduler to better reflect real scheduling conditions.
+
+The current model follows the following logic:
 
 1. It evaluates feasible single-user PHY operating points for a user at a given distance and rate target.
 2. It stores those single-user results in a distance-binned lookup table.
