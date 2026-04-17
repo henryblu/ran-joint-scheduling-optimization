@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
+from functools import lru_cache
 import json
 import logging
 from pathlib import Path
@@ -28,11 +29,18 @@ _CANDIDATE_FRONTIER_DTYPE_MAP = {
     "n_prb": "int64",
     "layers": "int64",
     "mcs": "int64",
-    "rate_active_bps": "float64",
+    "bits_per_slot": "float64",
     "p_dc_active_w": "float64",
     "p_out_total_w": "float64",
 }
-_CANDIDATE_FRONTIER_SORT_COLUMNS = ["pa_id", "p_dc_active_w", "n_prb", "mcs", "layers"]
+_CANDIDATE_FRONTIER_SORT_COLUMNS = [
+    "pa_id",
+    "p_dc_active_w",
+    "n_prb",
+    "bits_per_slot",
+    "mcs",
+    "layers",
+]
 
 
 @dataclass(frozen=True)
@@ -42,6 +50,27 @@ class _SingleUserEngineState:
     model_inputs: object
     search_shape: SearchSpace
     pa_catalog: tuple
+
+
+@lru_cache(maxsize=1)
+def _get_single_user_engine_state() -> _SingleUserEngineState:
+    """Resolve the static single-user engine state once per process."""
+
+    model_inputs = SINGLE_USER_SEARCH_CONFIG
+    n_slots_on_space = (1,)
+    return _SingleUserEngineState(
+        model_inputs=model_inputs,
+        search_shape=SearchSpace(
+            config=model_inputs,
+            n_slots_on_space=n_slots_on_space,
+            layers_space=model_inputs.layers_space,
+            mcs_space=model_inputs.mcs_space,
+            prb_step=model_inputs.prb_step,
+            fingerprint=build_resolved_fingerprint({"n_slots_on_space": n_slots_on_space}),
+            use_cache=True,
+        ),
+        pa_catalog=tuple(build_pa_catalog(model_inputs.pa_data_csv)),
+    )
 
 
 def load_or_build_distance_binned_candidate_table(
@@ -104,7 +133,7 @@ def save_distance_binned_candidate_table(
                 int(row.n_prb),
                 int(row.layers),
                 int(row.mcs),
-                float(row.rate_active_bps),
+                float(row.bits_per_slot),
                 float(row.p_dc_active_w),
                 float(row.p_out_total_w),
             ]
@@ -150,25 +179,12 @@ def build_distance_binned_candidate_table(
     Steps:
     1. Resolve the canonical single-user engine state once.
     2. Enumerate the active feasible table for each configured distance bin.
-    3. Keep only full-frame scheduler-facing rows.
+    3. Project the one-slot scheduler-facing rows.
     4. Strict-prune dominated rows within each PA family.
     """
 
-    model_inputs = SINGLE_USER_SEARCH_CONFIG
-    n_slots_on_space = tuple(range(1, int(model_inputs.frame_n_slots) + 1))
-    engine_state = _SingleUserEngineState(
-        model_inputs=model_inputs,
-        search_shape=SearchSpace(
-            config=model_inputs,
-            n_slots_on_space=n_slots_on_space,
-            layers_space=model_inputs.layers_space,
-            mcs_space=model_inputs.mcs_space,
-            prb_step=model_inputs.prb_step,
-            fingerprint=build_resolved_fingerprint({"n_slots_on_space": n_slots_on_space}),
-            use_cache=True,
-        ),
-        pa_catalog=tuple(build_pa_catalog(model_inputs.pa_data_csv)),
-    )
+    _get_single_user_engine_state.cache_clear()
+    engine_state = _get_single_user_engine_state()
     frontiers_by_distance_m = {}
     if max_workers is None or int(max_workers) <= 1:
         for distance_m in DISTANCE_BIN_GRID_M:
@@ -191,9 +207,8 @@ def build_distance_binned_candidate_table(
     with ProcessPoolExecutor(max_workers=min(int(max_workers), len(DISTANCE_BIN_GRID_M))) as executor:
         future_by_distance = {
             executor.submit(
-                build_candidate_frontier_for_distance,
+                _build_candidate_frontier_for_distance_in_worker,
                 int(distance_m),
-                engine_state=engine_state,
             ): int(distance_m)
             for distance_m in DISTANCE_BIN_GRID_M
         }
@@ -218,38 +233,39 @@ def build_distance_binned_candidate_table(
 def build_candidate_frontier_for_distance(
     distance_m: int,
     *,
-    engine_state: _SingleUserEngineState,
+    engine_state: _SingleUserEngineState | None = None,
 ) -> pd.DataFrame:
-    """Build one strict-pruned scheduler-facing frontier for a fixed distance bin."""
+    """Build one strict-pruned slot-normalized frontier for a fixed distance bin."""
 
+    resolved_engine_state = _get_single_user_engine_state() if engine_state is None else engine_state
     context = prepare_single_user_problem(
         request=SingleUserRequest(
             distance_m=float(distance_m),
             required_rate_bps=0.0,
         ),
-        model_inputs=engine_state.model_inputs,
-        search_shape=engine_state.search_shape,
-        pa_catalog=engine_state.pa_catalog,
+        model_inputs=resolved_engine_state.model_inputs,
+        search_shape=resolved_engine_state.search_shape,
+        pa_catalog=resolved_engine_state.pa_catalog,
     )
     active_table = enumerate_active_candidates(context)
     if active_table.empty:
         return pd.DataFrame(columns=BATCH_USER_PARAMETER_SPACE_COLUMNS)
 
-    full_frame_table = active_table.loc[
-        active_table["n_slots_on"].astype(int) == int(engine_state.model_inputs.frame_n_slots)
-    ].copy()
-    if full_frame_table.empty:
-        return pd.DataFrame(columns=BATCH_USER_PARAMETER_SPACE_COLUMNS)
-
     candidate_table = (
-        full_frame_table.assign(
-            rate_active_bps=full_frame_table["rate_ach_bps"].astype(float),
-            p_dc_active_w=full_frame_table["p_dc_avg_total_w"].astype(float),
+        active_table.assign(
+            bits_per_slot=active_table["bits_per_slot"].astype(float),
+            p_dc_active_w=active_table["p_dc_active_total_w"].astype(float),
         )[BATCH_USER_PARAMETER_SPACE_COLUMNS]
         .sort_values(_CANDIDATE_FRONTIER_SORT_COLUMNS)
         .reset_index(drop=True)
     )
     return prune_candidate_frontier(candidate_table)
+
+
+def _build_candidate_frontier_for_distance_in_worker(distance_m: int) -> pd.DataFrame:
+    """Build one distance-bin frontier inside a worker without parent-state pickling."""
+
+    return build_candidate_frontier_for_distance(int(distance_m))
 
 
 __all__ = [
