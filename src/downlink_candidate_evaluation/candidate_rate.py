@@ -18,6 +18,7 @@ class CandidateRateModel:
         bits_in_frame = candidate.n_slots_on * bits_per_slot
         frame_duration_s = deployment.frame_n_slots * deployment.t_slot_s
         return CandidateRateResult(
+            bits_per_slot=float(bits_per_slot),
             rate_ach_bps=float(bits_in_frame / frame_duration_s),
             n_re_data=float(re_counts["n_re_data"]),
             n_re_raw=float(re_counts["n_re_raw"]),

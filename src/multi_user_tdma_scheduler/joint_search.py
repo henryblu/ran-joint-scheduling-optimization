@@ -6,6 +6,7 @@ from time import perf_counter
 
 import numpy as np
 
+from configs import MULTI_USER_TDMA_CONFIG
 from models import PASwitchPolicy
 
 from .console_logging import emit_scheduler_console_log, format_metric
@@ -26,7 +27,7 @@ class _JointCandidateRow:
     layers: int
     mcs: int
     n_slots: int
-    rate_active_bps: float
+    bits_per_slot: float
     p_dc_active_w: float
     p_out_total_w: float
     delivered_rate_bps: float
@@ -44,7 +45,7 @@ class _JointCandidateRow:
             "layers": int(self.layers),
             "mcs": int(self.mcs),
             "n_slots": int(self.n_slots),
-            "rate_active_bps": float(self.rate_active_bps),
+            "bits_per_slot": float(self.bits_per_slot),
             "p_dc_active_w": float(self.p_dc_active_w),
             "p_out_total_w": float(self.p_out_total_w),
         }
@@ -128,6 +129,7 @@ class ExactJointScheduleSearch:
     ):
         self.problem = problem
         self.frame_n_slots = int(problem.frame_n_slots)
+        self.frame_duration_s = float(self.frame_n_slots) * float(MULTI_USER_TDMA_CONFIG.t_slot_s)
         self.user_candidate_spaces = {
             int(user_id): candidate_table.copy()
             for user_id, candidate_table in problem.user_candidate_spaces.items()
@@ -470,10 +472,10 @@ class ExactJointScheduleSearch:
         """Normalize one candidate-table record into the typed search row shape."""
 
         slot_share = float(raw_row["n_slots"]) / float(self.frame_n_slots)
-        rate_active_bps = float(raw_row["rate_active_bps"])
+        bits_per_slot = float(raw_row["bits_per_slot"])
         p_dc_active_w = float(raw_row["p_dc_active_w"])
         p_out_total_w = float(raw_row["p_out_total_w"])
-        delivered_rate_bps = float(slot_share * rate_active_bps)
+        delivered_rate_bps = float(int(raw_row["n_slots"]) * bits_per_slot / self.frame_duration_s)
         p_dc_avg_frame_w = float(slot_share * p_dc_active_w)
         p_out_avg_frame_w = float(slot_share * p_out_total_w)
         return _JointCandidateRow(
@@ -483,7 +485,7 @@ class ExactJointScheduleSearch:
             layers=int(raw_row["layers"]),
             mcs=int(raw_row["mcs"]),
             n_slots=int(raw_row["n_slots"]),
-            rate_active_bps=rate_active_bps,
+            bits_per_slot=bits_per_slot,
             p_dc_active_w=p_dc_active_w,
             p_out_total_w=p_out_total_w,
             delivered_rate_bps=delivered_rate_bps,

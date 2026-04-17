@@ -31,7 +31,7 @@ def prepare_joint_schedule_problem(
 
     Steps:
     1. Read the trusted per-user parameter spaces and user requirements from the batch artifact.
-    2. Select the full-frame active operating points the TDMA scheduler owns.
+    2. Read the slot-normalized operating points the TDMA scheduler owns.
     3. Check whether those rows fit inside one shared frame.
     4. Quantize and exact-prune the per-user TDMA spaces passed to the joint search.
 

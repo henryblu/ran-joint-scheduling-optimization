@@ -104,5 +104,6 @@ class StaticCandidateSpec:
 
     candidate_ordinal: int
     candidate: Candidate
+    bits_per_slot: float
     rate_ach_bps: float
     gamma_req_lin: float

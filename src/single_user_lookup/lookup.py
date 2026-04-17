@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from functools import lru_cache
 
 from candidate_table_generation import load_or_build_distance_binned_candidate_table
@@ -14,7 +15,7 @@ PA_CATALOG = tuple(build_pa_catalog(SINGLE_USER_SEARCH_CONFIG.pa_data_csv))
 
 
 def lookup_user_parameter_space(request):
-    """Return one user's feasible full-frame rows from the precomputed lookup table."""
+    """Return one user's feasible slot-normalized rows from the precomputed lookup table."""
 
     frontiers_by_distance_m = _distance_binned_candidate_table().frontiers_by_distance_m
     distance_m = float(request.distance_m)
@@ -42,10 +43,22 @@ def lookup_user_parameter_space(request):
         for distance_bin_m in sorted(frontiers_by_distance_m)
         if float(distance_bin_m) >= distance_m
     )
+    frame_n_slots = int(SINGLE_USER_SEARCH_CONFIG.frame_n_slots)
+    t_slot_s = float(SINGLE_USER_SEARCH_CONFIG.t_slot_s)
     user_space = (
         frontiers_by_distance_m[int(distance_bin_m)]
+        .assign(
+            required_slots=lambda table: table["bits_per_slot"].astype(float).map(
+                lambda bits_per_slot: _required_slots_for_rate(
+                    required_rate_bps=float(request.required_rate_bps),
+                    bits_per_slot=float(bits_per_slot),
+                    frame_n_slots=frame_n_slots,
+                    t_slot_s=t_slot_s,
+                )
+            )
+        )
         .loc[
-            lambda table: table["rate_active_bps"].astype(float) >= float(request.required_rate_bps),
+            lambda table: table["required_slots"].astype(int).between(1, frame_n_slots),
             BATCH_USER_PARAMETER_SPACE_COLUMNS,
         ]
         .copy()
@@ -65,6 +78,20 @@ def lookup_user_parameter_space(request):
         ],
     )
     return user_space
+
+
+def _required_slots_for_rate(*, required_rate_bps: float, bits_per_slot: float, frame_n_slots: int, t_slot_s: float) -> int:
+    """Return the one-frame slot count needed to hit an average-rate target."""
+
+    if bits_per_slot <= 0.0:
+        return int(frame_n_slots) + 1
+
+    return int(
+        math.ceil(
+            float(required_rate_bps) * float(frame_n_slots) * float(t_slot_s) / float(bits_per_slot)
+            - 1e-12
+        )
+    )
 
 
 def build_batch_user_parameter_space(user_table) -> BatchUserParameterSpace:

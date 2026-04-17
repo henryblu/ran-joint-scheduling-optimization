@@ -9,14 +9,14 @@ import pandas as pd
 from .pa import PAParams
 
 
-# `rate_active_bps` is the achieved throughput when the operating point stays
-# active for the full modeled frame before TDMA slot-share scaling is applied.
+# The stored artifact is one active-slot PHY operating row. Schedulers derive
+# slot counts, frame-average rates, and frame-average power from this primitive.
 BATCH_USER_PARAMETER_SPACE_COLUMNS = [
     "pa_id",
     "n_prb",
     "layers",
     "mcs",
-    "rate_active_bps",
+    "bits_per_slot",
     "p_dc_active_w",
     "p_out_total_w",
 ]
@@ -24,7 +24,7 @@ BATCH_USER_PARAMETER_SPACE_COLUMNS = [
 
 @dataclass(frozen=True)
 class BatchUserParameterSpace:
-    """Trusted batch single-user artifact consumed by the TDMA scheduler."""
+    """Trusted batch single-user artifact consumed by multi-user schedulers."""
 
     user_requirements: pd.DataFrame
     user_parameter_spaces: dict[int, pd.DataFrame]

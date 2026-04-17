@@ -15,6 +15,8 @@ ACTIVE_RESULT_COLUMNS = [
     "n_slots_on",
     "layers",
     "mcs",
+    "bits_per_slot",
+    "p_dc_active_total_w",
     "p_dc_avg_total_w",
     "p_out_total_w",
     "rate_ach_bps",
@@ -81,6 +83,7 @@ def _get_static_candidates(context, *, use_cache):
             StaticCandidateSpec(
                 candidate_ordinal=ordinal,
                 candidate=candidate,
+                bits_per_slot=rate.bits_per_slot,
                 rate_ach_bps=rate.rate_ach_bps,
                 gamma_req_lin=gamma["rho_req_linear"],
             )
@@ -122,6 +125,8 @@ def _evaluate_active_candidates(context, static_candidates):
                 "n_slots_on": candidate.n_slots_on,
                 "layers": candidate.layers,
                 "mcs": candidate.mcs,
+                "bits_per_slot": static_candidate.bits_per_slot,
+                "p_dc_active_total_w": result.p_dc_active_total_w,
                 "p_dc_avg_total_w": result.p_dc_avg_total_w,
                 "p_out_total_w": result.p_out_total_w,
                 "rate_ach_bps": static_candidate.rate_ach_bps,

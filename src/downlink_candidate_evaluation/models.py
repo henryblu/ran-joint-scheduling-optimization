@@ -7,6 +7,7 @@ from dataclasses import dataclass
 class CandidateRateResult:
     """Rate-side result for one resolved scheduler candidate."""
 
+    bits_per_slot: float
     rate_ach_bps: float
     n_re_data: float
     n_re_raw: float
@@ -24,4 +25,5 @@ class CandidatePowerResult:
     gamma_achieved: float | None = None
     ps_total_w: float | None = None
     p_out_total_w: float | None = None
+    p_dc_active_total_w: float | None = None
     p_dc_avg_total_w: float | None = None

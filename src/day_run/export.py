@@ -160,6 +160,7 @@ def _build_selected_allocation(row: dict[str, object]) -> dict[str, object]:
 
     n_slots = int(row["n_slots"])
     slot_share = float(n_slots) / float(SINGLE_USER_SEARCH_CONFIG.frame_n_slots)
+    frame_duration_s = float(SINGLE_USER_SEARCH_CONFIG.frame_n_slots) * float(SINGLE_USER_SEARCH_CONFIG.t_slot_s)
     return {
         "user_id": int(row["user_id"]),
         "pa_id": int(row["pa_id"]),
@@ -167,7 +168,7 @@ def _build_selected_allocation(row: dict[str, object]) -> dict[str, object]:
         "layers": int(row["layers"]),
         "mcs": int(row["mcs"]),
         "n_slots": n_slots,
-        "delivered_rate_bps": float(slot_share * float(row["rate_active_bps"])),
+        "delivered_rate_bps": float(n_slots * float(row["bits_per_slot"]) / frame_duration_s),
         "p_dc_avg_frame_w": float(slot_share * float(row["p_dc_active_w"])),
         "p_out_avg_frame_w": float(slot_share * float(row["p_out_total_w"])),
     }

@@ -15,7 +15,7 @@ USER_CANDIDATE_COLUMNS = [
     "layers",
     "mcs",
     "n_slots",
-    "rate_active_bps",
+    "bits_per_slot",
     "p_dc_active_w",
     "p_out_total_w",
 ]

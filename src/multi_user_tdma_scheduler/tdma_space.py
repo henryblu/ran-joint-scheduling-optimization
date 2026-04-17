@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from configs import MULTI_USER_TDMA_CONFIG
 from models import BatchUserParameterSpace
 from models.candidate_table import BATCH_USER_PARAMETER_SPACE_COLUMNS
 
@@ -15,13 +16,13 @@ def prepare_joint_schedule_problem(
     """Prepare the exact scheduler problem from a trusted batch parameter-space artifact.
 
     Steps:
-    1. Read the trusted per-user full-frame feasible spaces from the batch artifact.
+    1. Read the trusted per-user slot-normalized feasible spaces from the batch artifact.
     2. Check whether those rows are jointly schedulable within one shared frame.
     3. Quantize each user space onto the exact TDMA slot lattice for that frame.
     4. Exact-prune dominated per-user rows and assemble the prepared problem.
     """
 
-    full_frame_user_spaces = {
+    user_spaces = {
         int(user_row.user_id): (
             batch_space.user_parameter_spaces[int(user_row.user_id)][BATCH_USER_PARAMETER_SPACE_COLUMNS]
             .copy()
@@ -31,13 +32,13 @@ def prepare_joint_schedule_problem(
     }
     frame_n_slots = validate_single_frame_schedule_feasibility(
         batch_space,
-        full_frame_user_spaces,
+        user_spaces,
     )
     user_candidate_spaces = {
         int(user_row.user_id): quantize_and_prune_user_tdma_space(
             user_id=int(user_row.user_id),
             required_rate_bps=float(user_row.required_rate_bps),
-            active_table=full_frame_user_spaces[int(user_row.user_id)],
+            active_table=user_spaces[int(user_row.user_id)],
             frame_n_slots=frame_n_slots,
         )
         for user_row in batch_space.user_requirements.itertuples(index=False)
@@ -56,25 +57,27 @@ def prepare_joint_schedule_problem(
 
 def validate_single_frame_schedule_feasibility(
     batch_space: BatchUserParameterSpace,
-    full_frame_user_spaces,
+    user_spaces,
 ):
     """Validate that the batch can be scheduled within one shared frame."""
 
     exact_frame_share_sum = 0.0
+    t_slot_s = float(MULTI_USER_TDMA_CONFIG.t_slot_s)
     for user_row in batch_space.user_requirements.itertuples(index=False):
-        user_space = full_frame_user_spaces[int(user_row.user_id)]
+        user_space = user_spaces[int(user_row.user_id)]
         if user_space.empty:
             raise RuntimeError(
-                f"No feasible full-frame active operating points were found for user {int(user_row.user_id)}."
+                f"No feasible slot-normalized operating points were found for user {int(user_row.user_id)}."
             )
 
-        max_active_rate_bps = float(user_space["rate_active_bps"].max())
+        max_bits_per_slot = float(user_space["bits_per_slot"].max())
+        max_active_rate_bps = max_bits_per_slot / t_slot_s
         required_rate_bps = float(user_row.required_rate_bps)
         if required_rate_bps > max_active_rate_bps:
             raise RuntimeError(
-                f"User {int(user_row.user_id)} requires a higher average rate than any full-frame active operating point can deliver."
+                f"User {int(user_row.user_id)} requires a higher average rate than any slot-normalized operating point can deliver within one frame."
             )
-        exact_frame_share_sum += required_rate_bps / max_active_rate_bps
+        exact_frame_share_sum += required_rate_bps * t_slot_s / max_bits_per_slot
 
     if exact_frame_share_sum > 1.0 + 1e-12:
         raise RuntimeError(
@@ -83,7 +86,7 @@ def validate_single_frame_schedule_feasibility(
         )
 
     frame_n_slots = int(batch_space.frame_n_slots)
-    if slot_lower_bound(batch_space, full_frame_user_spaces, frame_n_slots) > frame_n_slots:
+    if slot_lower_bound(batch_space, user_spaces, frame_n_slots) > frame_n_slots:
         raise RuntimeError(
             "The requested average rates are not schedulable within one frame after exact slot quantization."
         )
@@ -92,21 +95,18 @@ def validate_single_frame_schedule_feasibility(
 
 def slot_lower_bound(
     batch_space: BatchUserParameterSpace,
-    full_frame_user_spaces,
+    user_spaces,
     frame_n_slots,
 ):
     """Return the exact one-frame TDMA slot lower bound implied by the fastest user row."""
 
     required_slot_count = 0
     for user_row in batch_space.user_requirements.itertuples(index=False):
-        user_space = full_frame_user_spaces[int(user_row.user_id)]
-        required_slot_count += int(
-            np.ceil(
-                float(frame_n_slots)
-                * float(user_row.required_rate_bps)
-                / float(user_space["rate_active_bps"].max())
-                - 1e-12
-            )
+        user_space = user_spaces[int(user_row.user_id)]
+        required_slot_count += _compute_required_slots(
+            required_rate_bps=float(user_row.required_rate_bps),
+            bits_per_slot=float(user_space["bits_per_slot"].max()),
+            frame_n_slots=frame_n_slots,
         )
     return int(required_slot_count)
 
@@ -118,17 +118,25 @@ def quantize_and_prune_user_tdma_space(
     active_table: pd.DataFrame,
     frame_n_slots: int,
 ) -> pd.DataFrame:
-    """Quantize one user's full-frame rows onto the shared single-frame TDMA lattice."""
+    """Quantize one user's slot-normalized rows onto the shared single-frame TDMA lattice."""
 
     if active_table.empty:
         return pd.DataFrame(columns=USER_CANDIDATE_COLUMNS)
 
-    rate_active_bps = active_table["rate_active_bps"].astype(float).to_numpy()
-    required_slots = np.ceil(
-        float(frame_n_slots) * float(required_rate_bps) / rate_active_bps - 1e-12
-    ).astype(int)
+    bits_per_slot = active_table["bits_per_slot"].astype(float).to_numpy()
+    required_slots = np.array(
+        [
+            _compute_required_slots(
+                required_rate_bps=float(required_rate_bps),
+                bits_per_slot=float(bits_value),
+                frame_n_slots=frame_n_slots,
+            )
+            for bits_value in bits_per_slot
+        ],
+        dtype=int,
+    )
     feasible_mask = (
-        (rate_active_bps > 0.0)
+        (bits_per_slot > 0.0)
         & (required_slots >= 1)
         & (required_slots <= int(frame_n_slots))
     )
@@ -231,6 +239,23 @@ def _row_schedule_power(row, *, frame_n_slots: int) -> float:
     """Return one user's frame-averaged DC power for the selected slot count."""
 
     return float(int(row["n_slots"]) * float(row["p_dc_active_w"]) / float(frame_n_slots))
+
+
+def _compute_required_slots(*, required_rate_bps: float, bits_per_slot: float, frame_n_slots: int) -> int:
+    """Return the exact one-frame slot count implied by a slot-normalized row."""
+
+    if bits_per_slot <= 0.0:
+        return int(frame_n_slots) + 1
+
+    return int(
+        np.ceil(
+            float(required_rate_bps)
+            * float(frame_n_slots)
+            * float(MULTI_USER_TDMA_CONFIG.t_slot_s)
+            / float(bits_per_slot)
+            - 1e-12
+        )
+    )
 
 
 __all__ = [
