@@ -1,4 +1,4 @@
-"""Shared PA defaults, catalog loading, and PA power helpers."""
+"""Shared PA defaults, catalog loading, and active-state PA power helpers."""
 
 import os
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from models import PAParams, PAState, PASwitchPolicy
+from models import PAParams
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -86,44 +86,22 @@ def build_pa_characteristics_table(pa_catalog_or_problem):
 
 
 def pa_dc_power(pa, p_out):
-    """Instantaneous DC power for a given RF output power."""
+    """Return the active-state DC power for one PA chain at the requested RF output."""
 
     if p_out <= 0.0:
-        return pa.p_idle_w
+        return 0.0
 
     curve_pout = getattr(pa, "curve_pout_w", None)
     curve_pdc = getattr(pa, "curve_pdc_w", None)
     if curve_pout is not None and curve_pdc is not None and len(curve_pout) >= 2:
-        minimum_active_dc_w = max(float(curve_pdc[0]), float(pa.p_idle_w))
         if p_out <= float(curve_pout[0]):
-            return minimum_active_dc_w
+            return float(curve_pdc[0])
         p_out_clip = min(float(p_out), float(curve_pout[-1]))
         return float(np.interp(p_out_clip, curve_pout, curve_pdc))
 
     loading = np.clip(p_out / pa.p_max_w, 1e-3, 1.0)
     eta = pa.eta_max * (loading ** 0.5)
-    return pa.p_idle_w + p_out / eta
-
-
-def inactive_pa_bank_power(pa, state, n_tx_chains):
-    """Instantaneous inactive DC power for one PA bank across all TX chains."""
-
-    if isinstance(state, PASwitchPolicy):
-        state = PAState.OFF
-    if not isinstance(state, PAState):
-        state = PAState(str(state))
-
-    if state == PAState.IDLE:
-        return int(n_tx_chains) * float(pa.p_idle_w)
-    if state == PAState.OFF:
-        return 0.0
-    raise ValueError("inactive_pa_bank_power only supports IDLE or OFF states.")
-
-
-def average_pa_power(pa, p_out, alpha_t):
-    """Average DC power (W) for duty cycle alpha_t."""
-
-    return alpha_t * pa_dc_power(pa, p_out) + (1.0 - alpha_t) * pa.p_idle_w
+    return p_out / eta
 
 
 def _build_measured_pa_from_curves(pa_name, scenario_label, kappa_distortion, pin_dbm, pout_w, pdcin_w, source_tag):
@@ -201,9 +179,7 @@ def _dbm_to_w(x_dbm):
 
 __all__ = [
     "DEFAULT_PA_DATA_CSV",
-    "average_pa_power",
     "build_pa_catalog",
     "build_pa_characteristics_table",
-    "inactive_pa_bank_power",
     "pa_dc_power",
 ]

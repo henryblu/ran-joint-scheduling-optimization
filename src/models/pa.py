@@ -8,12 +8,6 @@ from enum import Enum
 import numpy as np
 
 
-class PAState(Enum):
-    ACTIVE = "active"
-    IDLE = "idle"
-    OFF = "off"
-
-
 class PASwitchPolicy(Enum):
     BASELINE_8W_ONLY = "baseline_8w_only"
     HARD_OFF = "hard_off"
@@ -40,6 +34,5 @@ class PAParams:
 
 __all__ = [
     "PAParams",
-    "PAState",
     "PASwitchPolicy",
 ]

@@ -1,4 +1,4 @@
-from configs import average_pa_power
+from configs import pa_dc_power
 
 from .candidate_geometry import get_n_streams
 from .mcs_requirements import McsRequirementModel
@@ -54,11 +54,15 @@ class CandidatePowerModel:
                 infeasibility_reason=str(reason),
                 gamma_req_lin=resolved_gamma_req_lin,
             )
-        p_dc_avg_total_w = self._compute_average_dc_power(
+        p_dc_active_total_w = self._compute_active_dc_power(
             deployment,
             pa,
-            candidate,
             float(rf_terms["p_out_ant_w"]),
+        )
+        p_dc_avg_total_w = self._compute_average_dc_power(
+            deployment,
+            candidate,
+            p_dc_active_total_w,
         )
         return CandidatePowerResult(
             is_feasible=True,
@@ -67,6 +71,7 @@ class CandidatePowerModel:
             gamma_achieved=float(ps_solution["rho_achieved_linear"]),
             ps_total_w=float(rf_terms["ps_total_w"]),
             p_out_total_w=float(rf_terms["p_out_total_w"]),
+            p_dc_active_total_w=float(p_dc_active_total_w),
             p_dc_avg_total_w=float(p_dc_avg_total_w),
         )
 
@@ -95,6 +100,7 @@ class CandidatePowerModel:
         p_dist_stream_w = self.sinr_model.sigma_z2(pa, ps_stream_w, candidate)
         p_sig_out_stream_w = pa.g_pa_eff_linear * ps_stream_w
         p_sig_out_total_w = n_streams * p_sig_out_stream_w
+        # critically, total RF output power required for this user’s assigned PRBs in one active slot, summed over its active spatial layers and active chains in the chosen mode.
         p_out_total_w = p_sig_out_total_w + n_streams * p_dist_stream_w
         p_out_ant_w = p_out_total_w / deployment.n_tx_chains
         return {
@@ -125,8 +131,15 @@ class CandidatePowerModel:
         return True, "ok"
 
     @staticmethod
-    def _compute_average_dc_power(deployment, pa, candidate, p_out_ant_w):
-        """Compute average PA DC draw including idle chains."""
+    def _compute_active_dc_power(deployment, pa, p_out_ant_w):
+        """Compute active-state PA DC draw across all TX chains."""
+
+        per_chain_active_dc_w = pa_dc_power(pa, p_out_ant_w)
+        return deployment.n_tx_chains * per_chain_active_dc_w
+
+    @staticmethod
+    def _compute_average_dc_power(deployment, candidate, p_dc_active_total_w):
+        """Compute frame-averaged active PA DC draw from the active-state point."""
 
         alpha_t = candidate.n_slots_on / deployment.frame_n_slots
-        return deployment.n_tx_chains * average_pa_power(pa, p_out_ant_w, alpha_t)
+        return alpha_t * float(p_dc_active_total_w)

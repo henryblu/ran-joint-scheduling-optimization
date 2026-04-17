@@ -1,10 +1,8 @@
 """Shared public configuration presets, defaults, and PA helpers."""
 from .pa import (
     DEFAULT_PA_DATA_CSV,
-    average_pa_power,
     build_pa_catalog,
     build_pa_characteristics_table,
-    inactive_pa_bank_power,
     pa_dc_power,
 )
 from .radio import (
@@ -23,10 +21,8 @@ __all__ = [
     "MULTI_USER_TDMA_CONFIG",
     "SINGLE_USER_SEARCH_CONFIG",
     "USER_REQUIREMENT_COLUMNS",
-    "average_pa_power",
     "build_pa_catalog",
     "build_pa_characteristics_table",
     "get_scenario_config",
-    "inactive_pa_bank_power",
     "pa_dc_power",
 ]
