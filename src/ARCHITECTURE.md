@@ -52,6 +52,12 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - **Consumes:** Trusted `BatchUserParameterSpace` artifacts from `single_user_lookup` and PA switching policy from `models`.
 - **Does not own:** Canonical single-user defaults, single-user candidate evaluation, or generation of user demand profiles.
 
+### `src/multi_user_ofdma_scheduler`
+
+- **Owns:** `PreparedJointOfdmaProblem`, trusted-batch OFDMA frame-resource preparation, exact per-user OFDMA pruning, and the joint PRB-slot infeasibility prune that readies one solver-owned problem.
+- **Consumes:** Trusted `BatchUserParameterSpace` artifacts from `single_user_lookup`, shared PA models from `models`, and the repository's fixed radio geometry from `configs`.
+- **Does not own:** A production OFDMA scheduler runner, slot-PRB packing witnesses, notebook analytics, or the shared public scheduler dispatch contract.
+
 ### `src/day_cycle_simulation`
 
 - **Owns:** Synthetic daily load and session generation, including 15-minute load expansion, the `SyntheticSessionGenerationConfig` model, and `SyntheticSession`.
@@ -79,8 +85,9 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 5. `src/single_user_lookup` loads the persisted frontier artifact through `candidate_table_generation`, snaps each user upward to the next supported distance bin, filters by the user's required rate, and packages the trusted batch artifact.
 6. `src/multi_user_scheduler` owns the shared scheduler mode selection and dispatches the trusted batch artifact to the selected backend.
 7. `src/multi_user_tdma_scheduler` currently provides the only concrete backend: it converts those batch artifacts onto one shared frame slot lattice and solves the TDMA joint schedule.
-8. `src/day_cycle_simulation` is an upstream demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
-9. `src/day_run` orchestrates one full synthetic day by composing `day_cycle_simulation`, `single_user_lookup`, and `multi_user_scheduler`, while `src/run_reporting.py` owns the shared console reporting used by that run layer.
+8. `src/multi_user_ofdma_scheduler` prepares the same trusted batch artifacts onto one shared OFDMA PRB-slot budget for future solver use without changing the shared scheduler runner.
+9. `src/day_cycle_simulation` is an upstream demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
+10. `src/day_run` orchestrates one full synthetic day by composing `day_cycle_simulation`, `single_user_lookup`, and `multi_user_scheduler`, while `src/run_reporting.py` owns the shared console reporting used by that run layer.
 ## Boundary Checks
 
 - If logic evaluates one resolved candidate's rate, SINR, or power, it belongs in `downlink_candidate_evaluation`.
@@ -90,6 +97,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - If logic normalizes scheduler-facing user tables, looks up per-user feasible spaces, or packages the trusted batch artifact, it belongs in `single_user_lookup`.
 - If logic selects a concrete scheduler backend behind the shared public contract, it belongs in `multi_user_scheduler`.
 - If logic reasons jointly across users under a shared slot budget, it belongs in `multi_user_tdma_scheduler`.
+- If logic prepares trusted batch user spaces under a shared OFDMA PRB-slot budget for a future solver, it belongs in `multi_user_ofdma_scheduler`.
 - If logic builds shared default configs or PA catalogs, it belongs in `configs`.
 - If logic builds daily load curves or synthetic session demand, it belongs in `day_cycle_simulation`.
 - If logic orchestrates one full synthetic day run across packages, it belongs in `day_run`.
