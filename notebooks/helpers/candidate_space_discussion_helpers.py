@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import sys
-from typing import Any
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 import numpy as np
 import pandas as pd
 
@@ -18,41 +18,18 @@ SRC_PATH = (PROJECT_ROOT / "src").resolve()
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
-from configs import pa_dc_power
+from candidate_table_generation import DISTANCE_BIN_GRID_M
 from candidate_table_generation.pruning import prune_candidate_frontier
-from day_cycle_simulation.models import SyntheticSessionGenerationConfig
-from support.candidate_space import (
-    _draw_candidate_allocation_axis,
-    annotate_same_pa_dominance,
-    export_doc_figure,
-    prepare_feasible_plot_table,
-    select_dominated_example_pair,
-    select_slice_rows,
-)
+from models.candidate_table import BATCH_USER_PARAMETER_SPACE_COLUMNS
+from support.candidate_space import annotate_same_pa_dominance, export_doc_figure
 from support.candidate_table_generation import (
-    _build_full_frame_candidate_table,
+    _build_slot_normalized_candidate_table,
     _resolve_candidate_table_engine_state,
     _select_distance_bin,
-)
-from support.day_cycle import bin_index_to_clock, build_day_cycle_discussion_artifacts
-from support.single_user_study import (
-    build_single_user_scenario,
-    run_single_user_scenario,
-    summarize_single_user_scenario,
-)
-from support.table_lookup import (
-    build_cached_batch_user_parameter_space,
-    build_table_lookup_artifacts,
-    load_cached_distance_binned_table,
-    pick_example_scheduler_bin,
-)
-from support.tdma_walkthrough import (
-    plot_scheduler_input_spaces as plot_lookup_scheduler_input_spaces,
 )
 from support.theme import (
     NotebookTheme,
     apply_axis_style,
-    build_color_cycle,
     create_themed_figure,
     get_notebook_theme,
     render_html_table,
@@ -62,40 +39,27 @@ from support.theme import (
 
 @dataclass(frozen=True)
 class CandidateSpaceArtifacts:
-    """Lean notebook payload for the candidate-space walkthrough."""
+    """Compact notebook payload for the candidate-space frontier walkthrough."""
 
-    distance_m: float
-    required_rate_bps: float
-    required_rate_mbps: float
-    frame_slot_count: int
-    total_prbs: int
-    max_layers: int
+    worked_distance_m: int
+    comparison_distance_m: int
+    supported_distance_bins: tuple[int, ...]
     pa_label_by_id: dict[int, str]
     pa_color_map: dict[int, str]
-    single_user_summary: pd.DataFrame
-    best_feasible_row: pd.Series
-    best_feasible_label: str
-    slice_comparison: pd.DataFrame
-    slice_best_row: pd.Series
-    slice_comparison_row: pd.Series
-    lower_power_role_label: str
-    comparison_role_label: str
-    throughput_band: pd.DataFrame
-    pruning_pair_table: pd.DataFrame
-    band_dominance_table: pd.DataFrame
-    pruning_summary: pd.DataFrame
-    pruned_frontier_table: pd.DataFrame
-    bin_validation_table: pd.DataFrame
-    day_bin_count: int
-    example_bin_index: int
-    example_user_table: pd.DataFrame
-    batch_space: Any
-    full_frontiers_by_user: dict[int, pd.DataFrame]
-    user_color_map: dict[int, str]
+    row_contract: pd.Series
+    full_space_table: pd.DataFrame
+    annotated_full_space_table: pd.DataFrame
+    zoom_table: pd.DataFrame
+    zoom_x_limits_bits: tuple[float, float]
+    zoom_y_limits_w: tuple[float, float]
+    dominated_row: pd.Series
+    dominating_row: pd.Series
+    worked_frontier_table: pd.DataFrame
+    comparison_frontier_table: pd.DataFrame
 
 
 class CandidateSpaceHelpers:
-    """Theme-aware presentation helpers for Notebook 3."""
+    """Theme-aware presentation helpers for the candidate-space notebook."""
 
     def __init__(self, *, theme: str | NotebookTheme = "aalto_elec"):
         self.theme = get_notebook_theme(theme)
@@ -103,66 +67,52 @@ class CandidateSpaceHelpers:
     def build_artifacts(
         self,
         *,
-        load_curve_csv: Path,
-        day_cycle_config: SyntheticSessionGenerationConfig,
-        distance_m: float = 300.0,
-        required_rate_bps: float = 200e6,
-        throughput_slice_tolerance_mbps: float = 0.05,
-        throughput_band_mbps: tuple[float, float] = (200.0, 205.0),
-        target_user_count: int = 4,
+        worked_distance_m: int = 300,
+        comparison_distance_m: int = 50,
     ) -> CandidateSpaceArtifacts:
-        """Build the compact candidate-space views used in Notebook 3.
+        """Build the one-slot feasible-space and frontier views used in the notebook."""
 
-        Steps:
-        1. Resolve one fixed single-user case and derive the feasible rows used to explain the tradeoffs.
-        2. Build the pruning and stored-frontier views for the same distance bin.
-        3. Reuse one day-level active bin to assemble the lookup-stage handoff into per-user candidate menus.
-        """
+        engine_state = _resolve_candidate_table_engine_state()
+        worked_distance_bin = _select_distance_bin(int(worked_distance_m))
+        comparison_distance_bin = _select_distance_bin(int(comparison_distance_m))
+        pa_label_by_id = {
+            int(pa_id): str(pa.scenario_label)
+            for pa_id, pa in enumerate(engine_state.pa_catalog)
+        }
+        pa_color_map = self._build_pa_color_map(pa_label_by_id)
 
-        single_user_context = self._build_single_user_candidate_context(
-            distance_m=float(distance_m),
-            required_rate_bps=float(required_rate_bps),
-            throughput_slice_tolerance_mbps=float(throughput_slice_tolerance_mbps),
-            throughput_band_mbps=throughput_band_mbps,
+        worked_context = self._build_worked_space_context(
+            distance_m=int(worked_distance_bin),
+            pa_label_by_id=pa_label_by_id,
         )
-        lookup_context = self._build_lookup_context(
-            load_curve_csv=Path(load_curve_csv),
-            day_cycle_config=day_cycle_config,
-            target_user_count=int(target_user_count),
+        worked_frontier_table = self._prepare_candidate_table(
+            prune_candidate_frontier(worked_context["full_space_table"])
+        )
+        comparison_frontier_table = self._prepare_candidate_table(
+            prune_candidate_frontier(
+                _build_slot_normalized_candidate_table(
+                    int(comparison_distance_bin),
+                    engine_state=engine_state,
+                )
+            )
         )
 
         return CandidateSpaceArtifacts(
-            distance_m=float(distance_m),
-            required_rate_bps=float(required_rate_bps),
-            required_rate_mbps=float(required_rate_bps) / 1e6,
-            frame_slot_count=int(single_user_context["frame_slot_count"]),
-            total_prbs=int(single_user_context["total_prbs"]),
-            max_layers=int(single_user_context["max_layers"]),
-            pa_label_by_id=dict(single_user_context["pa_label_by_id"]),
-            pa_color_map=dict(lookup_context["pa_color_map"]),
-            single_user_summary=single_user_context["single_user_summary"].copy(),
-            best_feasible_row=single_user_context["best_feasible_row"].copy(),
-            best_feasible_label=str(single_user_context["best_feasible_label"]),
-            slice_comparison=single_user_context["slice_comparison"].copy(),
-            slice_best_row=single_user_context["slice_best_row"].copy(),
-            slice_comparison_row=single_user_context["slice_comparison_row"].copy(),
-            lower_power_role_label=str(single_user_context["lower_power_role_label"]),
-            comparison_role_label=str(single_user_context["comparison_role_label"]),
-            throughput_band=single_user_context["throughput_band"].copy(),
-            pruning_pair_table=single_user_context["pruning_pair_table"].copy(),
-            band_dominance_table=single_user_context["band_dominance_table"].copy(),
-            pruning_summary=single_user_context["pruning_summary"].copy(),
-            pruned_frontier_table=single_user_context["pruned_frontier_table"].copy(),
-            bin_validation_table=lookup_context["bin_validation_table"].copy(),
-            day_bin_count=int(lookup_context["day_bin_count"]),
-            example_bin_index=int(lookup_context["example_bin_index"]),
-            example_user_table=lookup_context["example_user_table"].copy(),
-            batch_space=lookup_context["batch_space"],
-            full_frontiers_by_user={
-                int(user_id): frontier.copy()
-                for user_id, frontier in lookup_context["full_frontiers_by_user"].items()
-            },
-            user_color_map=dict(lookup_context["user_color_map"]),
+            worked_distance_m=int(worked_distance_bin),
+            comparison_distance_m=int(comparison_distance_bin),
+            supported_distance_bins=tuple(int(value) for value in DISTANCE_BIN_GRID_M),
+            pa_label_by_id=pa_label_by_id,
+            pa_color_map=pa_color_map,
+            row_contract=worked_context["row_contract"].copy(),
+            full_space_table=worked_context["full_space_table"].copy(),
+            annotated_full_space_table=worked_context["annotated_full_space_table"].copy(),
+            zoom_table=worked_context["zoom_table"].copy(),
+            zoom_x_limits_bits=tuple(worked_context["zoom_x_limits_bits"]),
+            zoom_y_limits_w=tuple(worked_context["zoom_y_limits_w"]),
+            dominated_row=worked_context["dominated_row"].copy(),
+            dominating_row=worked_context["dominating_row"].copy(),
+            worked_frontier_table=worked_frontier_table.copy(),
+            comparison_frontier_table=comparison_frontier_table.copy(),
         )
 
     def render_table(
@@ -181,941 +131,860 @@ class CandidateSpaceHelpers:
             caption=caption,
         )
 
-    def plot_candidate_allocation(
-        self,
-        artifacts: CandidateSpaceArtifacts,
-        *,
-        export_path: Path | None = None,
-    ) -> tuple[plt.Figure, Any]:
-        """Plot one feasible row as a themed time-frequency-layer allocation block."""
-
-        fig = plt.figure(figsize=(12.0, 8.0))
-        fig.patch.set_facecolor(self.theme.background)
-        ax = fig.add_subplot(111, projection="3d")
-        _draw_candidate_allocation_axis(
-            ax=ax,
-            total_slots=int(artifacts.frame_slot_count),
-            total_prbs=int(artifacts.total_prbs),
-            max_layers=int(artifacts.max_layers),
-            allocation_row=artifacts.best_feasible_row,
-            allocation_color=self.theme.primary,
-            allocation_edgecolor=self.theme.secondary,
-            envelope_color=self.theme.neutral_light,
-            envelope_edgecolor=self.theme.neutral_dark,
-            label_color=self.theme.text,
-        )
-        self._apply_3d_axis_theme(ax)
-        fig.subplots_adjust(left=0.06, right=0.88, bottom=0.10, top=0.95)
-
-        self._export_figure(fig, export_path)
-        return fig, ax
-
-    def plot_same_throughput_tradeoff(
-        self,
-        artifacts: CandidateSpaceArtifacts,
-        *,
-        export_path: Path | None = None,
-    ) -> tuple[plt.Figure, tuple[Any, Any]]:
-        """Plot two same-throughput candidate rows side by side."""
-
-        fig = plt.figure(figsize=(16.0, 7.2))
-        fig.patch.set_facecolor(self.theme.background)
-        left_ax = fig.add_subplot(121, projection="3d")
-        right_ax = fig.add_subplot(122, projection="3d")
-
-        _draw_candidate_allocation_axis(
-            ax=left_ax,
-            total_slots=int(artifacts.frame_slot_count),
-            total_prbs=int(artifacts.total_prbs),
-            max_layers=int(artifacts.max_layers),
-            allocation_row=artifacts.slice_best_row,
-            allocation_color=self.theme.primary,
-            allocation_edgecolor=self.theme.secondary,
-            z_label_x=1.08,
-            envelope_color=self.theme.neutral_light,
-            envelope_edgecolor=self.theme.neutral_dark,
-            label_color=self.theme.text,
-        )
-        _draw_candidate_allocation_axis(
-            ax=right_ax,
-            total_slots=int(artifacts.frame_slot_count),
-            total_prbs=int(artifacts.total_prbs),
-            max_layers=int(artifacts.max_layers),
-            allocation_row=artifacts.slice_comparison_row,
-            allocation_color=self.theme.highlight,
-            allocation_edgecolor=self.theme.accent,
-            z_label_x=1.08,
-            envelope_color=self.theme.neutral_light,
-            envelope_edgecolor=self.theme.neutral_dark,
-            label_color=self.theme.text,
-        )
-        self._apply_3d_axis_theme(left_ax)
-        self._apply_3d_axis_theme(right_ax)
-        left_ax.text2D(
-            0.5,
-            -0.045,
-            "(a)",
-            transform=left_ax.transAxes,
-            ha="center",
-            va="top",
-            fontsize=11,
-            color=self.theme.text,
-        )
-        right_ax.text2D(
-            0.5,
-            -0.045,
-            "(b)",
-            transform=right_ax.transAxes,
-            ha="center",
-            va="top",
-            fontsize=11,
-            color=self.theme.text,
-        )
-        fig.subplots_adjust(left=0.04, right=0.95, bottom=0.10, top=0.94, wspace=0.16)
-
-        self._export_figure(fig, export_path)
-        return fig, (left_ax, right_ax)
-
-    def plot_throughput_band(
+    def plot_inherited_row_contract(
         self,
         artifacts: CandidateSpaceArtifacts,
         *,
         export_path: Path | None = None,
     ) -> tuple[plt.Figure, plt.Axes]:
-        """Plot the feasible candidates across the worked throughput band."""
+        """Plot one compact card for the inherited evaluated single-slot row contract."""
 
+        row = artifacts.row_contract
         fig, ax = create_themed_figure(
             theme=self.theme,
-            figsize=(8.6, 5.2),
+            figsize=(11.8, 4.6),
         )
-        throughput_band = artifacts.throughput_band
-        cloud_artist = ax.scatter(
-            throughput_band["rate_mbps"].astype(float),
-            throughput_band["active_pa_power_w"].astype(float),
-            c=throughput_band["total_prb_slots"].astype(float),
-            cmap=self._build_prb_colormap(),
-            s=68,
-            alpha=0.88,
-            edgecolors=self.theme.background,
-            linewidths=0.35,
+        ax.set_axis_off()
+        self._add_card_group(
+            ax,
+            x=0.04,
+            y=0.16,
+            width=0.92,
+            height=0.68,
+            header="Evaluated single-slot row",
+            rows=[
+                ("pa_id", f"{int(row['pa_id'])} ({artifacts.pa_label_by_id[int(row['pa_id'])]})"),
+                ("n_prb", str(int(row["n_prb"]))),
+                ("layers", str(int(row["layers"]))),
+                ("mcs", str(int(row["mcs"]))),
+                ("bits_per_slot", self._format_bits_per_slot(float(row["bits_per_slot"]))),
+                ("p_out_total_w", self._format_power_w(float(row["p_out_total_w"]))),
+                ("p_dc_active_w", self._format_power_w(float(row["p_dc_active_w"]))),
+                ("feasible", "True"),
+            ],
+            accent_color=self.theme.primary,
+            n_columns=4,
         )
-        ax.scatter(
-            [float(artifacts.slice_best_row["rate_mbps"])],
-            [float(artifacts.slice_best_row["active_pa_power_w"])],
-            facecolors="none",
-            edgecolors=self.theme.secondary,
-            linewidths=2.0,
-            s=190,
-            marker="o",
-            label=f"{artifacts.lower_power_role_label} ({artifacts.pa_label_by_id[int(artifacts.slice_best_row['pa_id'])]})",
-            zorder=4,
-        )
-        ax.scatter(
-            [float(artifacts.slice_comparison_row["rate_mbps"])],
-            [float(artifacts.slice_comparison_row["active_pa_power_w"])],
-            facecolors="none",
-            edgecolors=self.theme.accent,
-            linewidths=2.1,
-            s=220,
-            marker="D",
-            label=f"{artifacts.comparison_role_label} ({artifacts.pa_label_by_id[int(artifacts.slice_comparison_row['pa_id'])]})",
-            zorder=5,
-        )
-        ax.set_xlim(
-            float(throughput_band["rate_mbps"].min()-0.5),
-            float(throughput_band["rate_mbps"].max()+0.5),
-        )
-        ax.set_xlabel("Average throughput (Mbps)")
-        ax.set_ylabel("Active PA DC power (W)")
-        style_legend(ax, theme=self.theme)
-
-        colorbar = fig.colorbar(cloud_artist, ax=ax, label="Allocated PRBs per frame")
-        self._style_colorbar(colorbar)
-        fig.tight_layout()
-
         self._export_figure(fig, export_path)
         return fig, ax
 
-    def plot_pruning_band(
+    def plot_single_slot_space(
         self,
         artifacts: CandidateSpaceArtifacts,
         *,
         export_path: Path | None = None,
     ) -> tuple[plt.Figure, plt.Axes]:
-        """Plot kept and dominated rows across the worked throughput band."""
+        """Plot the full feasible one-slot space for the worked distance bin."""
 
         fig, ax = create_themed_figure(
             theme=self.theme,
             figsize=(9.4, 5.4),
         )
-        pruning_slice_table = artifacts.band_dominance_table
-        pa_ids = sorted(pruning_slice_table["pa_id"].astype(int).unique())
-        marker_by_pa = {
-            int(pa_id): marker
-            for pa_id, marker in zip(pa_ids, ["o", "s", "^", "D"], strict=False)
-        }
-        color_norm = colors.Normalize(
-            vmin=float(pruning_slice_table["total_prb_slots"].min()),
-            vmax=float(pruning_slice_table["total_prb_slots"].max()),
+        self._plot_candidate_cloud(
+            ax=ax,
+            table=artifacts.full_space_table,
+            pa_color_map=artifacts.pa_color_map,
+            pa_label_by_id=artifacts.pa_label_by_id,
+            alpha=0.62,
+            size=16,
+            legend=True,
         )
-        color_map = self._build_prb_colormap()
-
-        for pa_id in pa_ids:
-            pa_rows = pruning_slice_table.loc[pruning_slice_table["pa_id"].eq(int(pa_id))].copy()
-            marker = marker_by_pa[int(pa_id)]
-            kept_rows = pa_rows.loc[pa_rows["pruning_role"].eq("kept")]
-            dominated_rows = pa_rows.loc[pa_rows["pruning_role"].eq("dominated")]
-            pa_label = artifacts.pa_label_by_id[int(pa_id)]
-
-            if not kept_rows.empty:
-                ax.scatter(
-                    kept_rows["rate_mbps"].astype(float),
-                    kept_rows["active_pa_power_w"].astype(float),
-                    c=kept_rows["total_prb_slots"].astype(float),
-                    cmap=color_map,
-                    norm=color_norm,
-                    s=72,
-                    alpha=0.9,
-                    marker=marker,
-                    edgecolors=self.theme.neutral_dark,
-                    linewidths=0.55,
-                    label=f"{pa_label} kept",
-                )
-            if dominated_rows.empty:
-                continue
-
-            edge_colors = color_map(color_norm(dominated_rows["total_prb_slots"].astype(float)))
-            ax.scatter(
-                dominated_rows["rate_mbps"].astype(float),
-                dominated_rows["active_pa_power_w"].astype(float),
-                facecolors="none",
-                edgecolors=edge_colors,
-                s=95,
-                marker=marker,
-                linewidths=1.5,
-                label=f"{pa_label} dominated",
-            )
-
-        ax.axvline(
-            float(artifacts.required_rate_mbps),
-            color=self.theme.neutral_dark,
-            linestyle="--",
-            linewidth=1.2,
-        )
-        ax.set_xlim(
-            float(pruning_slice_table["rate_mbps"].min()-0.5),
-            float(pruning_slice_table["rate_mbps"].max()+0.5),
-        )
-        ax.set_xlabel("Average throughput (Mbps)")
+        ax.set_xlabel("Payload per active slot (kbit)")
         ax.set_ylabel("Active PA DC power (W)")
-        legend = ax.legend(frameon=True, ncol=2)
-        style_legend(legend, theme=self.theme)
-
-        scalar_mappable = plt.cm.ScalarMappable(norm=color_norm, cmap=color_map)
-        scalar_mappable.set_array([])
-        colorbar = fig.colorbar(scalar_mappable, ax=ax, label="Allocated PRBs per frame")
-        self._style_colorbar(colorbar)
-        fig.subplots_adjust(left=0.09, right=0.88, bottom=0.13, top=0.88)
-
-        self._export_figure(fig, export_path)
-        return fig, ax
-
-    def plot_frontier_compaction(
-        self,
-        artifacts: CandidateSpaceArtifacts,
-        *,
-        export_path: Path | None = None,
-    ) -> tuple[plt.Figure, plt.Axes]:
-        """Plot the row-count reduction introduced by same-PA pruning."""
-
-        fig, ax = create_themed_figure(
-            theme=self.theme,
-            figsize=(8.0, 4.8),
-        )
-        x_positions = np.arange(len(artifacts.pruning_summary))
-        width = 0.35
-
-        ax.bar(
-            x_positions - width / 2,
-            artifacts.pruning_summary["rows_before_pruning"].astype(int),
-            width=width,
-            color=self.theme.primary,
-            alpha=0.82,
-            label="Full-frame rows",
-        )
-        ax.bar(
-            x_positions + width / 2,
-            artifacts.pruning_summary["rows_after_pruning"].astype(int),
-            width=width,
-            color=self.theme.secondary,
-            alpha=0.82,
-            label="Stored frontier rows",
-        )
-        ax.set_xticks(x_positions.tolist())
-        ax.set_xticklabels(artifacts.pruning_summary["pa_label"].tolist())
-        ax.set_ylabel("Row count")
-        legend = ax.legend(loc="upper right", frameon=True)
-        style_legend(legend, theme=self.theme)
         fig.tight_layout()
-
         self._export_figure(fig, export_path)
         return fig, ax
 
-    def plot_pruned_frontier(
-        self,
-        artifacts: CandidateSpaceArtifacts,
-        *,
-        export_path: Path | None = None,
-    ) -> tuple[plt.Figure, plt.Axes]:
-        """Plot the stored full-frame frontier for the worked distance bin."""
-
-        fig, ax = create_themed_figure(
-            theme=self.theme,
-            figsize=(8.2, 5.2),
-        )
-        for pa_id, pa_rows in artifacts.pruned_frontier_table.groupby("pa_id", sort=True):
-            ax.scatter(
-                pa_rows["rate_active_bps"].astype(float) / 1e6,
-                pa_rows["p_dc_active_w"].astype(float),
-                s=36,
-                alpha=0.86,
-                color=artifacts.pa_color_map[int(pa_id)],
-                edgecolors=self.theme.background,
-                linewidths=0.45,
-                label=artifacts.pa_label_by_id[int(pa_id)],
-            )
-
-        ax.set_xlabel("Active rate for the full frame (Mbps)")
-        ax.set_ylabel("Active PA DC power (W)")
-        legend = ax.legend(loc="upper right", frameon=True)
-        style_legend(legend, theme=self.theme)
-        fig.tight_layout()
-
-        self._export_figure(fig, export_path)
-        return fig, ax
-
-    def plot_lookup_bin_context(
+    def plot_single_slot_space_zoom(
         self,
         artifacts: CandidateSpaceArtifacts,
         *,
         export_path: Path | None = None,
     ) -> tuple[plt.Figure, tuple[plt.Axes, plt.Axes]]:
-        """Plot the selected scheduler bin inside the day-level demand trace."""
+        """Plot the full one-slot space and one local zoom region."""
 
         fig, axes = create_themed_figure(
             theme=self.theme,
-            nrows=2,
-            ncols=1,
-            figsize=(12.0, 7.5),
-            sharex=True,
+            nrows=1,
+            ncols=2,
+            figsize=(13.2, 5.6),
             squeeze=False,
-            gridspec_kw={"height_ratios": [2.2, 1.0]},
         )
-        load_ax, active_ax = axes.ravel()
-        validation_table = artifacts.bin_validation_table
-
-        load_ax.bar(
-            validation_table["bin_index"].astype(int),
-            validation_table["target_load_gb_in_bin"].astype(float),
-            width=0.9,
-            color=self.theme.primary,
-            alpha=0.22,
-            label="Target load from the quarter-hour bins",
+        full_ax, zoom_ax = axes.ravel()
+        self._plot_candidate_cloud(
+            ax=full_ax,
+            table=artifacts.full_space_table,
+            pa_color_map=artifacts.pa_color_map,
+            pa_label_by_id=artifacts.pa_label_by_id,
+            alpha=0.34,
+            size=10,
+            legend=True,
         )
-        load_ax.plot(
-            validation_table["bin_index"].astype(int),
-            validation_table["rebuilt_load_gb_in_bin"].astype(float),
-            color=self.theme.accent,
-            linewidth=2.0,
-            label="Load rebuilt from generated sessions",
+        self._plot_zoom_box(
+            full_ax,
+            x_limits_bits=artifacts.zoom_x_limits_bits,
+            y_limits_w=artifacts.zoom_y_limits_w,
         )
-        load_ax.set_ylabel("Load in bin (GB)")
-        style_legend(load_ax, theme=self.theme)
+        full_ax.set_xlabel("Payload per active slot (kbit)")
+        full_ax.set_ylabel("Active PA DC power (W)")
 
-        active_ax.bar(
-            validation_table["bin_index"].astype(int),
-            validation_table["active_users"].astype(int),
-            width=0.9,
-            color=self.theme.secondary,
-            alpha=0.85,
+        self._plot_candidate_cloud(
+            ax=zoom_ax,
+            table=artifacts.zoom_table,
+            pa_color_map=artifacts.pa_color_map,
+            pa_label_by_id=artifacts.pa_label_by_id,
+            alpha=0.72,
+            size=28,
+            legend=False,
         )
-        active_ax.set_xlabel("Quarter-hour bin index")
-        active_ax.set_ylabel("Active users")
-
-        for ax in (load_ax, active_ax):
-            self._set_day_bin_axis(ax, day_bin_count=int(artifacts.day_bin_count))
-            self._highlight_selected_bin(
-                ax,
-                bin_index=int(artifacts.example_bin_index),
-                label=f"Chosen bin ({bin_index_to_clock(int(artifacts.example_bin_index))})",
-            )
-
+        zoom_ax.set_xlim(
+            float(artifacts.zoom_x_limits_bits[0]) / 1e3,
+            float(artifacts.zoom_x_limits_bits[1]) / 1e3,
+        )
+        zoom_ax.set_ylim(*artifacts.zoom_y_limits_w)
+        zoom_ax.set_xlabel("Payload per active slot (kbit)")
+        zoom_ax.set_ylabel("Active PA DC power (W)")
         fig.tight_layout()
         self._export_figure(fig, export_path)
-        return fig, (load_ax, active_ax)
+        return fig, (full_ax, zoom_ax)
 
-    def plot_active_bin_snapshot(
+    def plot_pruning_rule_diagram(
         self,
         artifacts: CandidateSpaceArtifacts,
         *,
         export_path: Path | None = None,
     ) -> tuple[plt.Figure, plt.Axes]:
-        """Plot the active users in the selected scheduler-facing bin."""
+        """Plot the exact same-PA strict pruning rule used by the stored frontier."""
 
-        plot_table = artifacts.example_user_table.sort_values("user_id").copy()
-        plot_table["required_rate_mbps"] = plot_table["required_rate_bps"].astype(float) / 1e6
         fig, ax = create_themed_figure(
             theme=self.theme,
-            figsize=(8.4, 4.8),
+            figsize=(12.4, 4.8),
         )
-
-        for row in plot_table.itertuples(index=False):
-            user_id = int(row.user_id)
-            user_color = artifacts.user_color_map[user_id]
-            ax.scatter(
-                [float(row.distance_m)],
-                [float(row.required_rate_mbps)],
-                s=94,
-                color=user_color,
-                edgecolor=self.theme.background,
-                linewidth=0.8,
-                zorder=3,
-            )
-            ax.annotate(
-                f"User {user_id}",
-                (float(row.distance_m), float(row.required_rate_mbps)),
-                xytext=(0, 10),
-                textcoords="offset points",
-                ha="center",
-                fontsize=9,
-                color=user_color,
-            )
-
-        ax.set_xlabel("User distance (m)")
-        ax.set_ylabel("Required throughput (Mbps)")
-        fig.tight_layout()
-
+        ax.set_axis_off()
+        self._add_diagram_box(
+            ax,
+            x=0.05,
+            y=0.20,
+            width=0.24,
+            height=0.58,
+            header="Kept row",
+            lines=[
+                "same pa_id",
+                "n_prb_kept <= n_prb_drop",
+                "p_dc_active_w_kept <= p_dc_active_w_drop",
+                "bits_per_slot_kept >= bits_per_slot_drop",
+            ],
+            facecolor=colors.to_hex(colors.to_rgba(self.theme.primary, 0.08)),
+            edgecolor=self.theme.primary,
+        )
+        self._add_diagram_box(
+            ax,
+            x=0.38,
+            y=0.28,
+            width=0.24,
+            height=0.42,
+            header="Strict improvement",
+            lines=[
+                "at least one axis improves strictly",
+                "n_prb_kept < n_prb_drop",
+                "or",
+                "p_dc_active_w_kept < p_dc_active_w_drop",
+                "or",
+                "bits_per_slot_kept > bits_per_slot_drop",
+            ],
+            facecolor=self.theme.background,
+            edgecolor=self.theme.grid,
+        )
+        self._add_diagram_box(
+            ax,
+            x=0.71,
+            y=0.20,
+            width=0.24,
+            height=0.58,
+            header="Dominated row",
+            lines=[
+                "same pa_id",
+                "more PRBs is allowed here",
+                "more active power is allowed here",
+                "less payload per slot is allowed here",
+            ],
+            facecolor=colors.to_hex(colors.to_rgba(self.theme.highlight, 0.20)),
+            edgecolor=self.theme.accent,
+        )
+        self._add_diagram_arrow(ax, (0.29, 0.49), (0.38, 0.49))
+        self._add_diagram_arrow(ax, (0.62, 0.49), (0.71, 0.49))
         self._export_figure(fig, export_path)
         return fig, ax
 
-    def plot_scheduler_input_spaces(
+    def plot_dominated_vs_kept_example(
         self,
         artifacts: CandidateSpaceArtifacts,
         *,
         export_path: Path | None = None,
-    ):
-        """Plot the per-user full-frame menus that leave the lookup stage."""
+    ) -> tuple[plt.Figure, tuple[plt.Axes, plt.Axes]]:
+        """Plot one explicit dominated-row versus kept-row pruning example."""
 
-        fig, axes = plot_lookup_scheduler_input_spaces(
-            artifacts.batch_space,
-            artifacts.example_user_table,
-            user_color_map=artifacts.user_color_map,
+        fig, axes = create_themed_figure(
+            theme=self.theme,
+            nrows=1,
+            ncols=2,
+            figsize=(13.4, 5.6),
+            squeeze=False,
+            gridspec_kw={"width_ratios": [1.6, 1.0]},
+        )
+        scatter_ax, card_ax = axes.ravel()
+        card_ax.set_axis_off()
+
+        self._plot_candidate_cloud(
+            ax=scatter_ax,
+            table=artifacts.zoom_table,
             pa_color_map=artifacts.pa_color_map,
-            pa_label_map=artifacts.pa_label_by_id,
-            full_frontiers_by_user=artifacts.full_frontiers_by_user,
+            pa_label_by_id=artifacts.pa_label_by_id,
+            alpha=0.45,
+            size=22,
+            legend=False,
         )
-        fig.patch.set_facecolor(self.theme.background)
-        for ax, user_row in zip(
-            np.atleast_1d(axes).ravel(),
-            artifacts.example_user_table.sort_values("user_id").itertuples(index=False),
-            strict=False,
-        ):
-            if not ax.get_visible():
-                continue
-            apply_axis_style(ax, theme=self.theme)
-            user_color = artifacts.user_color_map[int(user_row.user_id)]
-            for spine in ax.spines.values():
-                if not spine.get_visible():
-                    continue
-                spine.set_edgecolor(user_color)
-                spine.set_linewidth(1.25)
-        for legend in fig.legends:
-            style_legend(legend, theme=self.theme)
+        self._highlight_example_pair(scatter_ax, artifacts)
+        scatter_ax.set_xlim(
+            float(artifacts.zoom_x_limits_bits[0]) / 1e3,
+            float(artifacts.zoom_x_limits_bits[1]) / 1e3,
+        )
+        scatter_ax.set_ylim(*artifacts.zoom_y_limits_w)
+        scatter_ax.set_xlabel("Payload per active slot (kbit)")
+        scatter_ax.set_ylabel("Active PA DC power (W)")
 
+        dominated = artifacts.dominated_row
+        dominating = artifacts.dominating_row
+        self._add_card_group(
+            card_ax,
+            x=0.05,
+            y=0.54,
+            width=0.90,
+            height=0.34,
+            header="Kept row",
+            rows=self._build_pair_card_rows(dominating),
+            accent_color=self.theme.primary,
+            n_columns=2,
+        )
+        self._add_card_group(
+            card_ax,
+            x=0.05,
+            y=0.12,
+            width=0.90,
+            height=0.34,
+            header="Pruned row",
+            rows=self._build_pair_card_rows(dominated),
+            accent_color=self.theme.highlight,
+            n_columns=2,
+        )
+        fig.tight_layout()
         self._export_figure(fig, export_path)
-        return fig, axes
+        return fig, (scatter_ax, card_ax)
 
-    def _build_single_user_candidate_context(
+    def plot_space_vs_frontier(
+        self,
+        artifacts: CandidateSpaceArtifacts,
+        *,
+        export_path: Path | None = None,
+    ) -> tuple[plt.Figure, tuple[plt.Axes, plt.Axes]]:
+        """Plot the worked full feasible space beside the stored frontier."""
+
+        fig, axes = create_themed_figure(
+            theme=self.theme,
+            nrows=1,
+            ncols=2,
+            figsize=(13.0, 5.4),
+            squeeze=False,
+            sharex=True,
+            sharey=True,
+        )
+        full_ax, frontier_ax = axes.ravel()
+        self._plot_candidate_cloud(
+            ax=full_ax,
+            table=artifacts.full_space_table,
+            pa_color_map=artifacts.pa_color_map,
+            pa_label_by_id=artifacts.pa_label_by_id,
+            alpha=0.40,
+            size=10,
+            legend=True,
+        )
+        self._plot_candidate_cloud(
+            ax=frontier_ax,
+            table=artifacts.worked_frontier_table,
+            pa_color_map=artifacts.pa_color_map,
+            pa_label_by_id=artifacts.pa_label_by_id,
+            alpha=0.86,
+            size=18,
+            legend=False,
+        )
+        for axis in (full_ax, frontier_ax):
+            axis.set_xlabel("Payload per active slot (kbit)")
+            axis.set_ylabel("Active PA DC power (W)")
+        fig.tight_layout()
+        self._export_figure(fig, export_path)
+        return fig, (full_ax, frontier_ax)
+
+    def plot_frontier_distance_comparison(
+        self,
+        artifacts: CandidateSpaceArtifacts,
+        *,
+        export_path: Path | None = None,
+    ) -> tuple[plt.Figure, tuple[plt.Axes, plt.Axes]]:
+        """Plot stored frontiers at two distances on the same visual scale."""
+
+        fig, axes = create_themed_figure(
+            theme=self.theme,
+            nrows=1,
+            ncols=2,
+            figsize=(13.0, 5.4),
+            squeeze=False,
+            sharex=True,
+            sharey=True,
+        )
+        short_ax, long_ax = axes.ravel()
+        combined_bits_max = max(
+            float(artifacts.comparison_frontier_table["bits_per_slot"].max()),
+            float(artifacts.worked_frontier_table["bits_per_slot"].max()),
+        )
+        combined_power_max = max(
+            float(artifacts.comparison_frontier_table["p_dc_active_w"].max()),
+            float(artifacts.worked_frontier_table["p_dc_active_w"].max()),
+        )
+
+        self._plot_candidate_cloud(
+            ax=short_ax,
+            table=artifacts.comparison_frontier_table,
+            pa_color_map=artifacts.pa_color_map,
+            pa_label_by_id=artifacts.pa_label_by_id,
+            alpha=0.88,
+            size=22,
+            legend=True,
+        )
+        self._plot_candidate_cloud(
+            ax=long_ax,
+            table=artifacts.worked_frontier_table,
+            pa_color_map=artifacts.pa_color_map,
+            pa_label_by_id=artifacts.pa_label_by_id,
+            alpha=0.88,
+            size=22,
+            legend=False,
+        )
+        for axis in (short_ax, long_ax):
+            axis.set_xlim(0.0, combined_bits_max / 1e3 * 1.04)
+            axis.set_ylim(0.0, combined_power_max * 1.04)
+            axis.set_xlabel("Payload per active slot (kbit)")
+            axis.set_ylabel("Active PA DC power (W)")
+        fig.tight_layout()
+        self._export_figure(fig, export_path)
+        return fig, (short_ax, long_ax)
+
+    def plot_distance_bin_storage_strip(
+        self,
+        artifacts: CandidateSpaceArtifacts,
+        *,
+        export_path: Path | None = None,
+    ) -> tuple[plt.Figure, plt.Axes]:
+        """Plot the supported distance-bin strip used for stored frontier construction."""
+
+        fig, ax = create_themed_figure(
+            theme=self.theme,
+            figsize=(12.0, 2.6),
+        )
+        y_values = np.zeros(len(artifacts.supported_distance_bins), dtype=float)
+        ax.scatter(
+            list(artifacts.supported_distance_bins),
+            y_values,
+            s=46,
+            color=self.theme.neutral_light,
+            edgecolors=self.theme.neutral_dark,
+            linewidths=0.45,
+            zorder=2,
+        )
+        for distance_m, color in (
+            (artifacts.comparison_distance_m, self.theme.highlight),
+            (artifacts.worked_distance_m, self.theme.primary),
+        ):
+            ax.scatter(
+                [distance_m],
+                [0.0],
+                s=140,
+                color=color,
+                edgecolors=self.theme.accent,
+                linewidths=0.8,
+                zorder=3,
+            )
+            ax.text(
+                float(distance_m),
+                0.12,
+                f"{int(distance_m)} m",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+                color=self.theme.text,
+            )
+        ax.set_yticks([])
+        ax.set_xlabel("Supported static distance bin (m)")
+        ax.set_xlim(min(artifacts.supported_distance_bins) - 10, max(artifacts.supported_distance_bins) + 10)
+        ax.set_ylim(-0.2, 0.35)
+        ax.grid(False)
+        ax.spines["left"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        fig.tight_layout()
+        self._export_figure(fig, export_path)
+        return fig, ax
+
+    def plot_handoff_strip(
         self,
         *,
-        distance_m: float,
-        required_rate_bps: float,
-        throughput_slice_tolerance_mbps: float,
-        throughput_band_mbps: tuple[float, float],
-    ) -> dict[str, object]:
-        """Resolve the single-user candidate and pruning views for Notebook 3."""
+        export_path: Path | None = None,
+    ) -> tuple[plt.Figure, plt.Axes]:
+        """Plot the notebook handoff from stored frontier construction to lookup."""
 
-        scenario = build_single_user_scenario(
-            distance_m=float(distance_m),
-            required_rate_bps=float(required_rate_bps),
+        fig, ax = create_themed_figure(
+            theme=self.theme,
+            figsize=(13.0, 2.8),
         )
-        scenario_views = summarize_single_user_scenario(scenario)
-        example_candidate_view = scenario_views["example_candidate_view"].copy()
-        feasible_table = run_single_user_scenario(scenario).copy().reset_index(drop=True)
-        pa_label_by_id = {
-            int(pa_id): str(pa.scenario_label)
-            for pa_id, pa in enumerate(scenario.context.pa_catalog)
-        }
-        best_feasible_row = (
-            feasible_table.sort_values(
-                [
-                    "p_dc_avg_total_w",
-                    "bandwidth_hz",
-                    "n_prb",
-                    "n_slots_on",
-                    "layers",
-                    "mcs",
-                    "pa_id",
-                    "bwp_idx",
-                ]
-            )
-            .reset_index(drop=True)
-            .iloc[0]
-        )
-        feasible_plot_table = self._attach_active_pa_power(
-            feasible_table,
-            scenario=scenario,
-        )
-        required_rate_mbps = float(required_rate_bps) / 1e6
-        throughput_slice = (
-            feasible_plot_table.loc[
-                feasible_plot_table["rate_mbps"].between(
-                    required_rate_mbps - float(throughput_slice_tolerance_mbps),
-                    required_rate_mbps + float(throughput_slice_tolerance_mbps),
-                    inclusive="both",
-                )
-            ]
-            .sort_values(
-                [
-                    "active_pa_power_w",
-                    "total_prb_slots",
-                    "mcs",
-                    "n_prb",
-                    "n_slots_on",
-                    "layers",
-                    "pa_id",
-                    "rate_mbps",
-                ]
-            )
-            .reset_index(drop=True)
-        )
-        min_rate_mbps, max_rate_mbps = throughput_band_mbps
-        throughput_band = (
-            feasible_plot_table.loc[
-                feasible_plot_table["rate_mbps"].between(
-                    float(min_rate_mbps),
-                    float(max_rate_mbps),
-                    inclusive="both",
-                )
-            ]
-            .sort_values(
-                [
-                    "rate_mbps",
-                    "active_pa_power_w",
-                    "total_prb_slots",
-                    "mcs",
-                    "n_prb",
-                    "n_slots_on",
-                    "layers",
-                    "pa_id",
-                ]
-            )
-            .reset_index(drop=True)
-        )
-        if throughput_band.empty:
-            raise ValueError("No feasible candidates were found inside the requested throughput band.")
-
-        slice_best_row, slice_comparison_row = select_slice_rows(
-            throughput_slice,
-            power_column="active_pa_power_w",
-        )
-        lower_power_role_label = "Lower-power row"
-        comparison_role_label = (
-            "Lower-resource higher-MCS row"
-            if int(slice_comparison_row["total_prb_slots"]) < int(slice_best_row["total_prb_slots"])
-            else "Higher-MCS comparison"
-        )
-        annotated_feasible_table = annotate_same_pa_dominance(
-            feasible_plot_table,
-            resource_column="total_prb_slots",
-            power_column="active_pa_power_w",
-            rate_column="rate_mbps",
-        )
-        band_dominance_table = (
-            annotated_feasible_table.loc[
-                annotated_feasible_table["rate_mbps"].between(
-                    float(min_rate_mbps),
-                    float(max_rate_mbps),
-                    inclusive="both",
-                )
-            ]
-            .sort_values(
-                [
-                    "rate_mbps",
-                    "active_pa_power_w",
-                    "total_prb_slots",
-                    "pa_id",
-                    "pruning_role",
-                    "mcs",
-                    "n_prb",
-                    "n_slots_on",
-                    "layers",
-                ]
-            )
-            .reset_index(drop=True)
-        )
-        dominated_row, dominating_row = select_dominated_example_pair(
-            band_dominance_table,
-            rate_column="rate_mbps",
-            power_column="active_pa_power_w",
-            resource_column="total_prb_slots",
-            min_rate_mbps=float(min_rate_mbps),
-            max_rate_mbps=float(max_rate_mbps),
-            lookup_table=annotated_feasible_table,
-            require_dominator_in_table=True,
-        )
-        selected_distance_m = _select_distance_bin(int(distance_m))
-        full_frame_candidate_table = _build_full_frame_candidate_table(
-            int(selected_distance_m),
-            engine_state=_resolve_candidate_table_engine_state(),
-        )
-        pruned_frontier_table = prune_candidate_frontier(full_frame_candidate_table)
-
-        return {
-            "frame_slot_count": int(example_candidate_view.loc[0, "available_slots"]),
-            "total_prbs": int(example_candidate_view.loc[0, "available_prbs"]),
-            "max_layers": int(example_candidate_view.loc[0, "available_layers"]),
-            "pa_label_by_id": pa_label_by_id,
-            "best_feasible_row": best_feasible_row,
-            "best_feasible_label": pa_label_by_id[int(best_feasible_row["pa_id"])],
-            "single_user_summary": self._build_single_user_summary_table(
-                distance_m=float(distance_m),
-                required_rate_mbps=required_rate_mbps,
-                best_feasible_row=best_feasible_row,
-                best_feasible_label=pa_label_by_id[int(best_feasible_row["pa_id"])],
-            ),
-            "slice_comparison": self._build_slice_comparison_table(
-                pa_label_by_id=pa_label_by_id,
-                slice_best_row=slice_best_row,
-                slice_comparison_row=slice_comparison_row,
-                lower_power_role_label=lower_power_role_label,
-                comparison_role_label=comparison_role_label,
-            ),
-            "slice_best_row": slice_best_row,
-            "slice_comparison_row": slice_comparison_row,
-            "lower_power_role_label": lower_power_role_label,
-            "comparison_role_label": comparison_role_label,
-            "throughput_band": throughput_band,
-            "pruning_pair_table": self._build_pruning_pair_table(
-                pa_label_by_id=pa_label_by_id,
-                dominating_row=dominating_row,
-                dominated_row=dominated_row,
-            ),
-            "band_dominance_table": band_dominance_table,
-            "pruning_summary": self._build_pruning_summary(
-                full_frame_candidate_table,
-                pruned_frontier_table,
-                pa_label_by_id=pa_label_by_id,
-            ),
-            "pruned_frontier_table": pruned_frontier_table.copy(),
-        }
-
-    def _build_lookup_context(
-        self,
-        *,
-        load_curve_csv: Path,
-        day_cycle_config: SyntheticSessionGenerationConfig,
-        target_user_count: int,
-    ) -> dict[str, object]:
-        """Resolve the lookup-stage handoff for one selected scheduler bin."""
-
-        distance_binned_table = load_cached_distance_binned_table()
-        day_artifacts = build_day_cycle_discussion_artifacts(load_curve_csv, day_cycle_config)
-        example_bin_index = pick_example_scheduler_bin(
-            day_artifacts["scheduler_day_user_table"],
-            target_user_count=int(target_user_count),
-        )
-        example_user_table = (
-            day_artifacts["scheduler_day_user_table"].loc[
-                lambda table: table["bin_index"].eq(int(example_bin_index)),
-                ["user_id", "distance_m", "required_rate_bps"],
-            ]
-            .sort_values("user_id")
-            .reset_index(drop=True)
-        )
-        lookup_artifacts = build_table_lookup_artifacts(
-            example_user_table,
-            distance_binned_table=distance_binned_table,
-        )
-
-        return {
-            "bin_validation_table": day_artifacts["bin_validation_table"].copy(),
-            "day_bin_count": int(day_cycle_config.day_bin_count),
-            "example_bin_index": int(example_bin_index),
-            "example_user_table": example_user_table,
-            "batch_space": build_cached_batch_user_parameter_space(
-                example_user_table,
-                lookup_artifacts=lookup_artifacts,
-            ),
-            "full_frontiers_by_user": lookup_artifacts.full_frontiers_by_user,
-            "pa_color_map": self._build_pa_color_map(lookup_artifacts.pa_label_map),
-            "user_color_map": self._build_user_color_map(
-                example_user_table["user_id"].astype(int).tolist()
-            ),
-        }
-
-    def _attach_active_pa_power(
-        self,
-        feasible_table: pd.DataFrame,
-        *,
-        scenario,
-    ) -> pd.DataFrame:
-        """Attach active PA power to the plot-ready feasible candidate table."""
-
-        plot_table = prepare_feasible_plot_table(feasible_table)
-        n_tx_chains = int(scenario.context.deployment.n_tx_chains)
-        plot_table["active_pa_power_w"] = [
-            float(n_tx_chains)
-            * float(
-                pa_dc_power(
-                    scenario.context.pa_catalog[int(row.pa_id)],
-                    float(row.p_out_total_w) / float(n_tx_chains),
-                )
-            )
-            for row in plot_table.itertuples(index=False)
+        ax.set_axis_off()
+        boxes = [
+            ("Stored frontier", 0.05, self.theme.primary),
+            ("Distance-bin snap", 0.31, self.theme.neutral_dark),
+            ("Trusted frontier retrieval", 0.53, self.theme.neutral_dark),
+            ("Later rate expansion", 0.75, self.theme.highlight),
         ]
-        return plot_table
+        for label, x_pos, accent in boxes:
+            self._add_diagram_box(
+                ax,
+                x=x_pos,
+                y=0.28,
+                width=0.18,
+                height=0.40,
+                header=label,
+                lines=[],
+                facecolor=colors.to_hex(colors.to_rgba(accent, 0.12)),
+                edgecolor=accent,
+            )
+        self._add_diagram_arrow(ax, (0.23, 0.48), (0.31, 0.48))
+        self._add_diagram_arrow(ax, (0.49, 0.48), (0.53, 0.48))
+        self._add_diagram_arrow(ax, (0.71, 0.48), (0.75, 0.48))
+        self._export_figure(fig, export_path)
+        return fig, ax
 
-    def _build_single_user_summary_table(
+    def _build_worked_space_context(
         self,
         *,
-        distance_m: float,
-        required_rate_mbps: float,
-        best_feasible_row: pd.Series,
-        best_feasible_label: str,
-    ) -> pd.DataFrame:
-        """Return the one-row single-user summary shown at the start of Notebook 3."""
-
-        return pd.DataFrame(
-            [
-                {
-                    "Distance (m)": round(float(distance_m), 1),
-                    "Required throughput (Mbps)": round(float(required_rate_mbps), 1),
-                    "PA": best_feasible_label,
-                    "Slots": int(best_feasible_row["n_slots_on"]),
-                    "n_PRB per slot": int(best_feasible_row["n_prb"]),
-                    "Allocated PRBs per frame": int(best_feasible_row["n_prb"])
-                    * int(best_feasible_row["n_slots_on"]),
-                    "Layers": int(best_feasible_row["layers"]),
-                    "MCS index": int(best_feasible_row["mcs"]),
-                    "Achieved throughput (Mbps)": round(
-                        float(best_feasible_row["rate_ach_bps"]) / 1e6,
-                        3,
-                    ),
-                    "Average power (W)": round(float(best_feasible_row["p_dc_avg_total_w"]), 3),
-                }
-            ]
-        )
-
-    def _build_slice_comparison_table(
-        self,
-        *,
+        distance_m: int,
         pa_label_by_id: dict[int, str],
-        slice_best_row: pd.Series,
-        slice_comparison_row: pd.Series,
-        lower_power_role_label: str,
-        comparison_role_label: str,
-    ) -> pd.DataFrame:
-        """Return the small comparison table used in the throughput-band section."""
+    ) -> dict[str, object]:
+        """Resolve the worked one-slot space, one example pair, and one zoom slice."""
 
-        return pd.DataFrame(
-            [
-                {
-                    "Role": lower_power_role_label,
-                    "PA": pa_label_by_id[int(slice_best_row["pa_id"])],
-                    "Slots": int(slice_best_row["n_slots_on"]),
-                    "n_PRB per slot": int(slice_best_row["n_prb"]),
-                    "Allocated PRBs per frame": int(slice_best_row["total_prb_slots"]),
-                    "Layers": int(slice_best_row["layers"]),
-                    "MCS index": int(slice_best_row["mcs"]),
-                    "Average throughput (Mbps)": round(float(slice_best_row["rate_mbps"]), 3),
-                    "Active PA DC power (W)": round(float(slice_best_row["active_pa_power_w"]), 3),
-                },
-                {
-                    "Role": comparison_role_label,
-                    "PA": pa_label_by_id[int(slice_comparison_row["pa_id"])],
-                    "Slots": int(slice_comparison_row["n_slots_on"]),
-                    "n_PRB per slot": int(slice_comparison_row["n_prb"]),
-                    "Allocated PRBs per frame": int(slice_comparison_row["total_prb_slots"]),
-                    "Layers": int(slice_comparison_row["layers"]),
-                    "MCS index": int(slice_comparison_row["mcs"]),
-                    "Average throughput (Mbps)": round(float(slice_comparison_row["rate_mbps"]), 3),
-                    "Active PA DC power (W)": round(float(slice_comparison_row["active_pa_power_w"]), 3),
-                },
-            ]
+        full_space_table = self._prepare_candidate_table(
+            _build_slot_normalized_candidate_table(int(distance_m))
         )
+        annotated_full_space_table = self._prepare_candidate_table(
+            annotate_same_pa_dominance(
+                full_space_table,
+                resource_column="n_prb",
+                power_column="p_dc_active_w",
+                rate_column="bits_per_slot",
+            )
+        )
+        dominated_row, dominating_row = self._select_worked_pair(annotated_full_space_table)
+        zoom_table, zoom_x_limits_bits, zoom_y_limits_w = self._build_zoom_slice(
+            annotated_full_space_table,
+            dominated_row=dominated_row,
+            dominating_row=dominating_row,
+        )
+        return {
+            "row_contract": dominating_row.reindex(
+                [*BATCH_USER_PARAMETER_SPACE_COLUMNS, "bits_per_slot_kbit"]
+            ),
+            "full_space_table": full_space_table,
+            "annotated_full_space_table": annotated_full_space_table,
+            "zoom_table": zoom_table,
+            "zoom_x_limits_bits": zoom_x_limits_bits,
+            "zoom_y_limits_w": zoom_y_limits_w,
+            "dominated_row": dominated_row,
+            "dominating_row": dominating_row,
+        }
 
-    def _build_pruning_pair_table(
+    def _prepare_candidate_table(self, table: pd.DataFrame) -> pd.DataFrame:
+        """Attach display-oriented columns without changing the stored contract."""
+
+        plot_table = table.copy()
+        if "bits_per_slot" in plot_table.columns:
+            plot_table["bits_per_slot_kbit"] = plot_table["bits_per_slot"].astype(float) / 1e3
+        return plot_table.reset_index(drop=True)
+
+    def _select_worked_pair(
         self,
-        *,
-        pa_label_by_id: dict[int, str],
-        dominating_row: pd.Series,
-        dominated_row: pd.Series,
-    ) -> pd.DataFrame:
-        """Return the kept-versus-dominated comparison table shown before pruning."""
+        annotated_table: pd.DataFrame,
+    ) -> tuple[pd.Series, pd.Series]:
+        """Choose one explicit dominated-versus-kept example for the notebook."""
 
-        return pd.DataFrame(
-            [
-                {
-                    "Role": "Dominating row",
-                    "PA": pa_label_by_id[int(dominating_row["pa_id"])],
-                    "Slots": int(dominating_row["n_slots_on"]),
-                    "n_PRB per slot": int(dominating_row["n_prb"]),
-                    "Allocated PRBs per frame": int(dominating_row["total_prb_slots"]),
-                    "Layers": int(dominating_row["layers"]),
-                    "MCS index": int(dominating_row["mcs"]),
-                    "Average throughput (Mbps)": round(float(dominating_row["rate_mbps"]), 3),
-                    "Active PA DC power (W)": round(float(dominating_row["active_pa_power_w"]), 3),
-                },
-                {
-                    "Role": "Dominated row",
-                    "PA": pa_label_by_id[int(dominated_row["pa_id"])],
-                    "Slots": int(dominated_row["n_slots_on"]),
-                    "n_PRB per slot": int(dominated_row["n_prb"]),
-                    "Allocated PRBs per frame": int(dominated_row["total_prb_slots"]),
-                    "Layers": int(dominated_row["layers"]),
-                    "MCS index": int(dominated_row["mcs"]),
-                    "Average throughput (Mbps)": round(float(dominated_row["rate_mbps"]), 3),
-                    "Active PA DC power (W)": round(float(dominated_row["active_pa_power_w"]), 3),
-                },
+        dominated_rows = annotated_table.loc[
+            annotated_table["pruning_role"].eq("dominated")
+        ].copy()
+        if dominated_rows.empty:
+            raise ValueError("The worked table does not contain any dominated one-slot rows.")
+
+        bits_mid_low = float(dominated_rows["bits_per_slot"].quantile(0.25))
+        bits_mid_high = float(dominated_rows["bits_per_slot"].quantile(0.75))
+        bits_midpoint = float(dominated_rows["bits_per_slot"].median())
+        candidates = []
+        for row in dominated_rows.itertuples(index=False):
+            dominator_matches = annotated_table.loc[
+                annotated_table["row_id"].eq(int(row.dominator_row_id))
             ]
-        )
+            if dominator_matches.empty:
+                continue
+            dominator = dominator_matches.iloc[0]
+            bits_ratio = float(dominator["bits_per_slot"]) / max(float(row.bits_per_slot), 1e-12)
+            power_gap = float(row.p_dc_active_w) - float(dominator["p_dc_active_w"])
+            if bits_ratio > 1.06:
+                continue
+            if power_gap < 0.02:
+                continue
 
-    def _build_pruning_summary(
-        self,
-        full_frame_candidate_table: pd.DataFrame,
-        pruned_frontier_table: pd.DataFrame,
-        *,
-        pa_label_by_id: dict[int, str],
-    ) -> pd.DataFrame:
-        """Return the per-PA row-count reduction introduced by strict pruning."""
-
-        rows = []
-        pa_ids = sorted(
-            {
-                *full_frame_candidate_table["pa_id"].dropna().astype(int).tolist(),
-                *pruned_frontier_table["pa_id"].dropna().astype(int).tolist(),
-            }
-        )
-        for pa_id in pa_ids:
-            rows.append(
+            candidates.append(
                 {
-                    "pa_id": int(pa_id),
-                    "pa_label": pa_label_by_id[int(pa_id)],
-                    "rows_before_pruning": int(
-                        full_frame_candidate_table["pa_id"].eq(int(pa_id)).sum()
-                    ),
-                    "rows_after_pruning": int(
-                        pruned_frontier_table["pa_id"].eq(int(pa_id)).sum()
-                    ),
+                    "dominated_row": row,
+                    "dominating_row": dominator,
+                    "same_n_prb": int(dominator["n_prb"]) == int(row.n_prb),
+                    "mid_band": bits_mid_low <= float(row.bits_per_slot) <= bits_mid_high,
+                    "bits_ratio_gap": abs(bits_ratio - 1.0),
+                    "power_gap": power_gap,
+                    "bits_distance_to_mid": abs(float(row.bits_per_slot) - bits_midpoint),
                 }
             )
-        return pd.DataFrame(rows)
 
-    def _build_prb_colormap(self):
-        """Return the restrained colormap used for PRB-slot emphasis in Notebook 3."""
+        if not candidates:
+            raise ValueError("Unable to select one dominated one-slot example for the notebook.")
 
-        return colors.LinearSegmentedColormap.from_list(
-            f"{self.theme.name}_candidate_prbs",
-            [self.theme.neutral_light, self.theme.primary, self.theme.secondary],
+        best_pair = sorted(
+            candidates,
+            key=lambda item: (
+                not bool(item["same_n_prb"]),
+                not bool(item["mid_band"]),
+                float(item["bits_ratio_gap"]),
+                -float(item["power_gap"]),
+                float(item["bits_distance_to_mid"]),
+            ),
+        )[0]
+        dominated_row = annotated_table.loc[
+            annotated_table["row_id"].eq(int(best_pair["dominated_row"].row_id))
+        ].iloc[0]
+        dominating_row = best_pair["dominating_row"]
+        return dominated_row, dominating_row
+
+    def _build_zoom_slice(
+        self,
+        annotated_table: pd.DataFrame,
+        *,
+        dominated_row: pd.Series,
+        dominating_row: pd.Series,
+    ) -> tuple[pd.DataFrame, tuple[float, float], tuple[float, float]]:
+        """Build one local zoom around the worked dominated-versus-kept pair."""
+
+        bits_values = [float(dominated_row["bits_per_slot"]), float(dominating_row["bits_per_slot"])]
+        power_values = [float(dominated_row["p_dc_active_w"]), float(dominating_row["p_dc_active_w"])]
+        x_span = max(abs(max(bits_values) - min(bits_values)), 3000.0)
+        y_span = max(abs(max(power_values) - min(power_values)), 0.8)
+        x_limits_bits = (
+            max(0.0, min(bits_values) - 0.45 * x_span),
+            max(bits_values) + 0.45 * x_span,
+        )
+        y_limits_w = (
+            max(0.0, min(power_values) - 0.65 * y_span),
+            max(power_values) + 0.65 * y_span,
+        )
+        zoom_table = annotated_table.loc[
+            annotated_table["bits_per_slot"].between(
+                float(x_limits_bits[0]),
+                float(x_limits_bits[1]),
+                inclusive="both",
+            )
+            & annotated_table["p_dc_active_w"].between(
+                float(y_limits_w[0]),
+                float(y_limits_w[1]),
+                inclusive="both",
+            )
+        ].copy()
+        return zoom_table, x_limits_bits, y_limits_w
+
+    def _plot_candidate_cloud(
+        self,
+        *,
+        ax: plt.Axes,
+        table: pd.DataFrame,
+        pa_color_map: dict[int, str],
+        pa_label_by_id: dict[int, str],
+        alpha: float,
+        size: float,
+        legend: bool,
+    ) -> None:
+        """Plot one candidate cloud using the slot-normalized axes."""
+
+        for pa_id, pa_rows in table.groupby("pa_id", sort=True):
+            ax.scatter(
+                pa_rows["bits_per_slot_kbit"].astype(float),
+                pa_rows["p_dc_active_w"].astype(float),
+                s=size,
+                alpha=alpha,
+                color=pa_color_map[int(pa_id)],
+                edgecolors=self.theme.background,
+                linewidths=0.35,
+                label=pa_label_by_id[int(pa_id)],
+            )
+        if legend:
+            style_legend(ax.legend(frameon=True, loc="upper left"), theme=self.theme)
+
+    def _plot_zoom_box(
+        self,
+        ax: plt.Axes,
+        *,
+        x_limits_bits: tuple[float, float],
+        y_limits_w: tuple[float, float],
+    ) -> None:
+        """Draw one zoom box on the full-space plot."""
+
+        ax.add_patch(
+            Rectangle(
+                (float(x_limits_bits[0]) / 1e3, float(y_limits_w[0])),
+                (float(x_limits_bits[1]) - float(x_limits_bits[0])) / 1e3,
+                float(y_limits_w[1]) - float(y_limits_w[0]),
+                facecolor="none",
+                edgecolor=self.theme.accent,
+                linewidth=1.2,
+                linestyle="--",
+            )
         )
 
-    def _build_pa_color_map(self, pa_label_map: dict[int, str]) -> dict[int, str]:
-        """Return one theme-aware categorical color map for the PA families."""
+    def _highlight_example_pair(
+        self,
+        ax: plt.Axes,
+        artifacts: CandidateSpaceArtifacts,
+    ) -> None:
+        """Highlight the kept and pruned rows inside the local zoom."""
 
-        base_colors = build_color_cycle(self.theme, include_highlight=True)
-        return {
-            int(pa_id): base_colors[idx % len(base_colors)]
-            for idx, pa_id in enumerate(sorted(int(pa_id) for pa_id in pa_label_map))
-        }
-
-    def _build_user_color_map(self, user_ids: list[int]) -> dict[int, str]:
-        """Return one theme-aware categorical color map for the active users."""
-
-        resolved_user_ids = sorted(int(user_id) for user_id in user_ids)
-        if not resolved_user_ids:
-            return {}
-
-        user_cmap = colors.LinearSegmentedColormap.from_list(
-            f"{self.theme.name}_lookup_users",
-            [self.theme.secondary, self.theme.primary, self.theme.accent],
+        dominated = artifacts.dominated_row
+        dominating = artifacts.dominating_row
+        ax.scatter(
+            [float(dominating["bits_per_slot"]) / 1e3],
+            [float(dominating["p_dc_active_w"])],
+            s=170,
+            color=self.theme.primary,
+            edgecolors=self.theme.accent,
+            linewidths=1.0,
+            zorder=4,
         )
-        color_levels = np.linspace(0.1, 0.85, len(resolved_user_ids))
-        return {
-            int(user_id): colors.to_hex(user_cmap(level))
-            for user_id, level in zip(resolved_user_ids, color_levels, strict=False)
-        }
-
-    def _set_day_bin_axis(self, ax: plt.Axes, *, day_bin_count: int) -> None:
-        """Apply the shared day-bin framing used in the lookup-context plot."""
-
-        for boundary in range(0, int(day_bin_count) + 1, 4):
-            ax.axvline(boundary - 0.5, color=self.theme.grid, linewidth=0.8, zorder=0)
-        ax.set_xlim(-0.5, int(day_bin_count) - 0.5)
-        ax.set_xticks(list(range(0, int(day_bin_count), 8)))
-
-    def _highlight_selected_bin(self, ax: plt.Axes, *, bin_index: int, label: str) -> None:
-        """Highlight the selected teaching bin on one day-level axis."""
-
-        left = float(bin_index) - 0.45
-        right = float(bin_index) + 0.45
-        ax.axvspan(left, right, color=self.theme.highlight, alpha=0.12, zorder=0.2)
-        ax.axvline(
-            float(bin_index),
-            color=self.theme.highlight,
-            linestyle="--",
-            linewidth=1.3,
+        ax.scatter(
+            [float(dominated["bits_per_slot"]) / 1e3],
+            [float(dominated["p_dc_active_w"])],
+            s=170,
+            facecolors="none",
+            edgecolors=self.theme.highlight,
+            linewidths=2.0,
+            zorder=5,
         )
-        y_top = ax.get_ylim()[1]
         ax.text(
-            float(bin_index),
-            y_top * 0.97,
-            label,
+            float(dominating["bits_per_slot"]) / 1e3,
+            float(dominating["p_dc_active_w"]) + 0.14,
+            "Kept",
             ha="center",
-            va="top",
+            va="bottom",
             fontsize=9,
             color=self.theme.text,
-            bbox={
-                "boxstyle": "round,pad=0.25",
-                "facecolor": self.theme.background,
-                "edgecolor": self.theme.highlight,
-                "alpha": 0.95,
-            },
+        )
+        ax.text(
+            float(dominated["bits_per_slot"]) / 1e3,
+            float(dominated["p_dc_active_w"]) + 0.14,
+            "Pruned",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+            color=self.theme.text,
         )
 
-    def _style_colorbar(self, colorbar) -> None:
-        """Apply the shared notebook theme to a colorbar."""
+    def _build_pair_card_rows(self, row: pd.Series) -> list[tuple[str, str]]:
+        """Return the compact comparison rows used in the worked example card."""
 
-        colorbar.outline.set_edgecolor(self.theme.neutral_dark)
-        colorbar.outline.set_linewidth(0.9)
-        colorbar.ax.tick_params(colors=self.theme.neutral_dark, labelcolor=self.theme.neutral_dark)
-        colorbar.ax.yaxis.label.set_color(self.theme.text)
+        return [
+            ("pa_id", str(int(row["pa_id"]))),
+            ("n_prb", str(int(row["n_prb"]))),
+            ("layers", str(int(row["layers"]))),
+            ("mcs", str(int(row["mcs"]))),
+            ("bits_per_slot", self._format_bits_per_slot(float(row["bits_per_slot"]))),
+            ("p_dc_active_w", self._format_power_w(float(row["p_dc_active_w"]))),
+        ]
 
-    def _apply_3d_axis_theme(self, ax) -> None:
-        """Apply the shared notebook colors to one 3D axis."""
+    def _build_pa_color_map(self, pa_label_by_id: dict[int, str]) -> dict[int, str]:
+        """Return one stable color per PA family for the notebook sequence."""
 
-        background_rgba = colors.to_rgba(self.theme.background, 1.0)
-        grid_rgba = colors.to_rgba(self.theme.grid, 1.0)
+        color_map: dict[int, str] = {}
+        fallback_palette = [self.theme.secondary, self.theme.neutral_dark]
+        fallback_index = 0
+        for pa_id in sorted(int(value) for value in pa_label_by_id):
+            label = str(pa_label_by_id[int(pa_id)])
+            if label == "4W PA":
+                color_map[int(pa_id)] = self.theme.primary
+                continue
+            if label == "8W PA":
+                color_map[int(pa_id)] = self.theme.highlight
+                continue
+            color_map[int(pa_id)] = fallback_palette[fallback_index % len(fallback_palette)]
+            fallback_index += 1
+        return color_map
 
-        ax.set_facecolor(self.theme.background)
-        ax.tick_params(colors=self.theme.neutral_dark, labelcolor=self.theme.neutral_dark)
-        for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
-            axis.set_pane_color(background_rgba)
-            axis._axinfo["grid"]["color"] = grid_rgba
-            axis._axinfo["grid"]["linewidth"] = 0.8
-            axis.line.set_color(self.theme.neutral_dark)
-        ax.xaxis.label.set_color(self.theme.text)
-        ax.yaxis.label.set_color(self.theme.text)
+    def _add_card_group(
+        self,
+        ax: plt.Axes,
+        *,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        header: str,
+        rows: list[tuple[str, str]],
+        accent_color: str,
+        n_columns: int = 1,
+    ) -> None:
+        """Draw one grouped notebook card."""
+
+        patch = FancyBboxPatch(
+            (x, y),
+            width,
+            height,
+            boxstyle="round,pad=0.012,rounding_size=0.02",
+            facecolor=self.theme.background,
+            edgecolor=self.theme.grid,
+            linewidth=1.0,
+            transform=ax.transAxes,
+        )
+        ax.add_patch(patch)
+        header_patch = Rectangle(
+            (x, y + height - 0.09),
+            width,
+            0.09,
+            transform=ax.transAxes,
+            facecolor=colors.to_hex(colors.to_rgba(accent_color, 0.18)),
+            edgecolor="none",
+        )
+        ax.add_patch(header_patch)
+        ax.text(
+            x + 0.02,
+            y + height - 0.045,
+            header,
+            transform=ax.transAxes,
+            ha="left",
+            va="center",
+            fontsize=11,
+            fontweight="bold",
+            color=self.theme.text,
+        )
+
+        resolved_columns = max(int(n_columns), 1)
+        column_width = width / float(resolved_columns)
+        rows_per_column = int(np.ceil(len(rows) / float(resolved_columns)))
+        for index, (label, value) in enumerate(rows):
+            column = index // rows_per_column
+            row_index = index % rows_per_column
+            anchor_x = x + column * column_width + 0.02
+            anchor_y = y + height - 0.13 - row_index * 0.11
+            ax.text(
+                anchor_x,
+                anchor_y,
+                label,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=9,
+                family="monospace",
+                color=self.theme.neutral_dark,
+            )
+            ax.text(
+                anchor_x,
+                anchor_y - 0.035,
+                value,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=10,
+                color=self.theme.text,
+            )
+
+    def _add_diagram_box(
+        self,
+        ax: plt.Axes,
+        *,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        header: str,
+        lines: list[str],
+        facecolor: str,
+        edgecolor: str,
+    ) -> None:
+        """Draw one rounded diagram box."""
+
+        patch = FancyBboxPatch(
+            (x, y),
+            width,
+            height,
+            boxstyle="round,pad=0.012,rounding_size=0.02",
+            facecolor=facecolor,
+            edgecolor=edgecolor,
+            linewidth=1.0,
+            transform=ax.transAxes,
+        )
+        ax.add_patch(patch)
+        ax.text(
+            x + 0.02,
+            y + height - 0.05,
+            header,
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=10,
+            fontweight="bold",
+            color=self.theme.text,
+        )
+        if not lines:
+            return
+
+        line_step = (height - 0.11) / max(len(lines), 1)
+        for index, line in enumerate(lines):
+            ax.text(
+                x + 0.02,
+                y + height - 0.09 - index * line_step,
+                line,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=9,
+                color=self.theme.text,
+                family="monospace" if any(symbol in line for symbol in ("<", ">", "=")) else None,
+            )
+
+    def _add_diagram_arrow(
+        self,
+        ax: plt.Axes,
+        start: tuple[float, float],
+        end: tuple[float, float],
+    ) -> None:
+        """Draw one diagram arrow in axes coordinates."""
+
+        arrow = FancyArrowPatch(
+            start,
+            end,
+            transform=ax.transAxes,
+            arrowstyle="-|>",
+            mutation_scale=13,
+            linewidth=1.2,
+            color=self.theme.neutral_dark,
+        )
+        ax.add_patch(arrow)
 
     def _export_figure(self, fig: plt.Figure, export_path: Path | None) -> None:
         """Save one figure when the notebook requests a document export."""
@@ -1129,6 +998,21 @@ class CandidateSpaceHelpers:
             resolved_path.name,
             doc_img_dir=resolved_path.parent,
         )
+
+    @staticmethod
+    def _format_bits_per_slot(bits_per_slot: float) -> str:
+        """Format one slot payload value for notebook display."""
+
+        return f"{float(bits_per_slot) / 1e3:.2f} kbit"
+
+    @staticmethod
+    def _format_power_w(power_w: float) -> str:
+        """Format one power value with a stable engineering unit."""
+
+        resolved_power = float(power_w)
+        if resolved_power >= 10.0:
+            return f"{resolved_power:.2f} W"
+        return f"{resolved_power:.3f} W"
 
 
 __all__ = [

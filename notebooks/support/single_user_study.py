@@ -113,7 +113,7 @@ def summarize_single_user_scenario(scenario: SingleUserNotebookScenario) -> dict
 
 
 def build_single_user_pa_curve_table(scenario: SingleUserNotebookScenario) -> pd.DataFrame:
-    """Build PA curve rows for the scenario PA catalog, including idle points."""
+    """Build PA curve rows for the scenario PA catalog, including the quiescent reference point."""
 
     rows = []
     for pa_id, pa in enumerate(scenario.context.pa_catalog):

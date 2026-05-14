@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from configs import MULTI_USER_TDMA_CONFIG
 from models.candidate_table import BATCH_USER_PARAMETER_SPACE_COLUMNS
 from multi_user_tdma_scheduler.api import prepare_joint_schedule_problem
 from multi_user_tdma_scheduler.joint_search import ExactJointScheduleSearch
@@ -24,7 +25,7 @@ from multi_user_tdma_scheduler.tdma_space import (
 
 
 def _frame_avg_power_series(table: pd.DataFrame, *, frame_n_slots: int) -> pd.Series:
-    """Return the frame-averaged PA DC power for each quantized row."""
+    """Return frame-average power from the stored allocation-level PA DC."""
 
     return (
         table["n_slots"].astype(float)
@@ -38,15 +39,15 @@ def _frame_avg_rate_series(table: pd.DataFrame, *, frame_n_slots: int) -> pd.Ser
 
     return (
         table["n_slots"].astype(float)
-        * table["rate_active_bps"].astype(float)
-        / float(frame_n_slots)
+        * table["bits_per_slot"].astype(float)
+        / (float(frame_n_slots) * float(MULTI_USER_TDMA_CONFIG.t_slot_s))
     )
 
 
 def build_tdma_preparation_artifacts(batch_space: Any) -> SimpleNamespace:
     """Build the notebook TDMA preparation view from the production batch artifact."""
 
-    full_frame_user_spaces = {
+    slot_normalized_user_spaces = {
         int(user_row.user_id): (
             batch_space.user_parameter_spaces[int(user_row.user_id)][BATCH_USER_PARAMETER_SPACE_COLUMNS]
             .copy()
@@ -56,13 +57,13 @@ def build_tdma_preparation_artifacts(batch_space: Any) -> SimpleNamespace:
     }
     frame_n_slots = validate_single_frame_schedule_feasibility(
         batch_space,
-        full_frame_user_spaces,
+        slot_normalized_user_spaces,
     )
     quantized_user_spaces = {
         int(user_row.user_id): _quantize_user_rows(
             user_id=int(user_row.user_id),
             required_rate_bps=float(user_row.required_rate_bps),
-            active_table=full_frame_user_spaces[int(user_row.user_id)],
+            active_table=slot_normalized_user_spaces[int(user_row.user_id)],
             frame_n_slots=int(frame_n_slots),
         )
         for user_row in batch_space.user_requirements.itertuples(index=False)
@@ -78,7 +79,7 @@ def build_tdma_preparation_artifacts(batch_space: Any) -> SimpleNamespace:
     }
     exact_frame_share_lower_bound = _frame_share_lower_bound(
         batch_space,
-        full_frame_user_spaces=full_frame_user_spaces,
+        user_spaces=slot_normalized_user_spaces,
     )
 
     return SimpleNamespace(
@@ -87,11 +88,11 @@ def build_tdma_preparation_artifacts(batch_space: Any) -> SimpleNamespace:
         exact_slot_lower_bound=int(
             slot_lower_bound(
                 batch_space,
-                full_frame_user_spaces,
+                slot_normalized_user_spaces,
                 int(frame_n_slots),
             )
         ),
-        full_frame_user_spaces=full_frame_user_spaces,
+        user_spaces=slot_normalized_user_spaces,
         quantized_user_spaces=quantized_user_spaces,
         annotated_user_spaces=annotated_user_spaces,
         prepared_problem=prepared_problem,
@@ -107,7 +108,7 @@ def plot_scheduler_input_spaces(
     pa_label_map: dict[int, str],
     full_frontiers_by_user: dict[int, pd.DataFrame] | None = None,
 ):
-    """Plot the lookup-stage full-frame candidate menus passed into TDMA prep."""
+    """Plot the lookup-stage slot-normalized candidate menus passed into TDMA prep."""
 
     user_ids = user_table["user_id"].astype(int).tolist()
     n_cols = 2 if len(user_ids) > 2 else max(len(user_ids), 1)
@@ -139,7 +140,7 @@ def plot_scheduler_input_spaces(
             _scatter_pa_rows(
                 ax,
                 _sort_full_frame_menu_rows(full_frontiers_by_user[user_id].copy()),
-                x_column="rate_active_bps",
+                x_column="bits_per_slot",
                 y_column="p_dc_active_w",
                 x_scale=1e6,
                 pa_color_map=pa_color_map,
@@ -150,7 +151,7 @@ def plot_scheduler_input_spaces(
         _scatter_pa_rows(
             ax,
             candidate_table,
-            x_column="rate_active_bps",
+            x_column="bits_per_slot",
             y_column="p_dc_active_w",
             x_scale=1e6,
             pa_color_map=pa_color_map,
@@ -171,7 +172,7 @@ def plot_scheduler_input_spaces(
             color=str(user_color_map[user_id]),
             fontsize=11,
         )
-        ax.set_xlabel("Full-frame active rate (Mbps)")
+        ax.set_xlabel("Payload per active slot (Mbit)")
         ax.set_xlim(left=0.0)
         ax.set_ylim(0.0, max_power_w * 1.12)
         ax.grid(True, alpha=0.22)
@@ -325,11 +326,12 @@ def build_joint_allocation_examples(problem: Any, schedule_result: dict[str, Any
     return cases
 
 
-def _frame_share_lower_bound(batch_space: Any, *, full_frame_user_spaces: dict[int, pd.DataFrame]) -> float:
+def _frame_share_lower_bound(batch_space: Any, *, user_spaces: dict[int, pd.DataFrame]) -> float:
     return float(
         sum(
             float(user_row.required_rate_bps)
-            / float(full_frame_user_spaces[int(user_row.user_id)]["rate_active_bps"].max())
+            * float(MULTI_USER_TDMA_CONFIG.t_slot_s)
+            / float(user_spaces[int(user_row.user_id)]["bits_per_slot"].max())
             for user_row in batch_space.user_requirements.itertuples(index=False)
         )
     )
@@ -345,12 +347,16 @@ def _quantize_user_rows(
     if active_table.empty:
         return pd.DataFrame(columns=USER_CANDIDATE_COLUMNS)
 
-    rate_active_bps = active_table["rate_active_bps"].astype(float).to_numpy()
+    bits_per_slot = active_table["bits_per_slot"].astype(float).to_numpy()
     required_slots = np.ceil(
-        float(frame_n_slots) * float(required_rate_bps) / rate_active_bps - 1e-12
+        float(required_rate_bps)
+        * float(frame_n_slots)
+        * float(MULTI_USER_TDMA_CONFIG.t_slot_s)
+        / bits_per_slot
+        - 1e-12
     ).astype(int)
     feasible_mask = (
-        (rate_active_bps > 0.0)
+        (bits_per_slot > 0.0)
         & (required_slots >= 1)
         & (required_slots <= int(frame_n_slots))
     )
@@ -453,7 +459,7 @@ def _plot_source_table_for_user(
 
 
 def _sort_full_frame_menu_rows(candidate_table: pd.DataFrame) -> pd.DataFrame:
-    return candidate_table.sort_values(["rate_active_bps", "p_dc_active_w", "pa_id", "mcs", "n_prb"])
+    return candidate_table.sort_values(["bits_per_slot", "p_dc_active_w", "pa_id", "mcs", "n_prb"])
 
 
 def _scatter_pa_rows(
@@ -717,7 +723,11 @@ def _row_frame_avg_power(row: pd.Series | dict[str, Any], frame_n_slots: int) ->
 
 
 def _row_frame_avg_rate(row: pd.Series | dict[str, Any], frame_n_slots: int) -> float:
-    return float(int(row["n_slots"]) * float(row["rate_active_bps"]) / float(frame_n_slots))
+    return float(
+        int(row["n_slots"])
+        * float(row["bits_per_slot"])
+        / (float(frame_n_slots) * float(MULTI_USER_TDMA_CONFIG.t_slot_s))
+    )
 
 
 class _InstrumentedExactJointScheduleSearch(ExactJointScheduleSearch):

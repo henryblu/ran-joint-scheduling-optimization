@@ -10,6 +10,7 @@ from IPython import get_ipython
 from IPython.display import HTML, Javascript, display
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import pandas as pd
 
@@ -29,6 +30,7 @@ from support.single_user_study import (
 )
 from support.theme import (
     NotebookTheme,
+    apply_3d_axis_style,
     apply_axis_style,
     create_themed_figure,
     get_notebook_theme,
@@ -56,6 +58,10 @@ class ScenarioDefinitionArtifacts:
 
 class ScenarioDefinitionHelpers:
     """Theme-aware presentation helpers for Notebook 1."""
+
+    PA_PLOT_MIN_OUTPUT_DBM = 15.0
+    PA_PLOT_MAX_OUTPUT_DBM = 40.0
+    PA_PLOT_ESTIMATED_LABEL = "8W PA"
 
     def __init__(self, *, theme: str | NotebookTheme = "aalto_elec"):
         self.theme = get_notebook_theme(theme)
@@ -127,7 +133,7 @@ class ScenarioDefinitionHelpers:
                 '    B["Deployment context for one user condition"]',
                 '    C["Measured PA set"]',
                 '    D["Fixed 100 MHz resource space"]',
-                '    E["Lean full-frame candidate-table contract"]',
+                '    E["Lean slot-normalized candidate-table contract"]',
                 '    F["Candidate generation and later TDMA use"]',
                 "",
                 "    A --> B",
@@ -202,7 +208,7 @@ class ScenarioDefinitionHelpers:
 
         fig, gain_ax = create_themed_figure(
             theme=self.theme,
-            figsize=(9.4, 5.4),
+            figsize=(6, 9),
         )
         pae_ax = gain_ax.twinx()
         apply_axis_style(
@@ -213,9 +219,15 @@ class ScenarioDefinitionHelpers:
             hide_spines=("top", "left", "bottom"),
         )
         pae_ax.patch.set_alpha(0.0)
+        gain_ax.set_box_aspect(1.0)
 
         color_by_label = self._build_pa_color_map(pa_curve_table)
-        for scenario_label, pa_curve_rows in pa_curve_table.groupby("scenario_label", sort=True):
+        grouped_rows = {
+            str(scenario_label): pa_curve_rows
+            for scenario_label, pa_curve_rows in pa_curve_table.groupby("scenario_label", sort=False)
+        }
+        for scenario_label in self._ordered_pa_labels(pa_curve_table):
+            pa_curve_rows = grouped_rows[str(scenario_label)]
             active_rows = pa_curve_rows.loc[pa_curve_rows["pout_w"].fillna(0.0) > 0.0].copy()
             if active_rows.empty:
                 continue
@@ -248,13 +260,39 @@ class ScenarioDefinitionHelpers:
                 pae_percent[valid],
                 color=color,
                 linewidth=2.4,
-                linestyle="--",
+                linestyle=":",
             )
 
-        gain_ax.set_xlim(10.0, 40.0)
+            if str(scenario_label) != self.PA_PLOT_ESTIMATED_LABEL:
+                continue
+
+            extension = self._build_estimated_pa_extension(
+                pout_dbm[valid],
+                gain_db[valid],
+                pae_percent[valid],
+            )
+            if extension is None:
+                continue
+
+            gain_ax.plot(
+                extension["pout_dbm"],
+                extension["gain_db"],
+                color=self.theme.highlight,
+                linewidth=1.4,
+                linestyle=":",
+            )
+            pae_ax.plot(
+                extension["pout_dbm"],
+                extension["pae_percent"],
+                color=self.theme.highlight,
+                linewidth=1.4,
+                linestyle=":",
+            )
+
+        gain_ax.set_xlim(self.PA_PLOT_MIN_OUTPUT_DBM, self.PA_PLOT_MAX_OUTPUT_DBM)
         gain_ax.set_ylim(25.0, 35.0)
         pae_ax.set_ylim(0.0, 50.0)
-        gain_ax.set_xticks(list(range(10, 41, 5)))
+        gain_ax.set_xticks(list(range(15, 41, 5)))
         gain_ax.set_yticks(list(range(25, 36)))
         pae_ax.set_yticks(list(range(0, 51, 10)))
         gain_ax.set_xlabel("Average PA output power (dBm)")
@@ -284,8 +322,16 @@ class ScenarioDefinitionHelpers:
                 [0],
                 color=self.theme.neutral_dark,
                 linewidth=2.4,
-                linestyle="--",
+                linestyle=":",
                 label="PAE",
+            ),
+            Line2D(
+                [0],
+                [0],
+                color=self.theme.neutral_dark,
+                linewidth=1.4,
+                linestyle=":",
+                label="EST",
             ),
         ]
         pa_legend = gain_ax.legend(
@@ -303,9 +349,86 @@ class ScenarioDefinitionHelpers:
         gain_ax.add_artist(pa_legend)
         fig.tight_layout()
         self._display_plot_caption(
-            "Measured PA gain and efficiency over the active operating range.",
+            "Measured PA gain and efficiency, with the modeled low-power continuation shown for the 8 W PA down to 15 dBm.",
         )
         return fig, (gain_ax, pae_ax)
+
+    def _build_estimated_pa_extension(
+        self,
+        pout_dbm: np.ndarray,
+        gain_db: np.ndarray,
+        pae_percent: np.ndarray,
+    ) -> dict[str, np.ndarray] | None:
+        """Extend the 8 W notebook PA curve to the shared 15 dBm floor."""
+
+        if len(pout_dbm) == 0:
+            return None
+
+        low_index = int(np.argmin(pout_dbm))
+        low_output_dbm = float(pout_dbm[low_index])
+        if low_output_dbm <= self.PA_PLOT_MIN_OUTPUT_DBM:
+            return None
+
+        extension_x = np.array([self.PA_PLOT_MIN_OUTPUT_DBM, low_output_dbm], dtype=float)
+        return {
+            "pout_dbm": extension_x,
+            "gain_db": np.full(2, float(gain_db[low_index]), dtype=float),
+            "pae_percent": np.full(2, float(pae_percent[low_index]), dtype=float),
+        }
+
+    def plot_empty_pdsch_frame(
+        self,
+        scenario,
+    ) -> tuple[plt.Figure, plt.Axes]:
+        """Render the fixed empty NR downlink frame envelope used later in the study."""
+
+        context = scenario.context
+        frame_n_slots = int(context.model_inputs.frame_n_slots)
+        total_prbs = int(max(rrc.prb_max for rrc in context.rrc_catalog))
+        n_layers = int(context.deployment.n_tx_chains)
+
+        fig = plt.figure(figsize=(10.0, 6.2))
+        fig.patch.set_facecolor(self.theme.background)
+        ax = fig.add_subplot(111, projection="3d")
+        apply_3d_axis_style(ax, theme=self.theme)
+
+        self._draw_reference_cuboid(
+            ax,
+            x=0.0,
+            y=0.0,
+            z=0.0,
+            dx=float(frame_n_slots),
+            dy=float(total_prbs),
+            dz=float(n_layers),
+            facecolor=self.theme.highlight,
+            alpha=0.10,
+            edgecolor=self.theme.neutral_dark,
+            linewidth=1.0,
+        )
+
+        for layer_index in range(1, n_layers):
+            ax.plot(
+                [0.0, float(frame_n_slots), float(frame_n_slots), 0.0, 0.0],
+                [0.0, 0.0, float(total_prbs), float(total_prbs), 0.0],
+                [float(layer_index)] * 5,
+                color=self.theme.grid,
+                linewidth=0.8,
+                alpha=0.95,
+            )
+
+        ax.set_xlabel("Slot number", labelpad=10)
+        ax.set_ylabel("PRB number", labelpad=12)
+        ax.set_zlabel("Rank number", rotation=90, labelpad=12)
+        ax.zaxis.label.set_clip_on(False)
+        ax.set_xlim(0, frame_n_slots)
+        ax.set_ylim(total_prbs, 0)
+        ax.set_zlim(0, n_layers)
+        ax.set_xticks(np.arange(0, frame_n_slots + 1, 2))
+        ax.set_yticks(np.arange(0, total_prbs + 1, 50))
+        ax.set_zticks(np.arange(0, n_layers + 1, 1))
+        ax.view_init(elev=24, azim=-58)
+        fig.savefig("frame.png", bbox_inches="tight", pad_inches=0.2, dpi=300)
+        return fig, ax
 
     def _build_radio_assumption_table(
         self,
@@ -319,8 +442,13 @@ class ScenarioDefinitionHelpers:
         rows = [
             {
                 "group": "Deployment",
+                "assumption": "Downlink channel",
+                "value": "3GPP NR PDSCH shared downlink channel",
+            },
+            {
+                "group": "Deployment",
                 "assumption": "Scenario",
-                "value": "3GPP-compliant micro cell in band n78",
+                "value": "3GPP NR micro cell in band n78",
             },
             {
                 "group": "Deployment",
@@ -369,8 +497,18 @@ class ScenarioDefinitionHelpers:
             },
             {
                 "group": "Waveform",
+                "assumption": "Numerology",
+                "value": f"mu = 1, Delta f = {float(config.delta_f_hz) / 1e3:.0f} kHz",
+            },
+            {
+                "group": "Waveform",
                 "assumption": "Subcarrier spacing",
                 "value": f"{float(config.delta_f_hz) / 1e3:.0f} kHz",
+            },
+            {
+                "group": "Waveform",
+                "assumption": "RRC-configured preset",
+                "value": "Fixed shared downlink resource envelope used throughout the notebook chain",
             },
             {
                 "group": "Waveform",
@@ -462,11 +600,11 @@ class ScenarioDefinitionHelpers:
                 },
                 {
                     "question": "What is allocated?",
-                    "answer": "Each active user receives one full-frame scheduler row built from PA choice, PRBs, layers, and MCS.",
+                    "answer": "Each active user is represented by one active-slot scheduler row built from PA choice, PRBs, layers, and MCS.",
                 },
                 {
                     "question": "What is optimized?",
-                    "answer": "The active PA DC power is minimized while the full-frame row still meets the requested service rate.",
+                    "answer": "The active-slot PA DC power is minimized while the operating row still carries the strongest feasible payload per slot.",
                 },
             ]
         )
@@ -478,6 +616,19 @@ class ScenarioDefinitionHelpers:
         max_prbs = max(int(rrc.prb_max) for rrc in context.rrc_catalog)
         return pd.DataFrame(
             [
+                {
+                    "dimension": "numerology",
+                    "admitted_values": f"mu = 1, Delta f = {float(context.model_inputs.delta_f_hz) / 1e3:.0f} kHz",
+                    "note": "The study keeps one fixed NR numerology for the micro-cell PDSCH downlink.",
+                },
+                {
+                    "dimension": "frame_n_slots",
+                    "admitted_values": (
+                        f"{int(context.model_inputs.frame_n_slots)} slots per "
+                        f"{float(context.model_inputs.frame_n_slots * context.model_inputs.t_slot_s) * 1e3:.1f} ms frame"
+                    ),
+                    "note": "Later notebooks allocate within this fixed empty downlink frame.",
+                },
                 {
                     "dimension": "channel_bw_hz",
                     "admitted_values": f"{float(context.deployment.channel_bw_hz) / 1e6:.0f} MHz",
@@ -501,7 +652,7 @@ class ScenarioDefinitionHelpers:
                 {
                     "dimension": "Stored table columns",
                     "admitted_values": ", ".join(SCHEDULER_FACING_COLUMNS),
-                    "note": "This lean full-frame contract is reused by user lookup before TDMA slot quantization.",
+                    "note": "p_out_total_w is complete row RF output; p_dc_active_w is allocation-level PA DC with PRB-share scaling.",
                 },
             ]
         )
@@ -528,16 +679,9 @@ class ScenarioDefinitionHelpers:
 
     def _build_pa_color_map(self, pa_curve_table: pd.DataFrame) -> dict[str, str]:
         preferred_colors = {
-            "4W PA": self.theme.primary,
-            "8W PA": self.theme.secondary,
+            "4W PA": self.theme.highlight,
+            "8W PA": self.theme.primary,
         }
-        scenario_labels = sorted(
-            pa_curve_table["scenario_label"]
-            .dropna()
-            .astype(str)
-            .drop_duplicates()
-            .tolist()
-        )
         fallback_palette = [
             self.theme.accent,
             self.theme.neutral_dark,
@@ -545,7 +689,7 @@ class ScenarioDefinitionHelpers:
         color_map: dict[str, str] = {}
         fallback_index = 0
 
-        for label in scenario_labels:
+        for label in self._ordered_pa_labels(pa_curve_table):
             preferred_color = preferred_colors.get(label)
             if preferred_color is not None:
                 color_map[label] = preferred_color
@@ -554,6 +698,27 @@ class ScenarioDefinitionHelpers:
             fallback_index += 1
 
         return color_map
+
+    def _ordered_pa_labels(self, pa_curve_table: pd.DataFrame) -> list[str]:
+        preferred_order = ["8W PA", "4W PA"]
+        raw_labels = (
+            pa_curve_table["scenario_label"]
+            .dropna()
+            .astype(str)
+            .drop_duplicates()
+            .tolist()
+        )
+        preferred_labels = [
+            label
+            for label in preferred_order
+            if label in raw_labels
+        ]
+        fallback_labels = sorted(
+            label
+            for label in raw_labels
+            if label not in preferred_order
+        )
+        return [*preferred_labels, *fallback_labels]
 
     def _display_plot_caption(self, caption: str) -> None:
         if get_ipython() is None:
@@ -578,6 +743,53 @@ class ScenarioDefinitionHelpers:
         valid = power_w > 0.0
         power_dbm[valid] = 10.0 * np.log10(power_w[valid] * 1000.0)
         return power_dbm
+
+    @staticmethod
+    def _draw_reference_cuboid(
+        ax,
+        *,
+        x: float,
+        y: float,
+        z: float,
+        dx: float,
+        dy: float,
+        dz: float,
+        facecolor: str,
+        alpha: float,
+        edgecolor: str,
+        linewidth: float,
+    ) -> None:
+        """Draw one translucent 3D envelope cuboid."""
+
+        vertices = np.array(
+            [
+                [x, y, z],
+                [x + dx, y, z],
+                [x + dx, y + dy, z],
+                [x, y + dy, z],
+                [x, y, z + dz],
+                [x + dx, y, z + dz],
+                [x + dx, y + dy, z + dz],
+                [x, y + dy, z + dz],
+            ]
+        )
+        faces = [
+            [vertices[i] for i in [0, 1, 2, 3]],
+            [vertices[i] for i in [4, 5, 6, 7]],
+            [vertices[i] for i in [0, 1, 5, 4]],
+            [vertices[i] for i in [2, 3, 7, 6]],
+            [vertices[i] for i in [1, 2, 6, 5]],
+            [vertices[i] for i in [0, 3, 7, 4]],
+        ]
+        poly = Poly3DCollection(
+            faces,
+            facecolors=facecolor,
+            edgecolor=edgecolor,
+            alpha=alpha,
+            linewidth=linewidth,
+            zsort="average",
+        )
+        ax.add_collection3d(poly)
 
 __all__ = [
     "PROJECT_ROOT",

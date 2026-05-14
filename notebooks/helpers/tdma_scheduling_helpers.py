@@ -93,8 +93,11 @@ class TdmaSchedulingHelpers:
 
         Steps:
         1. Reuse one active scheduler bin from the day-level demand artifact.
-        2. Convert the cached full-frame lookup rows into the prepared TDMA search problem.
+        2. Convert the cached slot-normalized lookup rows into the prepared TDMA search problem.
         3. Solve the worked bin and assemble the lighter-versus-heavier bin comparison used at the end.
+
+        The active PA DC term is the stored allocation-level value from the
+        scheduler-facing candidate table.
         """
 
         distance_binned_table = load_cached_distance_binned_table()
@@ -1091,23 +1094,40 @@ def _plot_schedule_3d_on_axis(
     color_norm: colors.Normalize,
     cmap,
     title: str | None = None,
+    block_alpha: float = 0.58,
+    manual_draw_order: bool = False,
+    use_block_colors: bool = False,
 ) -> None:
     sorted_blocks = sorted(
         allocation_view["blocks"],
-        key=lambda block: (int(block["slot_start"]), int(block["slot_end"]), int(block["n_prb"])),
+        key=lambda block: (
+            int(block["slot_start"]),
+            int(block.get("prb_start", 0)),
+            int(block["slot_end"]),
+            int(block["n_prb"]),
+        ),
     )
-    for block in sorted_blocks:
+    if bool(manual_draw_order):
+        ax.computed_zorder = False
+
+    for draw_index, block in enumerate(sorted_blocks):
         active_power_w = float(block.get("p_dc_active_w", block.get("p_dc_avg_frame_w", 0.0)))
-        facecolor = cmap(color_norm(active_power_w))
+        facecolor = (
+            block.get("color", cmap(color_norm(active_power_w)))
+            if bool(use_block_colors)
+            else cmap(color_norm(active_power_w))
+        )
         _cuboid(
             ax,
             int(block["slot_start"]),
-            0,
+            int(block.get("prb_start", 0)),
             0,
             int(block["n_slots"]),
             int(block["n_prb"]),
             int(block["layers"]),
             facecolor,
+            alpha=float(block_alpha),
+            zorder=10 + int(draw_index) if bool(manual_draw_order) else None,
         )
 
     frame_slots = int(allocation_view["total_slots"])
@@ -1136,6 +1156,8 @@ def _cuboid(
     dy: int,
     dz: int,
     facecolor,
+    alpha: float = 0.58,
+    zorder: int | None = None,
 ) -> None:
     vertices = np.array(
         [
@@ -1161,10 +1183,12 @@ def _cuboid(
         faces,
         facecolors=facecolor,
         edgecolor=(0.1, 0.1, 0.1, 0.45),
-        alpha=0.58,
+        alpha=float(alpha),
         linewidth=0.65,
         zsort="average",
     )
+    if zorder is not None:
+        poly.set_zorder(int(zorder))
     ax.add_collection3d(poly)
 
 

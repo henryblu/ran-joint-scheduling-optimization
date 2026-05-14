@@ -23,12 +23,12 @@ class _CandidateTableEngineState:
     pa_catalog: tuple
 
 
-def _build_full_frame_candidate_table(
+def _build_slot_normalized_candidate_table(
     distance_m: int,
     *,
     engine_state: _CandidateTableEngineState | None = None,
 ) -> pd.DataFrame:
-    """Enumerate the full-frame rows for one fixed distance bin before pruning."""
+    """Enumerate the one-slot rows for one fixed distance bin before pruning."""
 
     resolved_engine_state = (
         _resolve_candidate_table_engine_state()
@@ -49,12 +49,9 @@ def _build_full_frame_candidate_table(
         return pd.DataFrame(columns=BATCH_USER_PARAMETER_SPACE_COLUMNS)
 
     return (
-        active_table.loc[
-            active_table["n_slots_on"].astype(int).eq(int(resolved_engine_state.model_inputs.frame_n_slots))
-        ]
-        .assign(
-            rate_active_bps=lambda table: table["rate_ach_bps"].astype(float),
-            p_dc_active_w=lambda table: table["p_dc_avg_total_w"].astype(float),
+        active_table.assign(
+            bits_per_slot=lambda table: table["bits_per_slot"].astype(float),
+            p_dc_active_w=lambda table: table["p_dc_active_total_w"].astype(float),
         )[BATCH_USER_PARAMETER_SPACE_COLUMNS]
         .sort_values(["pa_id", "p_dc_active_w", "n_prb", "mcs", "layers"])
         .reset_index(drop=True)
@@ -64,7 +61,7 @@ def _build_full_frame_candidate_table(
 @lru_cache(maxsize=1)
 def _resolve_candidate_table_engine_state() -> _CandidateTableEngineState:
     model_inputs = SINGLE_USER_SEARCH_CONFIG
-    n_slots_on_space = tuple(range(1, int(model_inputs.frame_n_slots) + 1))
+    n_slots_on_space = (1,)
     return _CandidateTableEngineState(
         model_inputs=model_inputs,
         search_shape=SearchSpace(
@@ -90,7 +87,7 @@ def _select_distance_bin(distance_m: int) -> int:
 
 
 __all__ = [
-    "_build_full_frame_candidate_table",
+    "_build_slot_normalized_candidate_table",
     "_resolve_candidate_table_engine_state",
     "_select_distance_bin",
 ]
