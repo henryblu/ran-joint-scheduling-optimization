@@ -114,21 +114,24 @@ def log_bin_result(result: BinRunResult) -> None:
     if result.status == "solved":
         # Solved bins get a small amount of schedule detail because that is the
         # information most useful for sanity-checking the run while it is live.
-        best_schedule = {} if result.best_schedule is None else result.best_schedule
+        schedule_result = result.schedule_result
+        active_slots = 0 if schedule_result is None else sum(slot.active for slot in schedule_result.slot_schedules)
+        allocation_total = 0 if schedule_result is None else sum(
+            len(slot.allocations) for slot in schedule_result.slot_schedules
+        )
         fields.extend(
             [
                 ("users", str(int(result.user_count))),
-                ("scheduled", str(int(len(best_schedule.get("rows", []))))),
-                ("slot_total", "na" if result.best_schedule is None else str(int(best_schedule["slot_total"]))),
-                ("unused_slots", "na" if result.best_schedule is None else str(int(best_schedule["unused_slots"]))),
+                ("allocations", str(int(allocation_total))),
+                ("active_slots", str(int(active_slots))),
                 ("single_user_s", _format_metric(result.single_user_elapsed_s, digits=1)),
                 ("joint_s", _format_metric(result.joint_elapsed_s, digits=1)),
                 ("total_s", _format_metric(result.total_elapsed_s, digits=1)),
                 (
                     "dc_total_w",
                     "na"
-                    if result.best_schedule is None
-                    else _format_metric(float(best_schedule["schedule_p_dc_total_avg_frame_w"]), digits=2),
+                    if schedule_result is None
+                    else _format_metric(float(schedule_result.power_summary.average_frame_dc_power_w), digits=2),
                 ),
             ]
         )

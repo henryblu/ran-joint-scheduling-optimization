@@ -54,7 +54,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--scheduler-mode",
         choices=[mode.value for mode in SchedulerMode],
         default=SchedulerMode.TDMA.value,
-        help="Shared scheduler backend to run. Only TDMA is implemented today.",
+        help="Shared scheduler backend to run.",
     )
     parser.add_argument(
         "--switch-policy",
@@ -103,7 +103,7 @@ def build_day_run_config(
         session_generation_config=DEFAULT_DAY_RUN_SESSION_GENERATION_CONFIG,
         switch_policy=switch_policy,
         cores=int(cores),
-        output_dir=REPO_ROOT / "outputs" / f"default_day_run_{switch_policy.value}",
+        output_dir=REPO_ROOT / "outputs" / f"default_day_run_{scheduler_mode.value}_{switch_policy.value}",
         log_level=None if log_level is None else str(log_level).upper(),
         scheduler_mode=scheduler_mode,
     )

@@ -7,33 +7,24 @@ import pandas as pd
 from models import PAParams
 
 
-USER_CANDIDATE_COLUMNS = [
-    "user_id",
-    "pa_id",
-    "n_prb",
-    "layers",
-    "mcs",
-    "bits_per_slot",
-    "p_dc_active_w",
-    "p_out_total_w",
-    "total_prb_slots",
-    "schedule_cost",
-]
-
-
 @dataclass(frozen=True)
 class PreparedJointOfdmaProblem:
-    """Prepared OFDMA frame-allocation problem passed from space prep to a future solver."""
+    """Prepared OFDMA slot-scheduling input passed from space prep to a future solver.
+
+    Steps:
+    1. Keep the trusted per-user one-slot PHY operating menus from the batch artifact.
+    2. Preserve the per-user frame payload requirements the future OFDMA scheduler must satisfy.
+    3. Preserve the shared frame timing and slot PRB budget from the fixed radio geometry.
+    """
 
     frame_n_slots: int
+    t_slot_s: float
     prb_max: int
-    frame_prb_budget: int
     n_tx_chains: int
     pa_catalog: tuple[PAParams, ...]
-    user_candidate_spaces: dict[int, pd.DataFrame]
-
+    user_requirements: pd.DataFrame
+    user_slot_spaces: dict[int, pd.DataFrame]
 
 __all__ = [
     "PreparedJointOfdmaProblem",
-    "USER_CANDIDATE_COLUMNS",
 ]
