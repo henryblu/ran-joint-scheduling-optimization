@@ -2,12 +2,11 @@ from __future__ import annotations
 
 """Shared public dispatcher for multi-user scheduler backends."""
 
-from models import BatchUserParameterSpace, PASwitchPolicy, SchedulerMode
+from models import BatchUserParameterSpace, MultiUserScheduleResult, PASwitchPolicy, SchedulerMode
+from multi_user_ofdma_scheduler.api import run_multi_user_ofdma_scheduler
 from multi_user_tdma_scheduler.api import run_multi_user_tdma_scheduler
-from multi_user_tdma_scheduler.models import MultiUserTdmaSchedulerResult
 
-
-MultiUserSchedulerResult = MultiUserTdmaSchedulerResult
+MultiUserSchedulerResult = MultiUserScheduleResult
 
 
 def run_multi_user_scheduler(
@@ -20,8 +19,8 @@ def run_multi_user_scheduler(
 
     Steps:
     1. Resolve the requested scheduler mode onto the shared public enum.
-    2. Delegate TDMA runs to the existing TDMA scheduler package unchanged.
-    3. Fail explicitly for OFDMA until that backend exists.
+    2. Dispatch to the selected backend package.
+    3. Return the backend's shared public scheduler result directly.
     """
 
     resolved_mode = (
@@ -35,7 +34,10 @@ def run_multi_user_scheduler(
             switch_policy=switch_policy,
         )
     if resolved_mode == SchedulerMode.OFDMA:
-        raise NotImplementedError("OFDMA scheduler is not implemented yet.")
+        return run_multi_user_ofdma_scheduler(
+            batch_space,
+            switch_policy=switch_policy,
+        )
 
     raise ValueError(f"Unsupported scheduler mode: {resolved_mode}")
 

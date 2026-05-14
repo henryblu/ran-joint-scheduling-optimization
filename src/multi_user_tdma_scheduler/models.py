@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 import pandas as pd
 
@@ -28,19 +27,12 @@ class PreparedJointScheduleProblem:
     frame_n_slots: int
     n_tx_chains: int
     pa_catalog: tuple[PAParams, ...]
+    user_requirements: pd.DataFrame
     user_candidate_spaces: dict[int, pd.DataFrame]
-
-
-@dataclass
-class MultiUserTdmaSchedulerResult:
-    """Optimal TDMA schedule and minimal exact-search diagnostics."""
-
-    best_schedule: dict[str, Any] | None = None
-    search_stats: dict[str, Any] = field(default_factory=dict)
+    infeasible_reason: str | None = None
 
 
 __all__ = [
-    "MultiUserTdmaSchedulerResult",
     "PreparedJointScheduleProblem",
     "USER_CANDIDATE_COLUMNS",
 ]
