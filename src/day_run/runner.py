@@ -183,19 +183,13 @@ def run_bin(
         batch_space = build_batch_user_parameter_space(user_table)
         single_user_elapsed_s = float(perf_counter() - single_user_started_at)
         joint_started_at = perf_counter()
-        best_schedule = None
-        status = "solved"
-        try:
-            scheduler_result = run_multi_user_scheduler(
-                batch_space,
-                scheduler_mode=scheduler_mode,
-                switch_policy=switch_policy,
-            )
-            best_schedule = scheduler_result.best_schedule
-        except NotImplementedError:
-            raise
-        except RuntimeError:
-            status = "infeasible"
+        scheduler_result = run_multi_user_scheduler(
+            batch_space,
+            scheduler_mode=scheduler_mode,
+            switch_policy=switch_policy,
+        )
+        status = "solved" if scheduler_result.feasible else "infeasible"
+        schedule_result = scheduler_result if scheduler_result.feasible else None
 
         return BinRunResult(
             bin_index=int(bin_index),
@@ -204,7 +198,7 @@ def run_bin(
             single_user_elapsed_s=single_user_elapsed_s,
             joint_elapsed_s=float(perf_counter() - joint_started_at),
             total_elapsed_s=float(perf_counter() - total_started_at),
-            best_schedule=best_schedule,
+            schedule_result=schedule_result,
         )
 
 
@@ -228,8 +222,6 @@ def _worker_logging_scope(bin_index: int):
             os.environ.pop(ACTIVE_BIN_SCOPE_ENV_VAR, None)
         else:
             os.environ[ACTIVE_BIN_SCOPE_ENV_VAR] = previous_scope
-
-
 __all__ = [
     "run_bin",
     "run_day",

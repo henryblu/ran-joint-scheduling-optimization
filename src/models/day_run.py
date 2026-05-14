@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from day_cycle_simulation.models import SyntheticSessionGenerationConfig
 
 from .pa import PASwitchPolicy
+from .schedule_result import MultiUserScheduleResult
 from .scheduler import SchedulerMode
 
 
@@ -35,7 +35,7 @@ class BinRunResult:
     single_user_elapsed_s: float = 0.0
     joint_elapsed_s: float = 0.0
     total_elapsed_s: float = 0.0
-    best_schedule: dict[str, Any] | None = None
+    schedule_result: MultiUserScheduleResult | None = None
 
 
 ExperimentConfig = DayRunConfig

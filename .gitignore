@@ -35,3 +35,6 @@ hpc_xml/
 PA models/3.5Ghz_pas/4W_8W_NR_combined_old.csv
 AGENTS.md
 check_peak_bin_schedulability.py
+.codex/skills/python-tssio/SKILL.md
+debug/
+results/TDMA_BASELINE/day_run_result.json

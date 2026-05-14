@@ -104,6 +104,23 @@ def pa_dc_power(pa, p_out):
     return p_out / eta
 
 
+def pa_slot_dc_power(pa, *, p_out_total_w, n_tx_chains, prb_fraction=1.0):
+    """Return allocation-level active PA DC draw for a slot RF output.
+
+    The PA curve is evaluated at the per-chain operating point. The optional
+    PRB fraction scales precomputed allocation rows that occupy only part of
+    the carrier; aggregate slot-level callers can use the default full carrier
+    fraction.
+    """
+
+    if float(p_out_total_w) <= 0.0:
+        return 0.0
+
+    per_chain_p_out_w = float(p_out_total_w) / float(n_tx_chains)
+    full_carrier_dc_w = float(n_tx_chains) * float(pa_dc_power(pa, per_chain_p_out_w))
+    return float(prb_fraction) * full_carrier_dc_w
+
+
 def _build_measured_pa_from_curves(pa_name, scenario_label, kappa_distortion, pin_dbm, pout_w, pdcin_w, source_tag):
     pin_dbm = np.asarray(pin_dbm, dtype=float)
     pout_w = np.asarray(pout_w, dtype=float)
@@ -182,4 +199,5 @@ __all__ = [
     "build_pa_catalog",
     "build_pa_characteristics_table",
     "pa_dc_power",
+    "pa_slot_dc_power",
 ]

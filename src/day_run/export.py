@@ -8,6 +8,7 @@ resolved run results into that file format.
 """
 
 import json
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -75,7 +76,7 @@ def build_day_run_result_document(
         for bin_index, user_table in user_tables_by_bin.items()
     ]
     return {
-        "schema_version": "day_run_result_v1",
+        "schema_version": "day_run_result_v2",
         "run": {
             "switch_policy": str(config.switch_policy.value),
             "load_curve_csv": _serialize_export_path(config.load_curve_csv),
@@ -126,51 +127,69 @@ def _build_bin_document(
             "joint": float(result.joint_elapsed_s),
             "total": float(result.total_elapsed_s),
         },
-        "schedule": None if result.best_schedule is None else _build_schedule_document(result.best_schedule),
+        "schedule": None if result.schedule_result is None else _build_schedule_document(result.schedule_result),
     }
 
 
-def _build_schedule_document(best_schedule: dict[str, object]) -> dict[str, object]:
-    """Build the solved-bin schedule block from the public scheduler payload."""
+def _build_schedule_document(schedule_result) -> dict[str, object]:
+    """Build the solved-bin schedule block directly from the shared scheduler result."""
 
-    # Re-map the scheduler row names onto the slightly more descriptive export
-    # names without widening the scheduler's own public contract.
-    selected_allocations = [
-        _build_selected_allocation(row)
-        for row in best_schedule["rows"]
-    ]
-    active_dc_total_w = float(sum(allocation["p_dc_avg_frame_w"] for allocation in selected_allocations))
-    dc_total_w = float(best_schedule["schedule_p_dc_total_avg_frame_w"])
     return {
-        "slot_total": int(best_schedule["slot_total"]),
-        "unused_slots": int(best_schedule["unused_slots"]),
-        "delivered_rate_sum_bps": float(best_schedule["total_rate_bps"]),
-        "power_w": {
-            "dc_total": dc_total_w,
-            "dc_active": active_dc_total_w,
-            "dc_inactive": float(max(0.0, dc_total_w - active_dc_total_w)),
-            "rf_total": float(best_schedule["schedule_p_out_total_avg_frame_w"]),
+        "scheduler_mode": str(schedule_result.scheduler_mode.value),
+        "frame_summary": {
+            "frame_n_slots": int(len(schedule_result.slot_schedules)),
+            "t_slot_s": float(SINGLE_USER_SEARCH_CONFIG.t_slot_s),
+            "prb_max": int(
+                math.floor(
+                    float(SINGLE_USER_SEARCH_CONFIG.channel_bw_hz)
+                    / (12.0 * float(SINGLE_USER_SEARCH_CONFIG.delta_f_hz))
+                )
+            ),
+            "n_tx_chains": int(SINGLE_USER_SEARCH_CONFIG.n_tx_chains),
         },
-        "selected_allocations": selected_allocations,
-    }
-
-
-def _build_selected_allocation(row: dict[str, object]) -> dict[str, object]:
-    """Derive one export allocation block from the selected active row and slot count."""
-
-    n_slots = int(row["n_slots"])
-    slot_share = float(n_slots) / float(SINGLE_USER_SEARCH_CONFIG.frame_n_slots)
-    frame_duration_s = float(SINGLE_USER_SEARCH_CONFIG.frame_n_slots) * float(SINGLE_USER_SEARCH_CONFIG.t_slot_s)
-    return {
-        "user_id": int(row["user_id"]),
-        "pa_id": int(row["pa_id"]),
-        "n_prb": int(row["n_prb"]),
-        "layers": int(row["layers"]),
-        "mcs": int(row["mcs"]),
-        "n_slots": n_slots,
-        "delivered_rate_bps": float(n_slots * float(row["bits_per_slot"]) / frame_duration_s),
-        "p_dc_avg_frame_w": float(slot_share * float(row["p_dc_active_w"])),
-        "p_out_avg_frame_w": float(slot_share * float(row["p_out_total_w"])),
+        "power_summary": {
+            "frame_energy_j": float(schedule_result.power_summary.frame_energy_j),
+            "average_frame_dc_power_w": float(schedule_result.power_summary.average_frame_dc_power_w),
+            "active_energy_j": float(schedule_result.power_summary.active_energy_j),
+            "inactive_energy_j": float(schedule_result.power_summary.inactive_energy_j),
+            "average_frame_rf_output_w": float(schedule_result.power_summary.average_frame_rf_output_w),
+        },
+        "user_summaries": [
+            {
+                "user_id": int(user_summary.user_id),
+                "required_bits": float(user_summary.required_bits),
+                "delivered_bits": float(user_summary.delivered_bits),
+                "required_rate_bps": float(user_summary.required_rate_bps),
+                "delivered_rate_bps": float(user_summary.delivered_rate_bps),
+                "satisfied": bool(user_summary.satisfied),
+            }
+            for user_summary in schedule_result.user_summaries
+        ],
+        "slot_schedules": [
+            {
+                "slot_index": int(slot.slot_index),
+                "active": bool(slot.active),
+                "pa_id": None if slot.pa_id is None else int(slot.pa_id),
+                "used_prbs": int(slot.used_prbs),
+                "aggregate_p_out_w": float(slot.aggregate_p_out_w),
+                "dc_power_w": float(slot.dc_power_w),
+                "allocations": [
+                    {
+                        "user_id": int(allocation.user_id),
+                        "pa_id": int(allocation.pa_id),
+                        "n_prb": int(allocation.n_prb),
+                        "layers": int(allocation.layers),
+                        "mcs": int(allocation.mcs),
+                        "bits_per_slot": float(allocation.bits_per_slot),
+                        "p_out_total_w": float(allocation.p_out_total_w),
+                        "p_dc_active_w": float(allocation.p_dc_active_w),
+                    }
+                    for allocation in slot.allocations
+                ],
+            }
+            for slot in schedule_result.slot_schedules
+        ],
+        "solver_details": dict(schedule_result.solver_details),
     }
 
 
@@ -178,10 +197,9 @@ def _serialize_export_path(path: Path) -> str:
     """Serialize one export path relative to the repository when possible."""
 
     resolved_path = Path(path).resolve()
-    try:
+    if resolved_path.is_relative_to(REPO_ROOT):
         return str(resolved_path.relative_to(REPO_ROOT))
-    except ValueError:
-        return str(resolved_path)
+    return str(resolved_path)
 
 
 __all__ = [

@@ -1,4 +1,4 @@
-from configs import pa_dc_power
+from configs.pa import pa_slot_dc_power
 
 from .candidate_geometry import get_n_streams
 from .mcs_requirements import McsRequirementModel
@@ -56,8 +56,10 @@ class CandidatePowerModel:
             )
         p_dc_active_total_w = self._compute_active_dc_power(
             deployment,
+            rrc,
+            candidate,
             pa,
-            float(rf_terms["p_out_ant_w"]),
+            float(rf_terms["p_out_total_w"]),
         )
         p_dc_avg_total_w = self._compute_average_dc_power(
             deployment,
@@ -131,11 +133,17 @@ class CandidatePowerModel:
         return True, "ok"
 
     @staticmethod
-    def _compute_active_dc_power(deployment, pa, p_out_ant_w):
-        """Compute active-state PA DC draw across all TX chains."""
+    def _compute_active_dc_power(deployment, rrc, candidate, pa, p_out_total_w):
+        """Compute allocation-level active PA DC draw from total slot RF output."""
 
-        per_chain_active_dc_w = pa_dc_power(pa, p_out_ant_w)
-        return deployment.n_tx_chains * per_chain_active_dc_w
+        prb_fraction = float(candidate.n_prb) / float(rrc.prb_max)
+
+        return pa_slot_dc_power(
+            pa,
+            p_out_total_w=float(p_out_total_w),
+            n_tx_chains=int(deployment.n_tx_chains),
+            prb_fraction=prb_fraction,
+        )
 
     @staticmethod
     def _compute_average_dc_power(deployment, candidate, p_dc_active_total_w):

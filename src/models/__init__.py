@@ -5,6 +5,13 @@ from .fingerprint import build_resolved_fingerprint
 from .pa import PAParams, PASwitchPolicy
 from .path_loss import PathLossModel
 from .radio import FrozenMcsTable, RadioConfig, freeze_mcs_table
+from .schedule_result import (
+    MultiUserScheduleResult,
+    SchedulerPowerSummary,
+    SlotAllocation,
+    SlotSchedule,
+    UserScheduleSummary,
+)
 from .scheduler import SchedulerMode
 from .user import UserRequest
 
@@ -17,7 +24,12 @@ __all__ = [
     "PathLossModel",
     "RadioConfig",
     "SchedulerMode",
+    "MultiUserScheduleResult",
+    "SchedulerPowerSummary",
+    "SlotAllocation",
+    "SlotSchedule",
     "UserRequest",
+    "UserScheduleSummary",
     "build_deployment",
     "build_resolved_fingerprint",
     "freeze_mcs_table",
