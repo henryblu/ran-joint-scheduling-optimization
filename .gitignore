@@ -27,6 +27,8 @@ logs/
 
 # Large or rebuildable result artifacts
 data/scheduler_comparison_hpc_sweep*/
+data/scheduler_comparison_hpc_sweep_*.zip
+!data/scheduler_comparison_hpc_sweep.zip
 data/scheduler_comparison_hpc_sweep_analysis/
 data/scheduler_comparison_distance_axis_v2_local_check/
 data/distance_axis_v2_hard_cases/

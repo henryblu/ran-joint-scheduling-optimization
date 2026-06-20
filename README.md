@@ -199,6 +199,7 @@ Important repository-local inputs:
 
 - `data/half_load_curve.csv`: default load curve for synthetic day generation
 - `data/distance_binned_candidate_table.json`: stored single-user frontier table used by the lookup layer
+- `data/scheduler_comparison_hpc_sweep.zip`: canonical compressed scheduler-comparison result artifact
 - `PA models/3.5Ghz_pas/4W_8W_NR_combined_NR_carrier_with_idle.csv`: default measured PA source used by the shared radio config
 
 Generated outputs are local by default:
@@ -210,6 +211,8 @@ Archived `results/` folders are not part of the cleaned thesis artifact. Rebuild
 The main export for a completed full-day run is one JSON file:
 
 - `day_run_result.json`
+
+The scheduler-comparison thesis results are stored as chunked high-performance-computing outputs inside `data/scheduler_comparison_hpc_sweep.zip`. The raw XML submission files are not part of the cleaned artifact. Conceptually, each HPC chunk runs a bounded slice of the scheduler comparison campaign; the ZIP is the canonical collected artifact from those chunk runs. Derived CSVs, manifests, and figures are rebuildable from that ZIP and are kept out of Git unless they are later promoted as final thesis evidence.
 
 ## Notebooks
 
