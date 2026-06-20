@@ -1,24 +1,43 @@
 # Python cache and notebook artifacts
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .ipynb_checkpoints/
 .jupyter_runtime/
+_tmp_jupyter_runtime/
 
 # Local scratch files
 tmp.py
 tmp/
 _tmp_cells/
-tests/
 copy/
+debug/
 
-# Archived or generated project content
-old/
+# Local editor and assistant scaffolding
+.vscode/
+.agents/
+.codex/
+AGENTS.md
+plans/
+
+# Generated/local execution outputs
+outputs/
+results/
+logs/
+
+# Large or rebuildable result artifacts
+data/scheduler_comparison_hpc_sweep*/
+data/scheduler_comparison_hpc_sweep_analysis/
+data/scheduler_comparison_distance_axis_v2_local_check/
+data/distance_axis_v2_hard_cases/
+
+# Historical generated analysis folders
 graphs/
 csvs/
+img_old/
 
-# temporary ignore docs as they need to be pruned before being added to the repo
+# Keep images local unless explicitly promoted into the thesis artifact
 img/
-docs/
 
 # Ignore all PA model source material except the 3.5 GHz CSVs used by the models
 PA models/**
@@ -28,13 +47,6 @@ PA models/**
 # Office temporary lock files
 ~$*
 
-# local execution artifacts, scripts.
-hpc_xml/
-
-# particulars or helpers to this project and experimentation that are not intended to be shared
+# Local helper scripts and old PA source material
 PA models/3.5Ghz_pas/4W_8W_NR_combined_old.csv
-AGENTS.md
 check_peak_bin_schedulability.py
-.codex/skills/python-tssio/SKILL.md
-debug/
-results/TDMA_BASELINE/day_run_result.json
