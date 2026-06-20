@@ -201,10 +201,11 @@ Important repository-local inputs:
 - `data/distance_binned_candidate_table.json`: stored single-user frontier table used by the lookup layer
 - `PA models/3.5Ghz_pas/4W_8W_NR_combined_NR_carrier_with_idle.csv`: default measured PA source used by the shared radio config
 
-Generated or archived outputs:
+Generated outputs are local by default:
 
-- `outputs/`: new day-run exports written by the current code path
-- `results/`: archived example result folders already present in the repository
+- `outputs/`: new day-run exports written by the current code path; ignored by Git
+
+Archived `results/` folders are not part of the cleaned thesis artifact. Rebuild fresh outputs from the current code path when result snapshots are needed.
 
 The main export for a completed full-day run is one JSON file:
 
