@@ -76,6 +76,12 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - **Consumes:** Run-level status updates and lean result contracts from the orchestration layer.
 - **Does not own:** Day-run execution, export-schema assembly, solver-space construction, or scheduler search logic.
 
+### `src/thesis_analysis`
+
+- **Owns:** Thesis-facing post-run analysis over completed experiment artifacts, including scheduler-comparison ZIP extraction, chunk CSV preprocessing, coverage and breakpoint summaries, display-table derivation, and final figure-generation support.
+- **Consumes:** Completed result artifacts such as `data/scheduler_comparison_hpc_sweep.zip` and the stable CSV/JSON contracts emitted by experiment runners.
+- **Does not own:** Campaign point generation, scheduler execution, HPC chunk dispatch, raw scheduler internals, notebook presentation prose, or raw image archives.
+
 ## Main Dependency Flow
 
 1. `src/configs` defines the shared radio assumptions, the scheduler user-table column contract, day-cycle presets, PA source paths, and PA catalog behavior.
@@ -88,6 +94,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 8. `src/multi_user_ofdma_scheduler` preserves the same trusted batch artifacts as slot-level OFDMA scheduler input, runs the greedy OFDMA slot scheduler, and adapts the OFDMA backend result onto the shared public scheduler result.
 9. `src/day_cycle_simulation` is an upstream demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
 10. `src/day_run` orchestrates one full synthetic day by composing `day_cycle_simulation`, `single_user_lookup`, and `multi_user_scheduler`, while `src/run_reporting.py` owns the shared console reporting used by that run layer.
+11. `src/thesis_analysis` starts after experiments have produced stable artifacts; it rebuilds local analysis tables and thesis outputs without owning scheduler execution.
 ## Boundary Checks
 
 - If logic evaluates one resolved candidate's rate, SINR, or power, it belongs in `downlink_candidate_evaluation`.
@@ -102,4 +109,6 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - If logic builds daily load curves or synthetic session demand, it belongs in `day_cycle_simulation`.
 - If logic orchestrates one full synthetic day run across packages, it belongs in `day_run`.
 - If logic only formats or configures shared run logging, it belongs in `run_reporting.py`.
+- If logic reads completed thesis result artifacts and derives analysis tables, summaries, or figures, it belongs in `thesis_analysis`.
+- If logic defines or runs scheduler-comparison campaign chunks, it belongs in the future experiment-runner module, not `thesis_analysis`.
 - Shared config values and PA behavior belong in `configs`; shared models and derived radio physics belong in `models`.
