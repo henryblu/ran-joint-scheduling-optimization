@@ -214,6 +214,13 @@ The main export for a completed full-day run is one JSON file:
 
 The scheduler-comparison thesis results are stored as chunked high-performance-computing outputs inside `data/scheduler_comparison_hpc_sweep.zip`. The raw XML submission files are not part of the cleaned artifact. Conceptually, each HPC chunk runs a bounded slice of the scheduler comparison campaign; the ZIP is the canonical collected artifact from those chunk runs. Derived CSVs, manifests, and figures are rebuildable from that ZIP and are kept out of Git unless they are later promoted as final thesis evidence.
 
+Current post-run workflow:
+
+1. To change scenarios or recompute campaign outputs, rerun the scheduler-comparison campaign first. The cleaned artifact currently tracks the completed ZIP, not the raw HPC XML submissions.
+2. To extract the canonical ZIP locally, run `python scripts\thesis\extract_scheduler_comparison_artifact.py`. This writes the large extracted tree under ignored `outputs/scheduler_comparison_hpc_sweep_extracted/`.
+3. To rebuild analysis CSVs and manifests, run `python scripts\thesis\preprocess_scheduler_comparison.py`. This writes ignored derived tables under `data/scheduler_comparison_hpc_sweep_analysis/`, matching the current Results and Observations notebook paths.
+4. To inspect or extend analysis, use the Results and Observations notebooks after the notebook audit restores the final notebook set.
+
 ## Notebooks
 
 The notebooks are the best place to see the repository used in context. They show the examples, the intermediate outputs, and the flow used in the thesis work.
