@@ -43,6 +43,7 @@ A good rule of thumb is:
 - `src/day_cycle_simulation`: synthetic demand generation
 - `src/day_run`: full-day orchestration and JSON export
 - `src/run_reporting.py`: shared logging helpers
+- `src/experiment_runner`: thesis campaign definitions, point ordering, chunking, and run-manifest contracts
 - `notebooks`: thesis notebooks for the scenario, demand generation, candidate spaces, TDMA scheduling, and results
 - `docs`: model explanation and project narrative
 - `data`: shared load curves and stored candidate-table artifacts
@@ -214,7 +215,7 @@ The main export for a completed full-day run is one JSON file:
 
 The scheduler-comparison thesis results are stored as chunked high-performance-computing outputs inside `data/scheduler_comparison_hpc_sweep.zip`. The raw XML submission files are not part of the cleaned artifact. Conceptually, each HPC chunk runs a bounded slice of the scheduler comparison campaign; the ZIP is the canonical collected artifact from those chunk runs. Derived CSVs, manifests, and figures are rebuildable from that ZIP and are kept out of Git unless they are later promoted as final thesis evidence.
 
-Current post-run workflow:
+The runner-side campaign contract lives in `experiment_runner.scheduler_comparison`: it defines the historical scheduler-comparison point grid, stable point IDs, exact-scenario load-chain ordering, chunk selection, and manifest columns used by the collected ZIP. Current post-run workflow:
 
 1. To change scenarios or recompute campaign outputs, rerun the scheduler-comparison campaign first. The cleaned artifact currently tracks the completed ZIP, not the raw HPC XML submissions.
 2. To extract the canonical ZIP locally, run `python scripts\thesis\extract_scheduler_comparison_artifact.py`. This writes the large extracted tree under ignored `outputs/scheduler_comparison_hpc_sweep_extracted/`.
