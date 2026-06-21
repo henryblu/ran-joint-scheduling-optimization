@@ -1,9 +1,9 @@
 from configs.pa import pa_slot_dc_power
 
-from .candidate_geometry import get_n_streams
-from .mcs_requirements import McsRequirementModel
-from .models import CandidatePowerResult
-from .sinr_chain import SinrChainModel
+from .eval_geometry import get_n_streams
+from .eval_mcs import McsRequirementModel
+from .eval_models import CandidatePowerResult
+from .eval_sinr import SinrChainModel
 
 
 class CandidatePowerModel:

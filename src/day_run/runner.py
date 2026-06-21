@@ -16,7 +16,7 @@ from time import perf_counter
 
 import pandas as pd
 
-from candidate_table_generation import load_or_build_distance_binned_candidate_table
+from candidate_table import build_batch_user_parameter_space, load_or_build_candidate_table
 from configs import USER_REQUIREMENT_COLUMNS
 from configs.day_run import (
     ACTIVE_BIN_SCOPE_ENV_VAR,
@@ -28,7 +28,6 @@ from day_cycle_simulation.generation import build_scheduler_day_user_table
 from models import PASwitchPolicy, SchedulerMode
 from models.day_run import BinRunResult, DayRunConfig
 from multi_user_scheduler.api import run_multi_user_scheduler
-from single_user_lookup.api import build_batch_user_parameter_space
 from run_reporting import (
     log_bin_result,
     log_run_progress,
@@ -54,7 +53,7 @@ def run_day(config: DayRunConfig) -> list[BinRunResult]:
         load_curve_csv=config.load_curve_csv,
         config=config.session_generation_config,
     )
-    load_or_build_distance_binned_candidate_table(max_workers=config.cores)
+    load_or_build_candidate_table(max_workers=config.cores)
     # Keep the runner-side projection simple: the day-cycle layer already owns
     # session generation, and the batch layer owns user-table validation.
     user_tables_by_bin = {

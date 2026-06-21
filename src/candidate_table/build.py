@@ -10,14 +10,14 @@ import pandas as pd
 from configs import SINGLE_USER_SEARCH_CONFIG, build_pa_catalog
 from models import build_resolved_fingerprint
 from models.candidate_table import BATCH_USER_PARAMETER_SPACE_COLUMNS
-from single_user_solver.api import enumerate_active_candidates
-from single_user_solver.models import SearchSpace, SingleUserRequest
-from single_user_solver.problem_factory import prepare_single_user_problem
 
 from .artifact import CANDIDATE_FRONTIER_SORT_COLUMNS
 from .logging import emit_candidate_table_console_log
 from .models import DISTANCE_BIN_GRID_M, DistanceBinnedCandidateTable
 from .pruning import prune_candidate_frontier
+from .single_user_models import SearchSpace, SingleUserRequest
+from .single_user_problem import prepare_single_user_problem
+from .single_user_search import enumerate_active_candidates
 
 
 @dataclass(frozen=True)

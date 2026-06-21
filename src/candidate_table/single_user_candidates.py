@@ -3,7 +3,7 @@ from types import MappingProxyType
 
 import numpy as np
 
-from .models import Candidate, RRCParams, SearchCatalog
+from .single_user_models import Candidate, RRCParams, SearchCatalog
 
 
 def build_search_catalog(

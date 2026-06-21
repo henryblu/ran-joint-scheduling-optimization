@@ -1,8 +1,8 @@
 from configs import build_pa_catalog
 from models import build_deployment, build_resolved_fingerprint
 
-from .candidate_space import build_search_catalog
-from .models import PreparedSingleUserContext
+from .single_user_candidates import build_search_catalog
+from .single_user_models import PreparedSingleUserContext
 
 
 def prepare_single_user_problem(request, model_inputs, search_shape, *, pa_catalog=None):

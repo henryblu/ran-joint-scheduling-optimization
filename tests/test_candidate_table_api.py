@@ -4,6 +4,7 @@ import pandas as pd
 
 import candidate_table
 from candidate_table import build_batch_user_parameter_space, load_candidate_table
+from candidate_table.build import build_candidate_frontier_for_distance
 from models import BatchUserParameterSpace
 from models.candidate_table import BATCH_USER_PARAMETER_SPACE_COLUMNS
 
@@ -61,3 +62,10 @@ def test_build_batch_user_parameter_space_from_stored_table():
     for user_space in batch.user_parameter_spaces.values():
         assert list(user_space.columns) == BATCH_USER_PARAMETER_SPACE_COLUMNS
         assert not user_space.empty
+
+
+def test_build_candidate_frontier_for_one_distance_bin():
+    frontier = build_candidate_frontier_for_distance(25)
+
+    assert list(frontier.columns) == BATCH_USER_PARAMETER_SPACE_COLUMNS
+    assert not frontier.empty

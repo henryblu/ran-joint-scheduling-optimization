@@ -1,10 +1,11 @@
 import pandas as pd
 
-from downlink_candidate_evaluation import CandidatePowerModel, CandidateRateModel
-from downlink_candidate_evaluation.mcs_requirements import McsRequirementModel
+from .eval_mcs import McsRequirementModel
+from .eval_power import CandidatePowerModel
+from .eval_rate import CandidateRateModel
 
-from .candidate_space import iter_candidates, resolve_candidate_context
-from .models import StaticCandidateSpec
+from .single_user_candidates import iter_candidates, resolve_candidate_context
+from .single_user_models import StaticCandidateSpec
 
 
 # Keep the runtime active table narrow: candidate identity, achieved rate,
@@ -26,6 +27,21 @@ ACTIVE_RESULT_COLUMNS = [
 
 
 _STATIC_CANDIDATE_CATALOG_CACHE = {}
+
+
+def enumerate_active_candidates(context):
+    """Enumerate the full feasible active candidate space for one prepared context."""
+
+    return enumerate_active_candidates_from_context(context)
+
+
+def search_candidates(context, required_rate_bps):
+    """Return the feasible candidate space for one prepared context and target rate."""
+
+    return search_candidates_from_context(
+        context,
+        required_rate_bps=float(required_rate_bps),
+    )
 
 
 def enumerate_active_candidates_from_context(context):

@@ -1,6 +1,6 @@
 import numpy as np
 
-from .candidate_geometry import get_n_streams, occupied_bandwidth_hz, slot_level_re_counts
+from .eval_geometry import get_n_streams, occupied_bandwidth_hz, slot_level_re_counts
 
 
 class SinrChainModel:

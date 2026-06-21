@@ -1,5 +1,5 @@
-from .models import CandidateRateResult
-from .candidate_geometry import occupied_bandwidth_hz, slot_level_re_counts
+from .eval_geometry import occupied_bandwidth_hz, slot_level_re_counts
+from .eval_models import CandidateRateResult
 
 
 class CandidateRateModel:
