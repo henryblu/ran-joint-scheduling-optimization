@@ -12,8 +12,10 @@ import logging
 import os
 from configs import SINGLE_USER_SEARCH_CONFIG
 from configs.day_run import (
+    ACTIVE_BIN_SCOPE_ENV_VAR,
     WORKER_LOG_LEVEL_ENV_VAR,
 )
+from configs.scheduler import ACTIVE_SNAPSHOT_SCOPE_ENV_VAR
 from models.day_run import BinRunResult, DayRunConfig
 
 
@@ -196,6 +198,16 @@ def build_console_message(
     return f"{header} {' '.join(f'{key}={value}' for key, value in fields)}"
 
 
+def current_run_scope(*, default: str = "RUN") -> str:
+    bin_scope = os.environ.get(ACTIVE_BIN_SCOPE_ENV_VAR)
+    if bin_scope:
+        return str(bin_scope)
+    snapshot_scope = os.environ.get(ACTIVE_SNAPSHOT_SCOPE_ENV_VAR)
+    if snapshot_scope:
+        return str(snapshot_scope)
+    return str(default)
+
+
 def _emit_console_log(
     *,
     level: int,
@@ -247,6 +259,7 @@ def _format_metric(value: float | None, *, digits: int) -> str:
 __all__ = [
     "build_console_message",
     "configure_run_logging",
+    "current_run_scope",
     "log_bin_result",
     "log_run_progress",
     "log_run_setup",

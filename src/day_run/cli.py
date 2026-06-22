@@ -53,7 +53,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--scheduler-mode",
         choices=[mode.value for mode in SchedulerMode],
-        default=SchedulerMode.TDMA.value,
+        default=SchedulerMode.K_MILP.value,
         help="Shared scheduler backend to run.",
     )
     parser.add_argument(
@@ -86,7 +86,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def build_day_run_config(
     *,
-    scheduler_mode: SchedulerMode = SchedulerMode.TDMA,
+    scheduler_mode: SchedulerMode = SchedulerMode.K_MILP,
     switch_policy: PASwitchPolicy = PASwitchPolicy.DUAL_SWITCHABLE,
     cores: int = DEFAULT_DAY_RUN_CORES,
     load_curve_csv: Path | None = None,

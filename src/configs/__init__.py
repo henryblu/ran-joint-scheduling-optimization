@@ -5,6 +5,7 @@ from .pa import (
     build_pa_characteristics_table,
     pa_dc_power,
 )
+from .scheduler import KMilpSolverConfig, K_MILP_SOLVER_CONFIG
 from .radio import (
     COMMON_RADIO_CONFIG,
     DEFAULT_NR_MCS_TABLE,
@@ -16,6 +17,8 @@ from .user import USER_REQUIREMENT_COLUMNS
 
 __all__ = [
     "COMMON_RADIO_CONFIG",
+    "KMilpSolverConfig",
+    "K_MILP_SOLVER_CONFIG",
     "DEFAULT_NR_MCS_TABLE",
     "DEFAULT_PA_DATA_CSV",
     "MULTI_USER_TDMA_CONFIG",

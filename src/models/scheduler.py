@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-"""Shared scheduler mode selection enums."""
+"""Shared source-facing scheduler mode selection enums."""
 
 from enum import Enum
 
 
 class SchedulerMode(Enum):
-    TDMA = "tdma"
-    OFDMA = "ofdma"
+    ROUND_ROBIN = "round_robin"
+    K_MILP = "k_milp"
 
 
 __all__ = ["SchedulerMode"]

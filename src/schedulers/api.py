@@ -1,25 +1,26 @@
 from __future__ import annotations
 
-"""Shared public dispatcher for multi-user scheduler backends."""
+"""Shared public dispatcher for final multi-user scheduler backends."""
 
 from models import BatchUserParameterSpace, MultiUserScheduleResult, PASwitchPolicy, SchedulerMode
-from multi_user_ofdma_scheduler.api import run_multi_user_ofdma_scheduler
-from multi_user_tdma_scheduler.api import run_multi_user_tdma_scheduler
+
+from .k_milp.api import run_k_milp_scheduler
+from .round_robin.api import run_round_robin_scheduler
 
 MultiUserSchedulerResult = MultiUserScheduleResult
 
 
-def run_multi_user_scheduler(
+def run_scheduler(
     batch_space: BatchUserParameterSpace,
     *,
-    scheduler_mode: SchedulerMode = SchedulerMode.TDMA,
+    scheduler_mode: SchedulerMode = SchedulerMode.K_MILP,
     switch_policy: PASwitchPolicy = PASwitchPolicy.DUAL_SWITCHABLE,
 ) -> MultiUserSchedulerResult:
-    """Run the selected multi-user scheduler backend from one trusted batch artifact.
+    """Run one final scheduler backend from a trusted batch artifact.
 
     Steps:
-    1. Resolve the requested scheduler mode onto the shared public enum.
-    2. Dispatch to the selected backend package.
+    1. Resolve the source-facing scheduler family.
+    2. Dispatch the trusted batch artifact to the matching backend.
     3. Return the backend's shared public scheduler result directly.
     """
 
@@ -28,13 +29,13 @@ def run_multi_user_scheduler(
         if isinstance(scheduler_mode, SchedulerMode)
         else SchedulerMode(str(scheduler_mode))
     )
-    if resolved_mode == SchedulerMode.TDMA:
-        return run_multi_user_tdma_scheduler(
+    if resolved_mode == SchedulerMode.ROUND_ROBIN:
+        return run_round_robin_scheduler(
             batch_space,
             switch_policy=switch_policy,
         )
-    if resolved_mode == SchedulerMode.OFDMA:
-        return run_multi_user_ofdma_scheduler(
+    if resolved_mode == SchedulerMode.K_MILP:
+        return run_k_milp_scheduler(
             batch_space,
             switch_policy=switch_policy,
         )
@@ -44,5 +45,5 @@ def run_multi_user_scheduler(
 
 __all__ = [
     "MultiUserSchedulerResult",
-    "run_multi_user_scheduler",
+    "run_scheduler",
 ]

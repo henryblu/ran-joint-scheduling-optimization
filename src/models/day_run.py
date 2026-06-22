@@ -22,7 +22,7 @@ class DayRunConfig:
     cores: int
     output_dir: Path
     log_level: str | None
-    scheduler_mode: SchedulerMode = SchedulerMode.TDMA
+    scheduler_mode: SchedulerMode = SchedulerMode.K_MILP
 
 
 @dataclass

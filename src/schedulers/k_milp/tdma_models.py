@@ -13,7 +13,6 @@ USER_CANDIDATE_COLUMNS = [
     "n_prb",
     "layers",
     "mcs",
-    "n_slots",
     "bits_per_slot",
     "p_dc_active_w",
     "p_out_total_w",

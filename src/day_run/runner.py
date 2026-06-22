@@ -27,7 +27,7 @@ from configs.day_run import (
 from day_cycle_simulation.generation import build_scheduler_day_user_table
 from models import PASwitchPolicy, SchedulerMode
 from models.day_run import BinRunResult, DayRunConfig
-from multi_user_scheduler.api import run_multi_user_scheduler
+from schedulers import run_scheduler
 from run_reporting import (
     log_bin_result,
     log_run_progress,
@@ -154,7 +154,7 @@ def run_bin(
     user_table: pd.DataFrame,
     switch_policy: PASwitchPolicy,
     *,
-    scheduler_mode: SchedulerMode = SchedulerMode.TDMA,
+    scheduler_mode: SchedulerMode = SchedulerMode.K_MILP,
 ) -> BinRunResult:
     """Run one bin: build the user spaces, solve the selected scheduler, and return the lean result.
 
@@ -182,7 +182,7 @@ def run_bin(
         batch_space = build_batch_user_parameter_space(user_table)
         single_user_elapsed_s = float(perf_counter() - single_user_started_at)
         joint_started_at = perf_counter()
-        scheduler_result = run_multi_user_scheduler(
+        scheduler_result = run_scheduler(
             batch_space,
             scheduler_mode=scheduler_mode,
             switch_policy=switch_policy,
