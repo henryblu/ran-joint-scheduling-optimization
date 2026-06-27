@@ -7,7 +7,7 @@ import re
 from zipfile import ZipFile
 
 
-DEFAULT_ARTIFACT_ZIP = Path("data/scheduler_comparison_hpc_sweep.zip")
+DEFAULT_ARTIFACT_ZIP = Path("outputs/scheduler_comparison_hpc_sweep.zip")
 DEFAULT_EXTRACTION_ROOT = Path("outputs/scheduler_comparison_hpc_sweep_extracted")
 CHUNK_NAME_PATTERN = re.compile(r"^chunk_(?P<index>\d{2})_of_(?P<count>\d+)$")
 
@@ -64,4 +64,3 @@ def extracted_chunks_present(root: Path) -> bool:
         path.is_dir() and CHUNK_NAME_PATTERN.match(path.name) is not None
         for path in resolved_root.rglob("*")
     )
-

@@ -21,14 +21,16 @@ AGENTS.md
 plans/
 
 # Generated/local execution outputs
-outputs/
+outputs/*
+!outputs/distance_binned_candidate_table.json
+!outputs/scheduler_comparison_hpc_sweep.zip
 results/
 logs/
 
 # Large or rebuildable result artifacts
+data/distance_binned_candidate_table.json
 data/scheduler_comparison_hpc_sweep*/
 data/scheduler_comparison_hpc_sweep_*.zip
-!data/scheduler_comparison_hpc_sweep.zip
 data/scheduler_comparison_hpc_sweep_analysis/
 data/scheduler_comparison_distance_axis_v2_local_check/
 data/distance_axis_v2_hard_cases/

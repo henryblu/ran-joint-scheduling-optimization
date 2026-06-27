@@ -13,7 +13,7 @@ from .models import DistanceBinnedCandidateTable
 
 
 DEFAULT_DISTANCE_BINNED_CANDIDATE_TABLE_PATH = (
-    Path(__file__).resolve().parents[2] / "data" / "distance_binned_candidate_table.json"
+    Path(__file__).resolve().parents[2] / "outputs" / "distance_binned_candidate_table.json"
 )
 CANDIDATE_FRONTIER_DTYPE_MAP = {
     "pa_id": "int64",
