@@ -27,6 +27,7 @@ CANDIDATE_FRONTIER_DTYPE_MAP = {
 CANDIDATE_FRONTIER_SORT_COLUMNS = [
     "pa_id",
     "p_dc_active_w",
+    "p_out_total_w",
     "n_prb",
     "bits_per_slot",
     "mcs",

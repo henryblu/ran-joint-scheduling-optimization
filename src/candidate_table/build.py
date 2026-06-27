@@ -15,9 +15,9 @@ from .artifact import CANDIDATE_FRONTIER_SORT_COLUMNS
 from .logging import emit_candidate_table_console_log
 from .models import DISTANCE_BIN_GRID_M, DistanceBinnedCandidateTable
 from .pruning import prune_candidate_frontier
-from .single_user_models import SearchSpace, SingleUserRequest
-from .single_user_problem import prepare_single_user_problem
-from .single_user_search import enumerate_active_candidates
+from .single_user.single_user_models import SearchSpace, SingleUserRequest
+from .single_user.single_user_problem import prepare_single_user_problem
+from .single_user.single_user_search import enumerate_active_candidates
 
 
 @dataclass(frozen=True)

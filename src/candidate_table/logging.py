@@ -5,7 +5,7 @@ import logging
 from run_reporting import build_console_message
 
 
-LOGGER = logging.getLogger("day_run")
+LOGGER = logging.getLogger("snapshot_run")
 
 
 def emit_candidate_table_console_log(
