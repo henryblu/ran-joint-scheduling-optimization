@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""CLI for one finite-frame scheduler smoke run."""
+"""CLI for one finite-frame scheduler experiment run."""
 
 import argparse
 
@@ -8,8 +8,9 @@ from configs.snapshot_run import DEFAULT_USER_GENERATION_CONFIG, LOG_LEVEL_CHOIC
 from models import PASwitchPolicy, SchedulerMode
 from user_generation import UserGenerationConfig
 
-from .models import FiniteFrameRunConfig, FiniteFrameRunResult
-from .runner import run_finite_frame
+from .models import ExperimentRunConfig, ExperimentRunResult
+from .reporting import print_experiment_result
+from .runner import run_experiment_case
 
 
 DEFAULT_SMOKE_ACTIVE_USER_COUNT = 15
@@ -17,11 +18,11 @@ DEFAULT_SMOKE_LOAD_FACTOR = 0.4
 DEFAULT_SMOKE_DISTANCE_M = 250.0
 
 
-def run_from_cli(argv: list[str] | None = None) -> FiniteFrameRunResult:
-    """Parse CLI inputs, run one finite-frame scheduler case, and print a summary."""
+def run_from_cli(argv: list[str] | None = None) -> ExperimentRunResult:
+    """Parse CLI inputs, run one scheduler experiment case, and print a summary."""
 
     args = parse_args(argv)
-    config = build_finite_frame_run_config(
+    config = build_experiment_run_config(
         scheduler_mode=SchedulerMode(args.scheduler_mode),
         switch_policy=PASwitchPolicy(args.switch_policy),
         active_user_count=int(args.active_user_count),
@@ -31,16 +32,16 @@ def run_from_cli(argv: list[str] | None = None) -> FiniteFrameRunResult:
         frame_duration_s=float(args.frame_duration_s),
         cores=int(args.cores),
     )
-    result = run_finite_frame(config)
-    print_finite_frame_result(config, result)
+    result = run_experiment_case(config)
+    print_experiment_result(config, result)
     return result
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse the finite-frame smoke CLI surface."""
+    """Parse the official single-case experiment CLI surface."""
 
     parser = argparse.ArgumentParser(
-        description="Run one finite-frame scheduler case through user generation, candidate lookup, and scheduling."
+        description="Run one scheduler experiment case through user generation, candidate lookup, and scheduling."
     )
     parser.add_argument(
         "--scheduler-mode",
@@ -94,12 +95,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--log-level",
         choices=LOG_LEVEL_CHOICES,
         default=None,
-        help="Accepted for CLI compatibility; finite-frame smoke prints a compact summary.",
+        help="Accepted for CLI compatibility; experiment runs print a compact summary.",
     )
     return parser.parse_args(argv)
 
 
-def build_finite_frame_run_config(
+def build_experiment_run_config(
     *,
     scheduler_mode: SchedulerMode = SchedulerMode.K_MILP,
     switch_policy: PASwitchPolicy = PASwitchPolicy.DUAL_SWITCHABLE,
@@ -109,8 +110,8 @@ def build_finite_frame_run_config(
     reference_backlog_bits: int = DEFAULT_USER_GENERATION_CONFIG.reference_backlog_bits,
     frame_duration_s: float = DEFAULT_USER_GENERATION_CONFIG.frame_duration_s,
     cores: int = 1,
-) -> FiniteFrameRunConfig:
-    """Build the finite-frame run config used by the default main smoke."""
+) -> ExperimentRunConfig:
+    """Build the single-case experiment config used by the default main smoke."""
 
     user_generation_config = UserGenerationConfig(
         active_user_count=int(active_user_count),
@@ -121,54 +122,28 @@ def build_finite_frame_run_config(
         frame_duration_s=float(frame_duration_s),
         distance_layout="all_edge",
     )
-    return FiniteFrameRunConfig(
+    return ExperimentRunConfig(
         user_generation_config=user_generation_config,
-        scheduler_mode=scheduler_mode if isinstance(scheduler_mode, SchedulerMode) else SchedulerMode(str(scheduler_mode)),
-        switch_policy=switch_policy if isinstance(switch_policy, PASwitchPolicy) else PASwitchPolicy(str(switch_policy)),
+        scheduler_mode=_resolve_scheduler_mode(scheduler_mode),
+        switch_policy=_resolve_switch_policy(switch_policy),
         cores=int(cores),
     )
 
 
-def print_finite_frame_result(config: FiniteFrameRunConfig, result: FiniteFrameRunResult) -> None:
-    """Print the compatibility smoke summary for a completed finite-frame run."""
+def _resolve_scheduler_mode(scheduler_mode: SchedulerMode | str) -> SchedulerMode:
+    if isinstance(scheduler_mode, SchedulerMode):
+        return scheduler_mode
+    return SchedulerMode(str(scheduler_mode))
 
-    schedule_result = result.schedule_result
-    solver_details = dict(schedule_result.solver_details)
-    power_summary = schedule_result.power_summary
-    active_slots = sum(1 for slot in schedule_result.slot_schedules if slot.active)
-    allocation_count = sum(len(slot.allocations) for slot in schedule_result.slot_schedules)
-    print(
-        "FINITE_FRAME_RUN",
-        f"status={result.status}",
-        f"scheduler={schedule_result.scheduler_mode.value}",
-        f"algorithm={solver_details.get('algorithm', 'unknown')}",
-        f"policy={config.switch_policy.value}",
-        f"users={config.user_generation_config.active_user_count}",
-        f"load={config.user_generation_config.load_factor:g}",
-        f"distance_m={config.user_generation_config.distance_max_m:g}",
-    )
-    print(
-        "FINITE_FRAME_RESULT",
-        f"feasible={schedule_result.feasible}",
-        f"infeasible_reason={schedule_result.infeasible_reason}",
-        f"active_slots={active_slots}",
-        f"allocations={allocation_count}",
-        f"avg_dc_w={power_summary.average_frame_dc_power_w:.9g}",
-        f"frame_energy_j={power_summary.frame_energy_j:.9g}",
-    )
-    print(
-        "FINITE_FRAME_TIMINGS",
-        f"candidate_table_s={result.candidate_table_elapsed_s:.3f}",
-        f"user_generation_s={result.user_generation_elapsed_s:.3f}",
-        f"candidate_lookup_s={result.candidate_lookup_elapsed_s:.3f}",
-        f"scheduler_s={result.scheduler_elapsed_s:.3f}",
-        f"total_s={result.total_elapsed_s:.3f}",
-    )
+
+def _resolve_switch_policy(switch_policy: PASwitchPolicy | str) -> PASwitchPolicy:
+    if isinstance(switch_policy, PASwitchPolicy):
+        return switch_policy
+    return PASwitchPolicy(str(switch_policy))
 
 
 __all__ = [
-    "build_finite_frame_run_config",
+    "build_experiment_run_config",
     "parse_args",
-    "print_finite_frame_result",
     "run_from_cli",
 ]

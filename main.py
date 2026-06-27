@@ -1,8 +1,8 @@
-"""Command-line entry point for one finite-frame scheduler run.
+"""Command-line entry point for one scheduler experiment run.
 
 Keep this file intentionally small:
 1. Bootstrap the local ``src`` package for direct script execution.
-2. Hand off the actual workflow to ``finite_frame_run``.
+2. Hand off the actual workflow to ``experiment_runner``.
 """
 
 from __future__ import annotations
@@ -19,11 +19,11 @@ if str(SRC_ROOT) not in sys.path:
 
 
 # Import after the path bootstrap so the local package resolves consistently.
-from finite_frame_run import run_from_cli
+from experiment_runner import run_from_cli
 
 
 def main(argv: list[str] | None = None):
-    """Run the finite-frame CLI with the provided argument list."""
+    """Run the experiment CLI with the provided argument list."""
 
     return run_from_cli(argv)
 

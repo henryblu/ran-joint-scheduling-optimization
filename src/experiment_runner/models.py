@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Models for one finite-frame scheduler run."""
+"""Models for one finite-frame scheduler experiment run."""
 
 from dataclasses import dataclass
 
@@ -11,8 +11,8 @@ from user_generation import UserGenerationConfig
 
 
 @dataclass(frozen=True)
-class FiniteFrameRunConfig:
-    """Resolved inputs for one generated finite-frame scheduler run."""
+class ExperimentRunConfig:
+    """Resolved inputs for one generated finite-frame scheduler experiment."""
 
     user_generation_config: UserGenerationConfig
     scheduler_mode: SchedulerMode
@@ -21,8 +21,8 @@ class FiniteFrameRunConfig:
 
 
 @dataclass(frozen=True)
-class FiniteFrameRunResult:
-    """Result and timings for the finite-frame workflow handoff."""
+class ExperimentRunResult:
+    """Result and timings for one finite-frame experiment handoff."""
 
     status: str
     scheduler_user_table: pd.DataFrame
@@ -35,6 +35,6 @@ class FiniteFrameRunResult:
 
 
 __all__ = [
-    "FiniteFrameRunConfig",
-    "FiniteFrameRunResult",
+    "ExperimentRunConfig",
+    "ExperimentRunResult",
 ]

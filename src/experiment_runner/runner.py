@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Run one finite-frame scheduler workflow from generated users to schedule result."""
+"""Run one finite-frame scheduler experiment from generated users to schedule result."""
 
 from time import perf_counter
 
@@ -8,11 +8,11 @@ from candidate_table import build_batch_user_parameter_space, load_or_build_cand
 from schedulers import run_scheduler
 from user_generation import build_scheduler_user_table
 
-from .models import FiniteFrameRunConfig, FiniteFrameRunResult
+from .models import ExperimentRunConfig, ExperimentRunResult
 
 
-def run_finite_frame(config: FiniteFrameRunConfig) -> FiniteFrameRunResult:
-    """Run the finite-frame workflow used by the scheduler comparison path.
+def run_experiment_case(config: ExperimentRunConfig) -> ExperimentRunResult:
+    """Run the official single-case experiment workflow.
 
     Steps:
     1. Load or rebuild the stored candidate table artifact.
@@ -43,7 +43,7 @@ def run_finite_frame(config: FiniteFrameRunConfig) -> FiniteFrameRunResult:
     )
     scheduler_elapsed_s = float(perf_counter() - scheduler_started_at)
 
-    return FiniteFrameRunResult(
+    return ExperimentRunResult(
         status="solved" if schedule_result.feasible else "infeasible",
         scheduler_user_table=scheduler_user_table,
         schedule_result=schedule_result,
@@ -55,4 +55,4 @@ def run_finite_frame(config: FiniteFrameRunConfig) -> FiniteFrameRunResult:
     )
 
 
-__all__ = ["run_finite_frame"]
+__all__ = ["run_experiment_case"]
