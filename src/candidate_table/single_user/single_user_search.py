@@ -1,8 +1,8 @@
 import pandas as pd
 
-from .eval_mcs import McsRequirementModel
-from .eval_power import CandidatePowerModel
-from .eval_rate import CandidateRateModel
+from ..eval.eval_mcs import McsRequirementModel
+from ..eval.eval_power import CandidatePowerModel
+from ..eval.eval_rate import CandidateRateModel
 
 from .single_user_candidates import iter_candidates, resolve_candidate_context
 from .single_user_models import StaticCandidateSpec
