@@ -14,8 +14,8 @@ The current model follows the following logic:
 
 1. It evaluates feasible single-user PHY operating points for a user at a given distance and rate target.
 2. It stores those single-user results in a distance-binned lookup table.
-3. It builds per-user feasible menus from that table and solves the joint TDMA schedule across users.
-4. It can generate a synthetic day of demand and run the full pipeline bin by bin, exporting one JSON result.
+3. It builds per-user feasible menus from that table and solves the joint schedule across users.
+4. It can generate one finite-frame user population and run the candidate-table lookup plus scheduler handoff as a smokeable main-path workflow.
 
 The source layout and package ownership are defined in [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md). That file should be treated as the boundary contract for `src/`.
 
@@ -36,14 +36,10 @@ A good rule of thumb is:
 
 - `src/configs`: shared defaults, scenario presets, PA catalog loading, and scheduler table contracts
 - `src/models`: shared value objects and radio-state helpers
-- `src/downlink_candidate_evaluation`: SINR, rate, and power feasibility per candidate
-- `src/single_user_solver`: single-user problem setup and candidate enumeration or search
-- `src/candidate_table_generation`: build, load, save, and prune the distance-binned candidate table
-- `src/single_user_lookup`: user normalization and lookup into the precomputed table
-- `src/multi_user_scheduler`: shared scheduler dispatch and mode selection
-- `src/multi_user_tdma_scheduler`: TDMA problem setup, pruning, and joint search
-- `src/day_cycle_simulation`: synthetic demand generation
-- `src/day_run`: full-day orchestration and JSON export
+- `src/candidate_table`: build, load, save, prune, evaluate, and query the distance-binned candidate table
+- `src/schedulers`: shared scheduler dispatch, round-robin baseline, and K-MILP backend
+- `src/user_generation`: finite-frame user population generation
+- `src/finite_frame_run`: finite-frame main-path orchestration
 - `src/run_reporting.py`: shared logging helpers
 - `src/experiment_runner`: thesis campaign definitions, point ordering, chunking, and run-manifest contracts
 - `notebooks`: thesis notebooks for the scenario, demand generation, candidate spaces, TDMA scheduling, and results
@@ -58,29 +54,24 @@ A good rule of thumb is:
 
 ```mermaid
 flowchart LR
-    A["configs + models"] --> B["downlink_candidate_evaluation"]
-    B --> C["single_user_solver"]
-    C --> D["candidate_table_generation"]
-    D --> E["single_user_lookup"]
-    E --> F["multi_user_scheduler"]
-    F --> G["multi_user_tdma_scheduler"]
-    H["day_cycle_simulation"] --> I["day_run"]
-    E --> I
-    F --> I
-    I --> J["day_run_result.json"]
+    A["configs + models"] --> B["candidate_table"]
+    B --> C["schedulers"]
+    D["user_generation"] --> E["finite_frame_run"]
+    B --> E
+    C --> E
+    E --> F["console result"]
 ```
 
 The main flow is:
 
-1. `configs` defines the radio assumptions, user-table contract, day-cycle presets, and PA source paths.
+1. `configs` defines the radio assumptions, user-table contract, and PA source paths.
 2. `models` provides shared data structures and radio-state helpers.
-3. `single_user_solver` prepares one user problem and evaluates feasible active candidates.
-4. `candidate_table_generation` stores a pruned frontier over fixed distance bins.
-5. `single_user_lookup` maps each user to the nearest supported distance bin and filters the table by required rate.
-6. `multi_user_scheduler` selects the concrete scheduler backend behind a shared public contract.
-7. `multi_user_tdma_scheduler` currently provides the implemented backend and solves the joint TDMA schedule.
-8. `day_cycle_simulation` can generate a full day of demand.
-9. `day_run` runs the full pipeline and writes the JSON export.
+3. `candidate_table` prepares single-user problems, evaluates feasible candidates, stores a pruned frontier over fixed distance bins, and maps each user into feasible scheduler menus.
+4. `schedulers` selects the concrete scheduler backend behind a shared public contract.
+5. `schedulers.round_robin` provides the deterministic baseline.
+6. `schedulers.k_milp` provides the final K-MILP backend.
+7. `user_generation` builds finite-frame user populations from load, distance, and user-count inputs.
+8. `finite_frame_run` runs the candidate-table lookup and scheduler handoff for one finite-frame case.
 
 For a full worked walk through of this flow, see the notebooks. The notebooks are the clearest way to follow the steps in order.
 
@@ -119,32 +110,23 @@ The tests cover:
 
 - public package entry points and contracts
 - structure and package-boundary rules
-- day-run CLI and export behavior
+- finite-frame main-path smoke behavior
 - notebook helper modules
 
 ## Main entry points
 
 The code is split into layers rather than one large application.
 
-### Single-user candidate evaluation
+### Candidate table
 
-Use `single_user_solver` when you want to prepare one fixed-distance problem and evaluate feasible active candidates.
-
-Key entry points:
-
-- `single_user_solver.problem_factory.prepare_single_user_problem`
-- `single_user_solver.enumerate_active_candidates`
-- `single_user_solver.search_candidates`
-
-### Precomputed candidate table
-
-Use `candidate_table_generation` when you want the stored distance-binned frontier used by the scheduler lookup layer.
+Use `candidate_table` when you want to build or query the stored distance-binned frontier used by the scheduler lookup layer.
 
 Key entry points:
 
-- `candidate_table_generation.build_distance_binned_candidate_table`
-- `candidate_table_generation.load_distance_binned_candidate_table`
-- `candidate_table_generation.load_or_build_distance_binned_candidate_table`
+- `candidate_table.build_distance_binned_candidate_table`
+- `candidate_table.load_distance_binned_candidate_table`
+- `candidate_table.load_or_build_distance_binned_candidate_table`
+- `candidate_table.build_batch_user_parameter_space`
 
 Default artifact path:
 
@@ -152,7 +134,7 @@ Default artifact path:
 
 If the artifact is missing, the load-or-build path creates it automatically.
 
-### Multi-user TDMA scheduling
+### Multi-user scheduling
 
 Use the lookup layer and the scheduler when you already have a table of user requirements.
 
@@ -164,21 +146,21 @@ Scheduler-facing user-table contract:
 
 Key entry points:
 
-- `single_user_lookup.build_batch_user_parameter_space`
-- `multi_user_scheduler.run_multi_user_scheduler`
-- `multi_user_tdma_scheduler.run_multi_user_tdma_scheduler`
-- `multi_user_tdma_scheduler.prepare_joint_schedule_problem`
+- `candidate_table.build_batch_user_parameter_space`
+- `schedulers.run_multi_user_scheduler`
+- `schedulers.round_robin.run_round_robin_scheduler`
+- `schedulers.k_milp.run_k_milp_scheduler`
 
-`prepare_joint_schedule_problem` is the advanced TDMA-specific staged entry point used by notebooks and tests. The usual orchestration path should call the one-step scheduler runner instead.
+The usual orchestration path should call the one-step scheduler runner instead of backend internals.
 
-### Full synthetic day run
+### Finite-frame run
 
-`main.py` is thin. It bootstraps `src/` and delegates to `day_run.run_from_cli`.
+`main.py` is thin. It bootstraps `src/` and delegates to `finite_frame_run.run_from_cli`.
 
 Example:
 
 ```powershell
-python main.py --switch-policy dual_switchable --cores 8 --log-level INFO
+python main.py --scheduler k_milp --k-users 1 --users 15 --load 0.4 --distance-m 250 --log-level INFO
 ```
 
 Supported switch policies are currently:
@@ -187,33 +169,26 @@ Supported switch policies are currently:
 - `hard_off`
 - `baseline_8w_only`
 
-The default day-run path:
+The default finite-frame path:
 
-- builds a synthetic day-wide demand table from `data/half_load_curve.csv`
+- builds a finite-frame user table from load, user count, and distance inputs
 - ensures the distance-binned candidate table exists
-- solves each simulation bin independently
-- writes one JSON artifact under `outputs/default_day_run_<policy>/day_run_result.json`
+- builds the scheduler-facing batch user parameter space
+- solves one scheduler case and prints a compact result summary
 
-This is the heaviest run path in the repository. For understanding the model, the notebooks are the better starting point.
+For understanding the model, the notebooks are the better starting point.
 
 ## Inputs and artifacts
 
 Important repository-local inputs:
 
-- `data/half_load_curve.csv`: default load curve for synthetic day generation
 - `data/distance_binned_candidate_table.json`: stored single-user frontier table used by the lookup layer
 - `data/scheduler_comparison_hpc_sweep.zip`: canonical compressed scheduler-comparison result artifact
 - `PA models/3.5Ghz_pas/4W_8W_NR_combined_NR_carrier_with_idle.csv`: default measured PA source used by the shared radio config
 
-Generated outputs are local by default:
-
-- `outputs/`: new day-run exports written by the current code path; ignored by Git
+Generated outputs are local by default and should stay out of Git unless they are promoted as final thesis evidence.
 
 Archived `results/` folders are not part of the cleaned thesis artifact. Rebuild fresh outputs from the current code path when result snapshots are needed.
-
-The main export for a completed full-day run is one JSON file:
-
-- `day_run_result.json`
 
 The scheduler-comparison thesis results are stored as chunked high-performance-computing outputs inside `data/scheduler_comparison_hpc_sweep.zip`. The raw XML submission files are not part of the cleaned artifact. Conceptually, each HPC chunk runs a bounded slice of the scheduler comparison campaign; the ZIP is the canonical collected artifact from those chunk runs. Derived CSVs, manifests, and figures are rebuildable from that ZIP and are kept out of Git unless they are later promoted as final thesis evidence.
 
@@ -262,7 +237,7 @@ If you are new to the repository, a good starting path is:
 3. `docs/`
 4. `src/configs`
 5. `src/models`
-6. `src/single_user_solver`
-7. `src/single_user_lookup`
-8. `src/multi_user_tdma_scheduler`
-9. `src/day_run`
+6. `src/candidate_table`
+7. `src/user_generation`
+8. `src/schedulers`
+9. `src/finite_frame_run`
