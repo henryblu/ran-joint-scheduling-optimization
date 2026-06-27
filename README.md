@@ -1,246 +1,248 @@
-# **I am updating the git this weekend 26.06.2026, most of the code and docs currently here is about 2 months old**
+# Master's Thesis Codebase: Joint Scheduling and Resource Allocation for PA Energy Optimization in Multi-PA 5G NR Downlink Systems
 
-# Master's Thesis Codebase: Joint Scheduling and Resource Allocation for PA Energy Optimization in Multi-PA 5G NR Downlink Systems 
+This repository contains the cleaned source artifact for the thesis model. It studies how finite-frame downlink scheduling and resource allocation can reduce PA DC energy consumption in a multi-PA 5G NR base station.
 
-The goal of this project is to study how downlink scheduling and PHY resource allocation can be used to reduce PA DC energy consumption in a multi-PA 5G NR base station. The implementation follows 3GPP-compliant assumptions and focuses on PDSCH transmission. It models link adaptation, PRB allocation, and PA operating behaviour, and shows how scheduler decisions map to PA operating points and overall energy use.
+The code models the path from generated user demand to scheduler output:
 
-This README is meant to help a reader find their way around the repository and identify the main code paths. It stays fairly technical on purpose. For worked examples and the step-by-step flow of the code, the best place to start is the notebooks. For the model logic and narrative explanation, see `docs/`. 
+1. Build or load a distance-binned single-user candidate table.
+2. Generate one finite-frame user population.
+3. Look up each user's feasible single-user operating points.
+4. Dispatch the joint scheduling problem to the selected scheduler backend.
+5. Report the solved or infeasible frame result.
 
-## Current status
+The main runnable path is `python main.py`, which delegates to `src/experiment_runner`.
 
-The current implementation uses a TDMA scheduler to prove feasibility. Ongoing work is extending this to a full OFDMA scheduler to better reflect real scheduling conditions.
+## Repository Layout
 
-The current model follows the following logic:
+- `src/configs`: shared radio assumptions, PA catalog loading, user-table columns, and scheduler solver policy.
+- `src/models`: shared value objects for radio, deployment, PA, user, candidate-table, and scheduler results.
+- `src/user_generation`: deterministic finite-frame user population generation.
+- `src/candidate_table`: single-user candidate evaluation, pruning, stored candidate-table loading/building, and user lookup.
+- `src/schedulers`: public scheduler dispatch plus the round-robin and K-MILP backends.
+- `src/experiment_runner`: official run entry point for one finite-frame experiment case; also contains historical scheduler-comparison campaign contracts.
+- `src/thesis_analysis`: post-run processing for completed scheduler-comparison artifacts.
+- `notebooks`: thesis discussion notebooks and notebook helper modules.
+- `docs`: supporting model notes.
+- `scripts/thesis`: thin scripts for extracting and preprocessing the completed scheduler-comparison ZIP.
+- `data`: small source/provenance inputs.
+- `outputs`: generated outputs; only selected final artifacts are tracked.
+- `PA models/3.5Ghz_pas`: measured PA CSV inputs used by the model.
 
-1. It evaluates feasible single-user PHY operating points for a user at a given distance and rate target.
-2. It stores those single-user results in a distance-binned lookup table.
-3. It builds per-user feasible menus from that table and solves the joint schedule across users.
-4. It can generate one finite-frame user population and run the candidate-table lookup plus scheduler handoff as a smokeable main-path workflow.
+The source boundary contract is documented in [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md).
 
-The source layout and package ownership are defined in [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md). That file should be treated as the boundary contract for `src/`.
-
-## Where to read more
-
-If you want the full walkthrough rather than just the technical entry points:
-
-- `notebooks/` shows examples, intermediate outputs, and the actual flow used in the thesis work.
-- `docs/` explains the model logic, the narrative, and the reasoning behind the code structure.
-
-A good rule of thumb is:
-
-- use the README to find the code,
-- use the notebooks to see how it runs,
-- use the docs to understand why it is built this way.
-
-## Repository map
-
-- `src/configs`: shared defaults, scenario presets, PA catalog loading, and scheduler table contracts
-- `src/models`: shared value objects and radio-state helpers
-- `src/candidate_table`: build, load, save, prune, evaluate, and query the distance-binned candidate table
-- `src/schedulers`: shared scheduler dispatch, round-robin baseline, and K-MILP backend
-- `src/user_generation`: finite-frame user population generation
-- `src/experiment_runner`: official experiment execution, scheduler-comparison point contracts, ordering, chunking, and manifests
-- `src/run_reporting.py`: shared logging helpers
-- `notebooks`: thesis notebooks for the scenario, demand generation, candidate spaces, TDMA scheduling, and results
-- `docs`: model explanation and project narrative
-- `data`: small source input tables such as load curves
-- `PA models`: measured PA CSV inputs
-- `results`: archived example outputs
-- `outputs`: generated outputs from current runs
-- `tests`: contract and structure tests
-
-## How the code runs
+## How The Main Run Works
 
 ```mermaid
-flowchart LR
-    A["configs + models"] --> D["user_generation"]
-    A --> B["candidate_table"]
-    A --> C["schedulers"]
-    E["experiment_runner"] --> D
-    B --> E
-    E --> B
-    B --> C
-    E --> C
-    E --> F["console result"]
+flowchart TD
+    Main["main.py"] --> Runner["experiment_runner.run_from_cli"]
+    Runner --> Config["ExperimentRunConfig"]
+    Config --> Users["user_generation"]
+    Config --> CandidateArtifact["candidate_table.load_or_build_candidate_table"]
+    CandidateArtifact --> CandidateBuild["candidate_table.build_candidate_table if artifact is missing"]
+    CandidateBuild --> CandidateEval["candidate_table.eval + single_user + pruning"]
+    Users --> UserTable["scheduler-facing user table"]
+    UserTable --> Lookup["candidate_table.build_batch_user_parameter_space"]
+    CandidateArtifact --> Lookup
+    Lookup --> BatchSpace["BatchUserParameterSpace"]
+    BatchSpace --> Dispatch["schedulers.run_scheduler"]
+    Dispatch --> RR["round_robin"]
+    Dispatch --> KMILP["k_milp"]
+    RR --> Result["MultiUserScheduleResult"]
+    KMILP --> Result
+    Result --> Console["EXPERIMENT_RUN / RESULT / TIMINGS"]
 ```
 
-The main flow is:
+`experiment_runner` is the only official runtime entry point. It calls into the lower-level modules; the lower-level modules do not call back into it.
 
-1. `configs` defines the radio assumptions, user-table contract, and PA source paths.
-2. `models` provides shared data structures and radio-state helpers.
-3. `candidate_table` prepares single-user problems, evaluates feasible candidates, stores a pruned frontier over fixed distance bins, and maps each user into feasible scheduler menus.
-4. `schedulers` selects the concrete scheduler backend behind a shared public contract.
-5. `schedulers.round_robin` provides the deterministic baseline.
-6. `schedulers.k_milp` provides the final K-MILP backend.
-7. `user_generation` builds finite-frame user populations from load, distance, and user-count inputs.
-8. `experiment_runner` runs one official finite-frame experiment case through candidate-table lookup and scheduler handoff.
+The retained `experiment_runner.scheduler_comparison` submodule defines the historical campaign grid, point IDs, chunk grouping, and manifest columns used by the completed scheduler-comparison artifact. It is a campaign contract, not the main single-case runtime path.
 
-For a full worked walk through of this flow, see the notebooks. The notebooks are the clearest way to follow the steps in order.
+## Environment
 
-## Environment and setup
+The repository does not currently include a lockfile or pinned requirements file. The cleaned workspace has been run with Python 3.11.
 
-The repository does not yet ship with a pinned `pyproject.toml`, `requirements.txt`, or environment file. The current workspace runs on Python 3.11, and the tests use `pytest`.
-
-A simple local setup from the repository root is:
+Minimal local setup:
 
 ```powershell
 python -m venv .venv
 . .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install numpy pandas scipy matplotlib ipython jupyter pytest
+python -m pip install numpy pandas scipy matplotlib ipython jupyter
 ```
 
-Notes:
-
-- `main.py` bootstraps `src/`, so `python main.py ...` works without an editable install.
-- For tests or manual imports from a shell or REPL, set `PYTHONPATH` to `src` first:
+For direct imports from a shell, set:
 
 ```powershell
 $env:PYTHONPATH = "src"
 ```
 
-## Testing
+`python main.py` bootstraps `src/` itself, so it does not require `PYTHONPATH`.
 
-Run the full test suite from the repository root:
+## Running A Single Case
 
-```powershell
-$env:PYTHONPATH = "src"
-python -m pytest
-```
-
-The tests cover:
-
-- public package entry points and contracts
-- structure and package-boundary rules
-- experiment-runner main-path smoke behavior
-- notebook helper modules
-
-## Main entry points
-
-The code is split into layers rather than one large application.
-
-### Candidate table
-
-Use `candidate_table` when you want to build or query the stored distance-binned frontier used by the scheduler lookup layer.
-
-Key entry points:
-
-- `candidate_table.build_candidate_table`
-- `candidate_table.load_candidate_table`
-- `candidate_table.load_or_build_candidate_table`
-- `candidate_table.build_batch_user_parameter_space`
-
-Default artifact path:
-
-- `outputs/distance_binned_candidate_table.json`
-
-If the artifact is missing, the load-or-build path creates it automatically.
-
-### Multi-user scheduling
-
-Use the lookup layer and the scheduler when you already have a table of user requirements.
-
-Scheduler-facing user-table contract:
-
-- `user_id`
-- `distance_m`
-- `required_rate_bps`
-
-Key entry points:
-
-- `candidate_table.build_batch_user_parameter_space`
-- `schedulers.run_scheduler`
-- `schedulers.round_robin.run_round_robin_scheduler`
-- `schedulers.k_milp.run_k_milp_scheduler`
-
-The usual orchestration path should call the one-step scheduler runner instead of backend internals.
-
-### Experiment run
-
-`main.py` is thin. It bootstraps `src/` and delegates to `experiment_runner.run_from_cli`.
-
-Example:
+Default smoke run:
 
 ```powershell
-python main.py --scheduler-mode k_milp --active-user-count 15 --load-factor 0.4 --distance-m 250 --log-level INFO
+python main.py
 ```
 
-Supported switch policies are currently:
+Explicit K-MILP case:
+
+```powershell
+python main.py --scheduler-mode k_milp --active-user-count 15 --load-factor 0.4 --distance-m 250
+```
+
+Explicit round-robin case:
+
+```powershell
+python main.py --scheduler-mode round_robin --active-user-count 15 --load-factor 0.4 --distance-m 250
+```
+
+The output is a compact three-line summary:
+
+- `EXPERIMENT_RUN`: scheduler, algorithm, PA policy, user count, load, and distance.
+- `EXPERIMENT_RESULT`: feasibility, active slots, allocation count, and power/energy summary.
+- `EXPERIMENT_TIMINGS`: candidate-table, user-generation, lookup, scheduler, and total runtime.
+
+Supported scheduler modes are:
+
+- `k_milp`
+- `round_robin`
+
+Supported PA switch policies are:
 
 - `dual_switchable`
 - `hard_off`
 - `baseline_8w_only`
 
-The default experiment path:
+## Candidate Table
 
-- builds a finite-frame user table from load, user count, and distance inputs
-- ensures the distance-binned candidate table exists
-- builds the scheduler-facing batch user parameter space
-- solves one scheduler case and prints a compact result summary
+The candidate table is the stored single-user frontier used by scheduler lookup.
 
-For understanding the model, the notebooks are the better starting point.
+Tracked artifact:
 
-## Inputs and artifacts
+```text
+outputs/distance_binned_candidate_table.json
+```
 
-Important repository-local inputs:
+Public entry points:
 
-- `data/half_load_curve.csv`: retained historical load-curve input used by notebooks and provenance checks
-- `outputs/distance_binned_candidate_table.json`: stored single-user frontier table used by the lookup layer
-- `outputs/scheduler_comparison_hpc_sweep.zip`: canonical compressed scheduler-comparison result artifact
-- `PA models/3.5Ghz_pas/4W_8W_NR_combined_NR_carrier_with_idle.csv`: default measured PA source used by the shared radio config
+- `candidate_table.load_candidate_table`
+- `candidate_table.load_or_build_candidate_table`
+- `candidate_table.build_candidate_table`
+- `candidate_table.build_candidate_frontier_for_distance`
+- `candidate_table.build_batch_user_parameter_space`
 
-Generated outputs are local by default and should stay out of Git unless they are promoted as final thesis evidence. The tracked exceptions under `outputs/` are the stored candidate table and the canonical compressed scheduler-comparison sweep.
+If the tracked artifact is missing, `load_or_build_candidate_table` rebuilds it.
 
-Archived `results/` folders are not part of the cleaned thesis artifact. Rebuild fresh outputs from the current code path when result snapshots are needed.
+Parallel rebuild smoke:
 
-The scheduler-comparison thesis results are stored as chunked high-performance-computing outputs inside `outputs/scheduler_comparison_hpc_sweep.zip`. The raw XML submission files are not part of the cleaned artifact. Conceptually, each HPC chunk runs a bounded slice of the scheduler comparison campaign; the ZIP is the canonical collected artifact from those chunk runs. Derived CSVs, manifests, and figures are rebuildable from that ZIP and are kept out of Git unless they are later promoted as final thesis evidence.
+```powershell
+$env:PYTHONPATH = "src"
+python -c "from candidate_table import build_candidate_table; from candidate_table.models import DISTANCE_BIN_GRID_M; table = build_candidate_table(max_workers=2); assert tuple(sorted(table.frontiers_by_distance_m)) == tuple(DISTANCE_BIN_GRID_M); print(f'parallel candidate bins ok bins={len(table.frontiers_by_distance_m)}')"
+```
 
-The runner-side campaign contract lives in `experiment_runner.scheduler_comparison`: it defines the historical scheduler-comparison point grid, stable point IDs, exact-scenario load-chain ordering, chunk selection, and manifest columns used by the collected ZIP. Current post-run workflow:
+## Scheduler Backends
 
-1. To change scenarios or recompute campaign outputs, rerun the scheduler-comparison campaign first. The cleaned artifact currently tracks the completed ZIP, not the raw HPC XML submissions.
-2. To extract the canonical ZIP locally, run `python scripts\thesis\extract_scheduler_comparison_artifact.py`. This writes the large extracted tree under ignored `outputs/scheduler_comparison_hpc_sweep_extracted/`.
-3. To rebuild analysis CSVs and manifests, run `python scripts\thesis\preprocess_scheduler_comparison.py`. This writes ignored derived tables under `data/scheduler_comparison_hpc_sweep_analysis/`, matching the current Results and Observations notebook paths.
-4. To inspect or extend analysis, use the Results and Observations notebooks after the notebook audit restores the final notebook set.
+The public dispatch function is:
 
-## Notebooks
+```python
+from schedulers import run_scheduler
+```
 
-The notebooks are the best place to see the repository used in context. They show the examples, the intermediate outputs, and the flow used in the thesis work.
+Backends:
 
-A useful reading order is:
+- `schedulers.round_robin`: deterministic OFDMA round-robin baseline.
+- `schedulers.k_milp`: final K-MILP backend with internal K1/K2 implementation stages.
 
-1. [`notebooks/1. scenario definition and problem framing.ipynb`](notebooks/1.%20scenario%20definition%20and%20problem%20framing.ipynb)
-2. [`notebooks/2. User Generation.ipynb`](notebooks/2.%20User%20Generation.ipynb)
-3. [`notebooks/3. Candidate Space Discussion.ipynb`](notebooks/3.%20Candidate%20Space%20Discussion.ipynb)
-4. [`notebooks/4. tdma scheduling discussion.ipynb`](notebooks/4.%20tdma%20scheduling%20discussion.ipynb)
-5. [`notebooks/5. Scenario Results and Discussion.ipynb`](notebooks/5.%20Scenario%20Results%20and%20Discussion.ipynb)
+Call the public dispatch path for normal use. Backend internals are kept available for notebooks and focused inspection, but they are not the main orchestration API.
 
-Many of the notebook visuals and helper functions live under `notebooks/helpers/`.
+## Tracked Inputs And Artifacts
 
-## Conventions
+Tracked source/provenance inputs:
 
-- `src/ARCHITECTURE.md` is the source of truth for package ownership
-- public result payloads are kept lean on purpose
-- package boundaries are enforced in part by the test suite
-- the scheduler-facing user-table contract is kept small and stable
+- `data/half_load_curve.csv`
+- `PA models/3.5Ghz_pas/*.csv`
 
-## Scope of this README
+Tracked generated/final artifacts:
 
-This README describes the repository as it exists now. It does not try to retell the full thesis story.
+- `outputs/distance_binned_candidate_table.json`
+- `outputs/scheduler_comparison_hpc_sweep.zip`
 
-In practice:
+Everything else under `outputs/` is ignored by default. The two tracked files above are explicit exceptions in `.gitignore`.
 
-- use this file to find the main code paths
-- use the notebooks to follow examples and execution flow
-- use the docs to follow the model logic and narrative
+The completed scheduler-comparison ZIP is the collected HPC campaign artifact. Raw HPC XML submissions and expanded local extraction folders are not tracked.
 
-If you are new to the repository, a good starting path is:
+## Post-Run Processing
 
-1. `src/ARCHITECTURE.md`
-2. `notebooks/`
-3. `docs/`
-4. `src/configs`
-5. `src/models`
-6. `src/candidate_table`
-7. `src/user_generation`
-8. `src/schedulers`
-9. `src/experiment_runner`
+Post-run processing lives in `src/thesis_analysis`.
+
+Extract the scheduler-comparison ZIP:
+
+```powershell
+python scripts\thesis\extract_scheduler_comparison_artifact.py
+```
+
+This extracts to:
+
+```text
+outputs/scheduler_comparison_hpc_sweep_extracted
+```
+
+Build local derived CSVs and summaries:
+
+```powershell
+python scripts\thesis\preprocess_scheduler_comparison.py
+```
+
+This writes ignored derived outputs under:
+
+```text
+data/scheduler_comparison_hpc_sweep_analysis
+```
+
+Those derived tables are rebuildable from `outputs/scheduler_comparison_hpc_sweep.zip`.
+
+## Notebooks And Docs
+
+The notebooks are discussion artifacts. They show the model stages, examples, and thesis-facing walkthroughs:
+
+1. `notebooks/1. Scenario definition and problem framing discussion.ipynb`
+2. `notebooks/2. User generation discussion.ipynb`
+3. `notebooks/3. Candidate evaluation discussion.ipynb`
+4. `notebooks/4. Candidate space discussion.ipynb`
+5. `notebooks/5. tdma scheduling discussion.ipynb`
+6. `notebooks/6. OFDMA scheduling discussion.ipynb`
+
+The docs folder currently contains the 5G NR resource hierarchy note used by the model explanation.
+
+## Validation Notes
+
+The final project artifact does not track a test suite. Validation for the recent cleanup was done before tests were removed from the tracked final repository.
+
+Useful smoke checks for local changes:
+
+```powershell
+python main.py --scheduler-mode k_milp --active-user-count 15 --load-factor 0.4 --distance-m 250
+```
+
+```powershell
+$env:PYTHONPATH = "src"
+python -c "from experiment_runner import build_experiment_run_config, run_experiment_case; print('experiment runner imports ok')"
+```
+
+```powershell
+$env:PYTHONPATH = "src"
+python -c "from candidate_table import build_candidate_table; table = build_candidate_table(max_workers=2); print(f'parallel candidate bins ok bins={len(table.frontiers_by_distance_m)}')"
+```
+
+## Reading Order
+
+For source orientation:
+
+1. [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md)
+2. `main.py`
+3. `src/experiment_runner`
+4. `src/user_generation`
+5. `src/candidate_table`
+6. `src/schedulers`
+7. `src/thesis_analysis`
