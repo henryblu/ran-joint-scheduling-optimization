@@ -9,20 +9,50 @@ import re
 import pandas as pd
 
 from .artifacts import resolve_scheduler_comparison_input_root
-from .breakpoints import (
-    build_breakpoint_summary,
-    build_infeasibility_reason_summary,
-)
+from .breakpoints import build_breakpoint_summary, build_infeasibility_reason_summary
 from .quality import (
-    EXPECTED_POINT_COUNT,
+    IDENTITY_COLUMNS,
     build_point_coverage,
     build_sanity_checks,
+)
+from .reporting import build_markdown_summary
+from .summaries import (
+    build_load_chain_summary,
+    build_policy_summary,
+    build_scheduler_summary,
 )
 
 
 CHUNK_NAME_PATTERN = re.compile(r"^chunk_(?P<index>\d{2})_of_(?P<count>\d+)$")
 MANIFEST_FILENAME = "scheduler_comparison_manifest.csv"
 RESULTS_FILENAME = "scheduler_comparison_results.csv"
+SOURCE_METADATA_COLUMNS = (
+    "source_chunk_index",
+    "source_chunk_name",
+    "source_inner_chunk_dir",
+    "source_csv_path",
+    "row_index_in_source_file",
+)
+REQUIRED_MANIFEST_COLUMNS = (*SOURCE_METADATA_COLUMNS, "point_id", *IDENTITY_COLUMNS)
+REQUIRED_RESULT_COLUMNS = (
+    *SOURCE_METADATA_COLUMNS,
+    "point_id",
+    *IDENTITY_COLUMNS,
+    "status",
+    "feasible",
+    "infeasible_reason",
+    "skip_reason",
+    "source_point_id",
+    "source_bound",
+    "total_demand_bits",
+    "requested_rate_sum_bps",
+    "single_user_elapsed_s",
+    "joint_elapsed_s",
+    "total_elapsed_s",
+    "frame_energy_j",
+    "average_frame_dc_power_w",
+    "delivered_rate_sum_bps",
+)
 
 
 @dataclass(frozen=True)
@@ -65,10 +95,15 @@ def preprocess_scheduler_comparison_hpc_results(
     chunk_inventory = build_chunk_inventory(chunks)
     combined_manifest = load_combined_csvs(chunks, csv_kind="manifest")
     combined_results = load_combined_csvs(chunks, csv_kind="results")
+    validate_required_columns(combined_manifest, REQUIRED_MANIFEST_COLUMNS, table_name="combined_manifest")
+    validate_required_columns(combined_results, REQUIRED_RESULT_COLUMNS, table_name="combined_results")
     point_coverage = build_point_coverage(combined_manifest, combined_results)
     sanity_checks = build_sanity_checks(chunks, combined_manifest, combined_results, point_coverage)
     breakpoint_summary = build_breakpoint_summary(combined_results)
     infeasibility_reason_summary = build_infeasibility_reason_summary(combined_results)
+    scheduler_summary = build_scheduler_summary(combined_results)
+    policy_summary = build_policy_summary(combined_results)
+    load_chain_summary = build_load_chain_summary(combined_results)
 
     write_analysis_outputs(
         output_root=resolved_output_root,
@@ -80,6 +115,9 @@ def preprocess_scheduler_comparison_hpc_results(
         sanity_checks=sanity_checks,
         breakpoint_summary=breakpoint_summary,
         infeasibility_reason_summary=infeasibility_reason_summary,
+        scheduler_summary=scheduler_summary,
+        policy_summary=policy_summary,
+        load_chain_summary=load_chain_summary,
     )
 
     return {
@@ -90,6 +128,9 @@ def preprocess_scheduler_comparison_hpc_results(
         "first_stage_sanity_checks": sanity_checks,
         "breakpoint_summary": breakpoint_summary,
         "infeasibility_reason_summary": infeasibility_reason_summary,
+        "scheduler_summary": scheduler_summary,
+        "policy_summary": policy_summary,
+        "load_chain_summary": load_chain_summary,
     }
 
 
@@ -166,6 +207,12 @@ def load_combined_csvs(chunks: tuple[HpcChunkCsvs, ...], *, csv_kind: str) -> pd
     return pd.concat(frames, ignore_index=True)
 
 
+def validate_required_columns(frame: pd.DataFrame, required_columns: tuple[str, ...], *, table_name: str) -> None:
+    missing = [column for column in required_columns if column not in frame.columns]
+    if missing:
+        raise ValueError(f"{table_name} is missing required columns: {', '.join(missing)}")
+
+
 def write_analysis_outputs(
     *,
     output_root: Path,
@@ -177,6 +224,9 @@ def write_analysis_outputs(
     sanity_checks: pd.DataFrame,
     breakpoint_summary: pd.DataFrame,
     infeasibility_reason_summary: pd.DataFrame,
+    scheduler_summary: pd.DataFrame,
+    policy_summary: pd.DataFrame,
+    load_chain_summary: pd.DataFrame,
 ) -> None:
     chunk_inventory.to_csv(output_root / "chunk_inventory.csv", index=False)
     combined_manifest.to_csv(output_root / "combined_manifest.csv", index=False)
@@ -184,6 +234,9 @@ def write_analysis_outputs(
     point_coverage.to_csv(output_root / "point_coverage.csv", index=False)
     breakpoint_summary.to_csv(output_root / "breakpoint_summary.csv", index=False)
     infeasibility_reason_summary.to_csv(output_root / "infeasibility_reason_summary.csv", index=False)
+    scheduler_summary.to_csv(output_root / "scheduler_summary.csv", index=False)
+    policy_summary.to_csv(output_root / "policy_summary.csv", index=False)
+    load_chain_summary.to_csv(output_root / "load_chain_summary.csv", index=False)
     sanity_checks.to_csv(output_root / "first_stage_sanity_checks.csv", index=False)
     (output_root / "first_stage_summary.md").write_text(
         build_markdown_summary(
@@ -196,137 +249,11 @@ def write_analysis_outputs(
             sanity_checks=sanity_checks,
             breakpoint_summary=breakpoint_summary,
             infeasibility_reason_summary=infeasibility_reason_summary,
+            scheduler_summary=scheduler_summary,
+            policy_summary=policy_summary,
         ),
         encoding="utf-8",
     )
-
-
-def build_markdown_summary(
-    *,
-    input_root: Path,
-    output_root: Path,
-    chunk_inventory: pd.DataFrame,
-    combined_manifest: pd.DataFrame,
-    combined_results: pd.DataFrame,
-    point_coverage: pd.DataFrame,
-    sanity_checks: pd.DataFrame,
-    breakpoint_summary: pd.DataFrame,
-    infeasibility_reason_summary: pd.DataFrame,
-) -> str:
-    failed_checks = sanity_checks.loc[~sanity_checks["passed"]]
-    unexpected_breakpoints = breakpoint_summary.loc[breakpoint_summary["unexpected_breakpoint_flag"]]
-    first_breaks = breakpoint_summary.loc[breakpoint_summary["breakpoint_category"] != "all_solved"]
-    status_counts = combined_results.groupby(["scheduler_mode", "switch_policy", "status"]).size().reset_index(name="count")
-    breakpoint_counts = breakpoint_summary.groupby(["scheduler_mode", "switch_policy", "breakpoint_category"]).size().reset_index(name="count")
-
-    lines = [
-        "# Scheduler Comparison HPC First-Stage Summary",
-        "",
-        f"Input root: `{input_root}`",
-        f"Output root: `{output_root}`",
-        "",
-        "## Coverage",
-        "",
-        f"- Chunks discovered: {len(chunk_inventory)}",
-        f"- Manifest rows: {len(combined_manifest)}",
-        f"- Result rows: {len(combined_results)}",
-        f"- Expected grid points: {EXPECTED_POINT_COUNT}",
-        f"- Coverage rows: {len(point_coverage)}",
-        f"- Failed sanity checks: {len(failed_checks)}",
-        "",
-        "## Breakpoints",
-        "",
-        f"- Load chains: {len(breakpoint_summary)}",
-        f"- Chains with a first non-solved row: {len(first_breaks)}",
-        f"- Chains with solved rows after an earlier non-solved row: {len(unexpected_breakpoints)}",
-        "",
-        "### Breakpoint Categories",
-        "",
-        markdown_table(breakpoint_counts.head(40)),
-        "",
-        "### Earliest Breakpoints",
-        "",
-        markdown_table(earliest_breakpoint_table(first_breaks)),
-        "",
-        "### Unexpected Nonmonotone Breakpoints",
-        "",
-        markdown_table(unexpected_breakpoint_table(unexpected_breakpoints)),
-        "",
-        "## Status Distribution",
-        "",
-        markdown_table(status_counts),
-        "",
-        "## Most Common Infeasibility Reasons",
-        "",
-        markdown_table(infeasibility_reason_summary.head(30)),
-        "",
-        "## Failed Sanity Checks",
-        "",
-        markdown_table(failed_checks),
-        "",
-        "## Recommended JSON Inspection Targets",
-        "",
-        "- First non-solved row in each load chain from `breakpoint_summary.csv`.",
-        "- Rows where `unexpected_breakpoint_flag` is true.",
-        "- Certified skipped rows whose source metadata fails sanity checks.",
-        "- Failed or other-status rows before ordinary infeasibility boundaries.",
-        "",
-    ]
-    return "\n".join(lines)
-
-
-def earliest_breakpoint_table(first_breaks: pd.DataFrame) -> pd.DataFrame:
-    columns = [
-        "scheduler_mode",
-        "switch_policy",
-        "active_user_count",
-        "distance_model",
-        "mean_distance_m",
-        "sigma_distance_m",
-        "first_unsolved_load_factor",
-        "first_unsolved_status",
-        "first_unsolved_reason",
-        "breakpoint_category",
-    ]
-    return first_breaks.sort_values(
-        ["first_unsolved_load_factor", "scheduler_mode", "switch_policy", "active_user_count"],
-        na_position="last",
-    ).loc[:, columns].head(30)
-
-
-def unexpected_breakpoint_table(unexpected_breakpoints: pd.DataFrame) -> pd.DataFrame:
-    columns = [
-        "scheduler_mode",
-        "switch_policy",
-        "active_user_count",
-        "distance_model",
-        "mean_distance_m",
-        "sigma_distance_m",
-        "first_unsolved_load_factor",
-        "first_unsolved_status",
-        "last_solved_load_factor",
-        "first_unsolved_point_id",
-    ]
-    return unexpected_breakpoints.loc[:, columns].head(30)
-
-
-def markdown_table(frame: pd.DataFrame) -> str:
-    if frame.empty:
-        return "_None._"
-
-    display = frame.fillna("").astype(str)
-    headers = list(display.columns)
-    lines = [
-        "| " + " | ".join(headers) + " |",
-        "| " + " | ".join("---" for _ in headers) + " |",
-    ]
-    for _, row in display.iterrows():
-        lines.append("| " + " | ".join(escape_markdown_cell(row[column]) for column in headers) + " |")
-    return "\n".join(lines)
-
-
-def escape_markdown_cell(value: object) -> str:
-    return str(value).replace("|", "\\|").replace("\n", " ")
 
 
 def file_size(path: Path) -> int:
@@ -340,6 +267,7 @@ def csv_row_count(path: Path) -> int:
 
 
 __all__ = [
+    "HpcChunkCsvs",
     "preprocess_scheduler_comparison_hpc_results",
     "discover_chunk_csvs",
 ]

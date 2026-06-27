@@ -1,2 +1,0 @@
-"""Thesis-facing analysis modules."""
-

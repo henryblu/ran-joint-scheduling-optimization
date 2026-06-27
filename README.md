@@ -20,11 +20,10 @@ The main runnable path is `python main.py`, which delegates to `src/experiment_r
 - `src/candidate_table`: single-user candidate evaluation, pruning, stored candidate-table loading/building, and user lookup.
 - `src/schedulers`: public scheduler dispatch plus the round-robin and K-MILP backends.
 - `src/experiment_runner`: official run entry point for one finite-frame experiment case; also contains historical scheduler-comparison campaign contracts.
-- `src/thesis_analysis`: post-run processing for completed scheduler-comparison artifacts.
+- `post_processing`: post-run processing for completed scheduler-comparison artifacts.
 - `notebooks`: thesis discussion notebooks and notebook helper modules.
 - `docs`: supporting model notes.
-- `scripts/thesis`: thin scripts for extracting and preprocessing the completed scheduler-comparison ZIP.
-- `data`: small source/provenance inputs.
+- `scripts`: thin reviewer entry points for extracting and preprocessing the completed scheduler-comparison ZIP.
 - `outputs`: generated outputs; only selected final artifacts are tracked.
 - `PA models/3.5Ghz_pas`: measured PA CSV inputs used by the model.
 
@@ -160,7 +159,6 @@ Call the public dispatch path for normal use. Backend internals are kept availab
 
 Tracked source/provenance inputs:
 
-- `data/half_load_curve.csv`
 - `PA models/3.5Ghz_pas/*.csv`
 
 Tracked generated/final artifacts:
@@ -174,33 +172,43 @@ The completed scheduler-comparison ZIP is the collected HPC campaign artifact. R
 
 ## Post-Run Processing
 
-Post-run processing lives in `src/thesis_analysis`.
+Post-run processing lives in the top-level `post_processing` package. It is outside `src`
+because it consumes completed run artifacts; it does not participate in model execution.
+
+Public import:
+
+```python
+from post_processing import post_process_scheduler_comparison
+```
 
 Extract the scheduler-comparison ZIP:
 
 ```powershell
-python scripts\thesis\extract_scheduler_comparison_artifact.py
+python scripts\extract_scheduler_comparison_artifact.py
 ```
 
 This extracts to:
 
 ```text
-outputs/scheduler_comparison_hpc_sweep_extracted
+outputs/scheduler_comparison_hpc_sweep
 ```
 
 Build local derived CSVs and summaries:
 
 ```powershell
-python scripts\thesis\preprocess_scheduler_comparison.py
+python scripts\preprocess_scheduler_comparison.py
 ```
 
 This writes ignored derived outputs under:
 
 ```text
-data/scheduler_comparison_hpc_sweep_analysis
+outputs/scheduler_comparison_hpc_sweep_analysis
 ```
 
 Those derived tables are rebuildable from `outputs/scheduler_comparison_hpc_sweep.zip`.
+The preprocessing output includes combined chunk tables, coverage checks,
+breakpoint tables, `scheduler_summary.csv`, `policy_summary.csv`, and
+`load_chain_summary.csv`.
 
 ## Notebooks And Docs
 
@@ -245,4 +253,4 @@ For source orientation:
 4. `src/user_generation`
 5. `src/candidate_table`
 6. `src/schedulers`
-7. `src/thesis_analysis`
+7. `post_processing`

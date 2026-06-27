@@ -46,12 +46,6 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - **Consumes:** Lean run-level context from orchestration and scheduler diagnostics.
 - **Does not own:** Run execution, export-schema assembly, solver-space construction, or scheduler search logic.
 
-### `src/thesis_analysis`
-
-- **Owns:** Thesis-facing post-run analysis over completed experiment artifacts, including scheduler-comparison ZIP extraction, chunk CSV preprocessing, coverage and breakpoint summaries, display-table derivation, and final figure-generation support.
-- **Consumes:** Completed result artifacts such as `outputs/scheduler_comparison_hpc_sweep.zip` and the stable CSV/JSON contracts emitted by experiment runners.
-- **Does not own:** Campaign point generation, scheduler execution, HPC chunk dispatch, raw scheduler internals, notebook presentation prose, or raw image archives.
-
 ## Main Dependency Flow
 
 1. `src/configs` defines the shared radio assumptions, the scheduler user-table column contract, PA source paths, PA catalog behavior, and scheduler solver policy.
@@ -62,7 +56,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 6. `src/schedulers.k_milp` runs the final K-MILP backend. Its K1 compressed TDMA-plan HiGHS MILP and K2 restricted pattern-count MILP are internal implementation stages, not public scheduler modes.
 7. `src/user_generation` is an upstream finite-frame demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
 8. `src/experiment_runner` orchestrates one finite-frame case by composing `user_generation`, `candidate_table`, and `schedulers`; its `scheduler_comparison` submodule defines bounded thesis campaigns and the chunk/manifests they emit.
-9. `src/thesis_analysis` starts after experiments have produced stable artifacts; it rebuilds local analysis tables and thesis outputs without owning scheduler execution.
+9. Top-level `post_processing` starts after experiments have produced stable artifacts; it rebuilds local analysis tables and thesis outputs without owning scheduler execution or living inside the model source tree.
 
 ## Boundary Checks
 
@@ -75,6 +69,6 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - If logic builds finite-frame user populations from load, distance, and user-count inputs, it belongs in `user_generation`.
 - If logic orchestrates one finite-frame experiment run or defines scheduler-comparison campaign chunks, it belongs in `experiment_runner`.
 - If logic only formats or configures shared run logging, it belongs in `run_reporting.py`.
-- If logic reads completed thesis result artifacts and derives analysis tables, summaries, or figures, it belongs in `thesis_analysis`.
-- Scheduler-comparison campaign contracts belong in `experiment_runner`, not `thesis_analysis`.
+- If logic reads completed thesis result artifacts and derives analysis tables, summaries, or figures, it belongs in the top-level `post_processing` package.
+- Scheduler-comparison campaign contracts belong in `experiment_runner`, not `post_processing`.
 - Shared config values and PA behavior belong in `configs`; shared models and derived radio physics belong in `models`.
