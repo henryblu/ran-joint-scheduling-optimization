@@ -1,8 +1,8 @@
-"""Command-line entry point for one synthetic day TDMA simulation run.
+"""Command-line entry point for one finite-frame scheduler run.
 
 Keep this file intentionally small:
 1. Bootstrap the local ``src`` package for direct script execution.
-2. Hand off the actual workflow to ``day_run``.
+2. Hand off the actual workflow to ``finite_frame_run``.
 """
 
 from __future__ import annotations
@@ -19,11 +19,11 @@ if str(SRC_ROOT) not in sys.path:
 
 
 # Import after the path bootstrap so the local package resolves consistently.
-from day_run import run_from_cli
+from finite_frame_run import run_from_cli
 
 
 def main(argv: list[str] | None = None):
-    """Run the day-run CLI with the provided argument list."""
+    """Run the finite-frame CLI with the provided argument list."""
 
     return run_from_cli(argv)
 
