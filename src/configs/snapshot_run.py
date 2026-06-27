@@ -1,11 +1,11 @@
 """Shared defaults and runtime constants for finite-buffer snapshot runs."""
 
-from finite_buffer_demand.models import FiniteBufferDemandSnapshotConfig
 from models import SchedulerMode
+from user_generation import UserGenerationConfig
 
 
 DEFAULT_SNAPSHOT_RUN_CORES = 8
-DEFAULT_FINITE_BUFFER_DEMAND_SNAPSHOT_CONFIG = FiniteBufferDemandSnapshotConfig(
+DEFAULT_USER_GENERATION_CONFIG = UserGenerationConfig(
     active_user_count=8,
     load_factor=1.0,
     distance_min_m=25.0,
@@ -14,6 +14,7 @@ DEFAULT_FINITE_BUFFER_DEMAND_SNAPSHOT_CONFIG = FiniteBufferDemandSnapshotConfig(
     frame_duration_s=0.010,
     distance_layout="area_uniform",
 )
+DEFAULT_FINITE_BUFFER_DEMAND_SNAPSHOT_CONFIG = DEFAULT_USER_GENERATION_CONFIG
 
 DEFAULT_TDMA_STRESS_ACTIVE_USER_COUNTS = (4, 8, 12, 16, 20, 24, 32)
 DEFAULT_TDMA_STRESS_LOAD_FACTORS = (0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
@@ -63,6 +64,7 @@ __all__ = [
     "ACTIVE_SNAPSHOT_SCOPE_ENV_VAR",
     "ACTIVE_RUN_SCOPE_ENV_VAR",
     "DEFAULT_FINITE_BUFFER_DEMAND_SNAPSHOT_CONFIG",
+    "DEFAULT_USER_GENERATION_CONFIG",
     "DEFAULT_OFDMA_DUAL_ADMITTED_ROWS_PER_USER",
     "DEFAULT_OFDMA_ADMITTED_ROWS_PER_USER",
     "DEFAULT_OFDMA_K2_ACCEPT_REL_GAP",
@@ -75,7 +77,6 @@ __all__ = [
     "DEFAULT_TDMA_STRESS_ACTIVE_USER_COUNTS",
     "DEFAULT_TDMA_STRESS_DISTANCE_LAYOUTS",
     "DEFAULT_TDMA_STRESS_LOAD_FACTORS",
-    "FiniteBufferDemandSnapshotConfig",
     "LOG_LEVEL_CHOICES",
     "MILP_NODE_LIMIT_ENV_VAR",
     "OFDMA_MILP_MAX_USERS_PER_SLOT_ENV_VAR",
@@ -83,6 +84,7 @@ __all__ = [
     "MILP_TIME_LIMIT_ENV_VAR",
     "THREAD_LIMIT_ENV_VARS",
     "WORKER_LOG_LEVEL_ENV_VAR",
+    "UserGenerationConfig",
     "build_snapshot_run_result_filename",
     "supports_single_snapshot_run",
 ]
