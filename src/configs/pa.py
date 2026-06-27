@@ -93,24 +93,20 @@ def pa_dc_power(pa, p_out):
 
     curve_pout = getattr(pa, "curve_pout_w", None)
     curve_pdc = getattr(pa, "curve_pdc_w", None)
-    if curve_pout is not None and curve_pdc is not None and len(curve_pout) >= 2:
-        if p_out <= float(curve_pout[0]):
-            return float(curve_pdc[0])
-        p_out_clip = min(float(p_out), float(curve_pout[-1]))
-        return float(np.interp(p_out_clip, curve_pout, curve_pdc))
+    if curve_pout is None or curve_pdc is None or len(curve_pout) < 2:
+        raise ValueError(f"Missing measured PA curve for {getattr(pa, 'pa_name', '')}")
 
-    loading = np.clip(p_out / pa.p_max_w, 1e-3, 1.0)
-    eta = pa.eta_max * (loading ** 0.5)
-    return p_out / eta
+    if p_out <= float(curve_pout[0]):
+        return float(curve_pdc[0])
+    p_out_clip = min(float(p_out), float(curve_pout[-1]))
+    return float(np.interp(p_out_clip, curve_pout, curve_pdc))
 
 
 def pa_slot_dc_power(pa, *, p_out_total_w, n_tx_chains, prb_fraction=1.0):
     """Return allocation-level active PA DC draw for a slot RF output.
 
-    The PA curve is evaluated at the per-chain operating point. The optional
-    PRB fraction scales precomputed allocation rows that occupy only part of
-    the carrier; aggregate slot-level callers can use the default full carrier
-    fraction.
+    The PA curve is evaluated at the per-chain operating point, then scaled by
+    the number of active TX chains and the occupied PRB fraction.
     """
 
     if float(p_out_total_w) <= 0.0:
@@ -118,7 +114,7 @@ def pa_slot_dc_power(pa, *, p_out_total_w, n_tx_chains, prb_fraction=1.0):
 
     per_chain_p_out_w = float(p_out_total_w) / float(n_tx_chains)
     full_carrier_dc_w = float(n_tx_chains) * float(pa_dc_power(pa, per_chain_p_out_w))
-    return float(prb_fraction) * full_carrier_dc_w
+    return float(full_carrier_dc_w) * float(prb_fraction)
 
 
 def _build_measured_pa_from_curves(pa_name, scenario_label, kappa_distortion, pin_dbm, pout_w, pdcin_w, source_tag):
@@ -155,8 +151,6 @@ def _build_measured_pa_from_curves(pa_name, scenario_label, kappa_distortion, pi
 
     eta_samples = np.clip(pout_grid_w / np.clip(pdc_grid_w, 1e-12, None), 1e-4, 1.0)
     p_max_w = float(np.max(pout_grid_w))
-    if p_idle_w is None:
-        p_idle_w = float(np.min(pdc_grid_w))
     eta_max = float(np.max(eta_samples))
 
     n_gain = max(3, int(0.3 * len(pin_grid_w)))
