@@ -5,13 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import combinations
 
+from configs import SINGLE_USER_SEARCH_CONFIG
+from configs.pa import pa_slot_dc_power
 from models import BatchUserParameterSpace
 from schedulers.k_milp.tdma_plan_frontier import TdmaSlotRow, build_tdma_slot_rows, prune_dominated_tdma_slot_rows
 from schedulers.k_milp.tdma_space import prepare_joint_schedule_problem
 
 from .admission import AdmissionStats, build_admitted_ofdma_problem
 from .models import MilpCandidateRow, OfdmaMilpProblem, OfdmaSlotPattern
-from .restricted_patterns import append_dual_ue_patterns, build_rows_by_user_for_pa
+from .restricted_patterns import build_rows_by_user_for_pa
+from .split_templates import SplitTemplatePatternStats, build_split_template_dual_ue_patterns
 
 
 @dataclass(frozen=True)
@@ -25,6 +28,10 @@ class ContainedPatternStats:
     raw_dual_ue_pair_bound: int
     one_ue_pattern_count: int
     valid_dual_ue_pattern_count: int
+    split_template_count: int = 0
+    split_template_raw_pair_count: int = 0
+    split_template_feasible_pair_count: int = 0
+    split_template_overflow_fallback_count: int = 0
 
 
 def build_tdma_contained_slot_patterns(
@@ -33,6 +40,7 @@ def build_tdma_contained_slot_patterns(
     *,
     allowed_pa_ids: tuple[int, ...],
     max_dual_rows_per_user: int,
+    dual_pattern_strategy: str = "admission",
 ) -> tuple[tuple[OfdmaSlotPattern, ...], ContainedPatternStats]:
     """Build one pattern family containing TDMA one-UE rows plus M-dual pair rows."""
 
@@ -44,6 +52,25 @@ def build_tdma_contained_slot_patterns(
         problem,
         baseline_rows_by_user=baseline_rows_by_user,
     )
+    if str(dual_pattern_strategy) == "split_template":
+        dual_ue_patterns, split_stats = build_split_template_dual_ue_patterns(
+            problem,
+            allowed_pa_ids=allowed_pa_ids,
+            prb_step=int(SINGLE_USER_SEARCH_CONFIG.prb_step),
+            next_pattern_id=len(one_ue_patterns),
+        )
+        return (
+            (*one_ue_patterns, *dual_ue_patterns),
+            build_split_template_contained_pattern_stats(
+                baseline_rows_by_user=baseline_rows_by_user,
+                split_stats=split_stats,
+                one_ue_patterns=one_ue_patterns,
+            ),
+        )
+
+    if str(dual_pattern_strategy) != "admission":
+        raise ValueError(f"Unknown dual pattern strategy: {dual_pattern_strategy}")
+
     admitted_problem, admission_stats = build_admitted_ofdma_problem(
         problem,
         allowed_pa_ids=allowed_pa_ids,
@@ -152,7 +179,7 @@ def build_dual_ue_extension_patterns(
     pattern_id = int(next_pattern_id)
     for pa_id in allowed_pa_ids:
         rows_by_user = build_rows_by_user_for_pa(admitted_problem, pa_id=int(pa_id))
-        pattern_id = append_dual_ue_patterns(
+        pattern_id = append_even_target_dual_ue_patterns(
             problem,
             patterns=patterns,
             rows_by_user=rows_by_user,
@@ -160,6 +187,75 @@ def build_dual_ue_extension_patterns(
             next_pattern_id=int(pattern_id),
         )
     return tuple(patterns)
+
+
+def append_even_target_dual_ue_patterns(
+    problem: OfdmaMilpProblem,
+    *,
+    patterns: list[OfdmaSlotPattern],
+    rows_by_user: dict[int, tuple[MilpCandidateRow, ...]],
+    pa_id: int,
+    next_pattern_id: int,
+) -> int:
+    """Append dual-user patterns from the structured even-target admission grid."""
+
+    pattern_id = int(next_pattern_id)
+    pa_output_cap_w = float(problem.n_tx_chains) * float(problem.pa_catalog[int(pa_id)].p_max_w)
+    sorted_rows_by_user = {
+        int(user_id): tuple(sorted(rows, key=admitted_pair_row_rank))
+        for user_id, rows in sorted(rows_by_user.items())
+    }
+    for left_user_id, right_user_id in combinations(sorted(sorted_rows_by_user), 2):
+        left_rows = sorted_rows_by_user[int(left_user_id)]
+        right_rows = sorted_rows_by_user[int(right_user_id)]
+        for left_row in left_rows:
+            for right_row in right_rows:
+                if int(left_row.n_prb) + int(right_row.n_prb) > int(problem.prb_max):
+                    continue
+                if float(left_row.p_out_total_w) + float(right_row.p_out_total_w) > float(pa_output_cap_w) + 1e-9:
+                    continue
+                patterns.append(
+                    build_even_target_dual_ue_pattern(
+                        problem,
+                        pattern_id=int(pattern_id),
+                        pa_id=int(pa_id),
+                        rows=(left_row, right_row),
+                    )
+                )
+                pattern_id += 1
+    return int(pattern_id)
+
+
+def build_even_target_dual_ue_pattern(
+    problem: OfdmaMilpProblem,
+    *,
+    pattern_id: int,
+    pa_id: int,
+    rows: tuple[MilpCandidateRow, MilpCandidateRow],
+) -> OfdmaSlotPattern:
+    sorted_rows = tuple(sorted(rows, key=lambda row: int(row.user_id)))
+    used_prbs = int(sum(int(row.n_prb) for row in sorted_rows))
+    aggregate_p_out_w = float(sum(float(row.p_out_total_w) for row in sorted_rows))
+    pa = problem.pa_catalog[int(pa_id)]
+    dc_power_w = pa_slot_dc_power(
+        pa,
+        p_out_total_w=float(aggregate_p_out_w),
+        n_tx_chains=int(problem.n_tx_chains),
+        prb_fraction=float(used_prbs) / float(problem.prb_max),
+    )
+    return OfdmaSlotPattern(
+        pattern_id=int(pattern_id),
+        pa_id=int(pa_id),
+        rows=sorted_rows,
+        used_prbs=int(used_prbs),
+        aggregate_p_out_w=float(aggregate_p_out_w),
+        dc_power_w=float(dc_power_w),
+        slot_energy_j=float(dc_power_w) * float(problem.t_slot_s),
+        delivered_bits_by_user={
+            int(row.user_id): float(row.bits_per_slot)
+            for row in sorted_rows
+        },
+    )
 
 
 def build_contained_pattern_stats(
@@ -191,6 +287,30 @@ def build_contained_pattern_stats(
     )
 
 
+def build_split_template_contained_pattern_stats(
+    *,
+    baseline_rows_by_user: dict[int, tuple[MilpCandidateRow, ...]],
+    split_stats: SplitTemplatePatternStats,
+    one_ue_patterns: tuple[OfdmaSlotPattern, ...],
+) -> ContainedPatternStats:
+    return ContainedPatternStats(
+        max_dual_rows_per_user=int(split_stats.max_rows_per_capacity),
+        one_ue_baseline_rows_by_user={
+            int(user_id): int(len(rows))
+            for user_id, rows in sorted(baseline_rows_by_user.items())
+        },
+        dual_raw_rows_by_user=dict(split_stats.raw_rows_by_user),
+        dual_admitted_rows_by_user=dict(split_stats.template_rows_by_user),
+        raw_dual_ue_pair_bound=int(split_stats.raw_dual_ue_pair_count),
+        one_ue_pattern_count=int(len(one_ue_patterns)),
+        valid_dual_ue_pattern_count=int(split_stats.retained_dual_ue_pattern_count),
+        split_template_count=int(split_stats.split_template_count),
+        split_template_raw_pair_count=int(split_stats.raw_dual_ue_pair_count),
+        split_template_feasible_pair_count=int(split_stats.feasible_dual_ue_pattern_count),
+        split_template_overflow_fallback_count=int(split_stats.overflow_fallback_count),
+    )
+
+
 def estimate_raw_dual_ue_pair_bound(
     problem: OfdmaMilpProblem,
     *,
@@ -204,8 +324,12 @@ def estimate_raw_dual_ue_pair_bound(
             for user_id in user_ids
         }
         for left_user_id, right_user_id in combinations(user_ids, 2):
-            total += int(counts[int(left_user_id)]) * int(counts[int(right_user_id)])
+                total += int(counts[int(left_user_id)]) * int(counts[int(right_user_id)])
     return int(total)
+
+
+def admitted_pair_row_rank(row: MilpCandidateRow) -> tuple[int, float, int, int]:
+    return (int(row.n_prb), float(row.p_out_total_w), int(row.pa_id), int(row.local_row_id))
 
 
 def tdma_row_rank(row: TdmaSlotRow) -> tuple[int, int, int, int, float, float, float]:

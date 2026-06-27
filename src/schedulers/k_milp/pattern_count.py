@@ -10,8 +10,8 @@ import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, milp
 from scipy.sparse import coo_matrix
 
-from configs.scheduler import K_MILP_SOLVER_CONFIG
 from configs.pa import pa_slot_dc_power
+from configs.scheduler import K_MILP_SOLVER_CONFIG
 from models import MultiUserScheduleResult, SchedulerMode, SchedulerPowerSummary, SlotAllocation, SlotSchedule, UserScheduleSummary
 from run_reporting import build_console_message, current_run_scope
 
@@ -458,18 +458,18 @@ def build_pattern_milp_options(
     time_limit_s: float | None = None,
 ) -> dict[str, bool | int | float]:
     options: dict[str, bool | int | float] = {
-        "disp": logging.getLogger("day_run").isEnabledFor(logging.DEBUG),
+        "disp": logging.getLogger("snapshot_run").isEnabledFor(logging.DEBUG),
     }
-    resolved_time_limit_s = time_limit_s
-    if resolved_time_limit_s is None:
-        resolved_time_limit_s = K_MILP_SOLVER_CONFIG.time_limit_s
-    if resolved_time_limit_s is not None:
-        options["time_limit"] = float(resolved_time_limit_s)
+    if time_limit_s is not None:
+        options["time_limit"] = float(time_limit_s)
+    elif K_MILP_SOLVER_CONFIG.time_limit_s is not None:
+        options["time_limit"] = float(K_MILP_SOLVER_CONFIG.time_limit_s)
     if K_MILP_SOLVER_CONFIG.node_limit is not None:
         options["node_limit"] = int(K_MILP_SOLVER_CONFIG.node_limit)
     if mip_rel_gap is not None:
         options["mip_rel_gap"] = float(mip_rel_gap)
         return options
+
     if K_MILP_SOLVER_CONFIG.rel_gap is not None:
         options["mip_rel_gap"] = float(K_MILP_SOLVER_CONFIG.rel_gap)
     return options

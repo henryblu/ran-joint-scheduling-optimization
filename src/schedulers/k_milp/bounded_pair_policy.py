@@ -31,6 +31,9 @@ K2_CUTOFF_ABS_EPS_J = 1e-9
 K2_CUTOFF_REL_EPS = 1e-6
 TOL = 1e-9
 LOGGER = logging.getLogger("snapshot_run")
+ADMISSION_DUAL_PATTERN_STRATEGY = "admission"
+SPLIT_TEMPLATE_DUAL_PATTERN_STRATEGY = "split_template"
+DEFAULT_DUAL_PATTERN_STRATEGY = ADMISSION_DUAL_PATTERN_STRATEGY
 
 
 @dataclass(frozen=True)
@@ -67,10 +70,12 @@ def build_and_solve_k1_bounded_restricted_pair_schedule(
         allowed_pa_ids=allowed_pa_ids,
         attempt_name=f"{attempt_name}_k1",
     )
+    dual_pattern_strategy = configured_dual_pattern_strategy()
     k2_patterns, build_elapsed_s = build_restricted_pair_pattern_sets(
         problem,
         batch_space=batch_space,
         allowed_pa_ids=allowed_pa_ids,
+        dual_pattern_strategy=dual_pattern_strategy,
     )
 
     if k1_attempt.success:
@@ -90,6 +95,17 @@ def build_and_solve_k1_bounded_restricted_pair_schedule(
             attempt_name=f"{attempt_name}_k2_without_k1_cutoff",
             build_elapsed_s=float(build_elapsed_s),
         )
+        fallback = solve_split_template_fallback_without_k1_cutoff(
+            problem,
+            batch_space=batch_space,
+            allowed_pa_ids=allowed_pa_ids,
+            attempt_name=attempt_name,
+            hard_off_details=hard_off_details,
+            prior_attempts=(k1_attempt, empty_attempt),
+            primary_dual_pattern_strategy=dual_pattern_strategy,
+        )
+        if fallback is not None:
+            return fallback
         return BoundedPatternSolve(
             result=build_infeasible_pattern_result(problem, attempts=(empty_attempt,), hard_off_details=hard_off_details),
             attempts=(empty_attempt,),
@@ -109,6 +125,17 @@ def build_and_solve_k1_bounded_restricted_pair_schedule(
             result=build_pattern_result(problem, attempt=k2_attempt, hard_off_details=hard_off_details),
             attempts=(k1_attempt, k2_attempt),
         )
+    fallback = solve_split_template_fallback_without_k1_cutoff(
+        problem,
+        batch_space=batch_space,
+        allowed_pa_ids=allowed_pa_ids,
+        attempt_name=attempt_name,
+        hard_off_details=hard_off_details,
+        prior_attempts=(k1_attempt, k2_attempt),
+        primary_dual_pattern_strategy=dual_pattern_strategy,
+    )
+    if fallback is not None:
+        return fallback
     return BoundedPatternSolve(
         result=build_infeasible_pattern_result(problem, attempts=(k1_attempt, k2_attempt), hard_off_details=hard_off_details),
         attempts=(k1_attempt, k2_attempt),
@@ -145,6 +172,7 @@ def build_restricted_pair_pattern_sets(
     *,
     batch_space: BatchUserParameterSpace,
     allowed_pa_ids: tuple[int, ...],
+    dual_pattern_strategy: str | None = None,
 ) -> tuple[tuple[OfdmaSlotPattern, ...], float]:
     build_started_at = perf_counter()
     raw_patterns, stats = build_tdma_contained_slot_patterns(
@@ -152,6 +180,7 @@ def build_restricted_pair_pattern_sets(
         batch_space,
         allowed_pa_ids=allowed_pa_ids,
         max_dual_rows_per_user=K_MILP_SOLVER_CONFIG.dual_admitted_rows_per_user,
+        dual_pattern_strategy=configured_dual_pattern_strategy() if dual_pattern_strategy is None else str(dual_pattern_strategy),
     )
     one_ue_raw_patterns = tuple(pattern for pattern in raw_patterns if len(pattern.rows) == 1)
     one_ue_pattern_count = len(one_ue_raw_patterns)
@@ -171,6 +200,53 @@ def build_restricted_pair_pattern_sets(
         retained_dual_ue_pattern_count=int(retained_dual_ue_pattern_count),
     )
     return k2_patterns, build_elapsed_s
+
+
+def configured_dual_pattern_strategy() -> str:
+    return str(K_MILP_SOLVER_CONFIG.dual_pattern_strategy or DEFAULT_DUAL_PATTERN_STRATEGY)
+
+
+def solve_split_template_fallback_without_k1_cutoff(
+    problem: OfdmaMilpProblem,
+    *,
+    batch_space: BatchUserParameterSpace,
+    allowed_pa_ids: tuple[int, ...],
+    attempt_name: str,
+    hard_off_details: dict[str, object],
+    prior_attempts: tuple[object, ...],
+    primary_dual_pattern_strategy: str,
+) -> BoundedPatternSolve | None:
+    if str(primary_dual_pattern_strategy) != ADMISSION_DUAL_PATTERN_STRATEGY:
+        return None
+
+    fallback_patterns, fallback_build_elapsed_s = build_restricted_pair_pattern_sets(
+        problem,
+        batch_space=batch_space,
+        allowed_pa_ids=allowed_pa_ids,
+        dual_pattern_strategy=SPLIT_TEMPLATE_DUAL_PATTERN_STRATEGY,
+    )
+    if not fallback_patterns:
+        return None
+
+    fallback_attempt = solve_pattern_count_attempt(
+        problem,
+        allowed_pa_ids=allowed_pa_ids,
+        attempt_name=f"{attempt_name}_k2_split_template_fallback",
+        patterns=fallback_patterns,
+        build_elapsed_s=float(fallback_build_elapsed_s),
+        mip_rel_gap=K_MILP_SOLVER_CONFIG.k2_accept_rel_gap,
+        time_limit_s=K_MILP_SOLVER_CONFIG.k2_cutoff_time_limit_s,
+    )
+    attempts = (*prior_attempts, fallback_attempt)
+    if fallback_attempt.success:
+        return BoundedPatternSolve(
+            result=build_pattern_result(problem, attempt=fallback_attempt, hard_off_details=hard_off_details),
+            attempts=attempts,
+        )
+    return BoundedPatternSolve(
+        result=build_infeasible_pattern_result(problem, attempts=attempts, hard_off_details=hard_off_details),
+        attempts=attempts,
+    )
 
 
 def solve_k2_with_k1_cutoff(

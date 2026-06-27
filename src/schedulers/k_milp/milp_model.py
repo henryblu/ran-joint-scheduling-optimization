@@ -9,7 +9,6 @@ import numpy as np
 from scipy.optimize import Bounds, milp
 
 from configs.scheduler import K_MILP_SOLVER_CONFIG
-
 from .diagnostics import build_attempt_diagnostics, get_optional_float
 from .logging import (
     log_model_build_end,
@@ -475,7 +474,7 @@ def add_product_constraints(
 
 def build_scipy_milp_options() -> dict[str, bool | int | float]:
     options: dict[str, bool | int | float] = {
-        "disp": logging.getLogger("day_run").isEnabledFor(logging.DEBUG),
+        "disp": logging.getLogger("snapshot_run").isEnabledFor(logging.DEBUG),
     }
     if K_MILP_SOLVER_CONFIG.time_limit_s is not None:
         options["time_limit"] = float(K_MILP_SOLVER_CONFIG.time_limit_s)
@@ -488,6 +487,7 @@ def build_scipy_milp_options() -> dict[str, bool | int | float]:
 
 def configured_max_users_per_slot() -> int | None:
     return K_MILP_SOLVER_CONFIG.max_users_per_slot
+
 
 __all__ = [
     "build_scipy_milp_options",

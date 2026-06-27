@@ -18,6 +18,7 @@ def prepare_ofdma_milp_problem(
     batch_space: BatchUserParameterSpace,
     *,
     switch_policy: PASwitchPolicy,
+    prune_candidate_rows: bool = True,
 ) -> OfdmaMilpProblem:
     """Flatten one trusted batch artifact into the direct slot-indexed MILP input."""
 
@@ -42,7 +43,11 @@ def prepare_ofdma_milp_problem(
         int(user_id): float(required_rate_bps) * float(frame_duration_s)
         for user_id, required_rate_bps in required_rate_by_user.items()
     }
-    candidate_rows = build_milp_candidate_rows(batch_space, user_requirements)
+    candidate_rows = build_milp_candidate_rows(
+        batch_space,
+        user_requirements,
+        prune_candidate_rows=bool(prune_candidate_rows),
+    )
     return OfdmaMilpProblem(
         frame_n_slots=frame_n_slots,
         t_slot_s=t_slot_s,
@@ -61,6 +66,8 @@ def prepare_ofdma_milp_problem(
 def build_milp_candidate_rows(
     batch_space: BatchUserParameterSpace,
     user_requirements: pd.DataFrame,
+    *,
+    prune_candidate_rows: bool = True,
 ) -> tuple[MilpCandidateRow, ...]:
     """Build deterministic MILP candidate rows from the batch user spaces."""
 
@@ -84,10 +91,11 @@ def build_milp_candidate_rows(
             ["pa_id", "n_prb", "mcs", "layers", "bits_per_slot", "p_out_total_w", "p_dc_active_w"],
             ascending=[True, True, True, True, True, True, True],
         ).reset_index(drop=True)
-        user_space = prune_dominated_milp_candidate_rows(
-            user_space,
-            required_bits=float(required_bits),
-        )
+        if bool(prune_candidate_rows):
+            user_space = prune_dominated_milp_candidate_rows(
+                user_space,
+                required_bits=float(required_bits),
+            )
         for local_row_id, row in enumerate(user_space.itertuples(index=False)):
             candidate_rows.append(
                 MilpCandidateRow(
@@ -210,7 +218,10 @@ def pa_ids_by_label_or_power(
 
 
 def compute_prb_budget() -> int:
-    return int(float(SINGLE_USER_SEARCH_CONFIG.channel_bw_hz) // (12.0 * float(SINGLE_USER_SEARCH_CONFIG.delta_f_hz)))
+    return int(
+        float(SINGLE_USER_SEARCH_CONFIG.channel_bw_hz)
+        // (12.0 * float(SINGLE_USER_SEARCH_CONFIG.delta_f_hz))
+    )
 
 
 __all__ = [

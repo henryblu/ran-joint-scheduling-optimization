@@ -25,10 +25,14 @@ def run_k_milp_scheduler(
 ) -> MultiUserScheduleResult:
     """Prepare and solve the exact OFDMA slot-pattern count oracle."""
 
-    resolved_policy = switch_policy if isinstance(switch_policy, PASwitchPolicy) else PASwitchPolicy(str(switch_policy))
-    problem = prepare_ofdma_milp_problem(batch_space, switch_policy=resolved_policy)
-    log_problem_summary(problem)
     max_users_per_slot = configured_max_users_per_slot()
+    resolved_policy = switch_policy if isinstance(switch_policy, PASwitchPolicy) else PASwitchPolicy(str(switch_policy))
+    problem = prepare_ofdma_milp_problem(
+        batch_space,
+        switch_policy=resolved_policy,
+        prune_candidate_rows=max_users_per_slot is not None,
+    )
+    log_problem_summary(problem)
     if max_users_per_slot is not None:
         result = run_slot_indexed_sequence(
             problem,
