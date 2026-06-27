@@ -10,6 +10,7 @@ from .models import RoundRobinCandidateRow, RoundRobinProblem
 
 
 TOL = 1e-9
+OUTPUT_BALANCE_WEIGHT = 0.25
 
 
 def select_allocation_row(
@@ -21,7 +22,7 @@ def select_allocation_row(
     target_prbs: int,
     remaining_bits: float,
 ) -> RoundRobinCandidateRow | None:
-    """Return the best replacement row under the user's rolling PRB target."""
+    """Return the best replacement row under the user's rolling PRB and power targets."""
 
     if int(target_prbs) <= 0 or float(remaining_bits) <= TOL:
         return None
@@ -36,7 +37,14 @@ def select_allocation_row(
     )
     if not rows:
         return None
-    return min(rows, key=replacement_candidate_rank)
+    return min(
+        rows,
+        key=lambda row: replacement_candidate_rank(
+            problem,
+            row,
+            remaining_bits=float(remaining_bits),
+        ),
+    )
 
 
 def candidate_replacement_rows(
@@ -69,6 +77,8 @@ def candidate_replacement_rows(
             ),
         )
         if replacement_row is None:
+            continue
+        if not row_output_fits_prb_fraction(problem, replacement_row):
             continue
         if row_keeps_slot_schedulable(problem, slot_rows=slot_rows, row=replacement_row):
             replacement_rows.append(replacement_row)
@@ -127,10 +137,20 @@ def useful_replacement_row(
     return scaled_allocation_row(problem, selected_row=row, n_prb=int(n_prb))
 
 
-def replacement_candidate_rank(row: RoundRobinCandidateRow) -> tuple[int, float, float, float, int, int, int, int]:
+def replacement_candidate_rank(
+    problem: RoundRobinProblem,
+    row: RoundRobinCandidateRow,
+    *,
+    remaining_bits: float,
+) -> tuple[float, float, float, int, float, float, int, int, int, int]:
+    useful_fraction = min(float(row.bits_per_slot), float(remaining_bits)) / max(float(remaining_bits), TOL)
+    balance_error = row_output_balance_error(problem, row)
+    score = float(useful_fraction) - float(OUTPUT_BALANCE_WEIGHT) * float(balance_error)
     return (
-        -int(row.n_prb),
-        -float(row.bits_per_slot),
+        -float(score),
+        float(balance_error),
+        -float(useful_fraction),
+        int(row.n_prb),
         float(row.p_out_total_w),
         float(row.p_dc_active_w),
         -int(row.mcs),
@@ -138,6 +158,23 @@ def replacement_candidate_rank(row: RoundRobinCandidateRow) -> tuple[int, float,
         int(row.pa_id),
         int(row.local_row_id),
     )
+
+
+def row_output_fits_prb_fraction(problem: RoundRobinProblem, row: RoundRobinCandidateRow) -> bool:
+    return row_output_cap_fraction(problem, row) <= row_prb_fraction(problem, row) + TOL
+
+
+def row_output_balance_error(problem: RoundRobinProblem, row: RoundRobinCandidateRow) -> float:
+    return abs(float(row_output_cap_fraction(problem, row)) - float(row_prb_fraction(problem, row)))
+
+
+def row_output_cap_fraction(problem: RoundRobinProblem, row: RoundRobinCandidateRow) -> float:
+    pa_output_cap_w = float(problem.n_tx_chains) * float(problem.pa_catalog[int(row.pa_id)].p_max_w)
+    return float(row.p_out_total_w) / max(float(pa_output_cap_w), TOL)
+
+
+def row_prb_fraction(problem: RoundRobinProblem, row: RoundRobinCandidateRow) -> float:
+    return float(row.n_prb) / max(float(problem.prb_max), TOL)
 
 
 def prbs_needed_for_bits(row: RoundRobinCandidateRow, *, remaining_bits: float) -> int:

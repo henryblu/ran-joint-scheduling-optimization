@@ -170,4 +170,7 @@ __all__ = [
 
 
 def compute_prb_budget() -> int:
-    return int(float(SINGLE_USER_SEARCH_CONFIG.channel_bw_hz) // (12.0 * float(SINGLE_USER_SEARCH_CONFIG.delta_f_hz)))
+    return int(
+        float(SINGLE_USER_SEARCH_CONFIG.channel_bw_hz)
+        // (12.0 * float(SINGLE_USER_SEARCH_CONFIG.delta_f_hz))
+    )

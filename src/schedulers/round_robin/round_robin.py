@@ -9,7 +9,12 @@ from schedulers.feasibility_bounds import (
 )
 
 from .models import RoundRobinAttemptResult, RoundRobinCandidateRow, RoundRobinProblem
-from .slot_selection import compute_slot_dc_power_w, select_allocation_row
+from .slot_selection import (
+    compute_slot_dc_power_w,
+    row_output_balance_error,
+    row_output_fits_prb_fraction,
+    select_allocation_row,
+)
 
 
 TOL = 1e-9
@@ -130,10 +135,11 @@ def select_rows_by_user(
         )
         if not eligible_rows:
             continue
-        selected_prb = max(int(row.n_prb) for row in eligible_rows)
+        balanced_rows = tuple(row for row in eligible_rows if row_output_fits_prb_fraction(problem, row))
+        ranked_rows = balanced_rows if balanced_rows else eligible_rows
         selected_rows[int(user_id)] = min(
-            (row for row in eligible_rows if int(row.n_prb) == int(selected_prb)),
-            key=row_selection_rank,
+            ranked_rows,
+            key=lambda row: row_selection_rank(problem, row),
         )
     return selected_rows
 
@@ -417,14 +423,18 @@ def compute_frame_energy_j(
     )
 
 
-def row_selection_rank(row: RoundRobinCandidateRow) -> tuple[int, int, float, float, int, int, int, int, int]:
+def row_selection_rank(
+    problem: RoundRobinProblem,
+    row: RoundRobinCandidateRow,
+) -> tuple[float, float, int, float, int, int, int, int, int]:
     return (
+        float(row_output_balance_error(problem, row)),
+        -float(row.bits_per_slot),
+        int(row.n_prb),
+        float(row.p_dc_active_w),
         -int(row.mcs),
         -int(row.layers),
-        -float(row.bits_per_slot),
-        float(row.p_dc_active_w),
         int(row.pa_id),
-        int(row.n_prb),
         int(row.mcs),
         int(row.layers),
         int(row.local_row_id),
