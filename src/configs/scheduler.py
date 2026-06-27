@@ -16,6 +16,7 @@ class KMilpSolverConfig:
     k2_accept_rel_gap: float = 1e-3
     k2_cutoff_time_limit_s: float = 60.0
     dual_admitted_rows_per_user: int = 5
+    dual_pattern_strategy: str = "admission"
 
 
 K_MILP_SOLVER_CONFIG = KMilpSolverConfig()
