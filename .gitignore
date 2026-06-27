@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+tests/
 .ipynb_checkpoints/
 .jupyter_runtime/
 _tmp_jupyter_runtime/
