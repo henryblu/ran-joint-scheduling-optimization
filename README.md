@@ -1,3 +1,5 @@
+# **I am updating the git this weekend 26.06.2026, most of the code and docs currently here is about 2 months old**
+
 # Master's Thesis Codebase: Joint Scheduling and Resource Allocation for PA Energy Optimization in Multi-PA 5G NR Downlink Systems 
 
 The goal of this project is to study how downlink scheduling and PHY resource allocation can be used to reduce PA DC energy consumption in a multi-PA 5G NR base station. The implementation follows 3GPP-compliant assumptions and focuses on PDSCH transmission. It models link adaptation, PRB allocation, and PA operating behaviour, and shows how scheduler decisions map to PA operating points and overall energy use.
