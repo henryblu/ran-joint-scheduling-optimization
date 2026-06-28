@@ -19,7 +19,7 @@ The main runnable path is `python main.py`, which delegates to `src/experiment_r
 - `src/user_generation`: deterministic finite-frame user population generation.
 - `src/candidate_table`: single-user candidate evaluation, pruning, stored candidate-table loading/building, and user lookup.
 - `src/schedulers`: public scheduler dispatch plus the round-robin and K-MILP backends.
-- `src/experiment_runner`: official run entry point for one finite-frame experiment case; also contains historical scheduler-comparison campaign contracts.
+- `src/experiment_runner`: official run entry point for finite-frame experiment cases; also contains campaign point construction, chunk selection, pruning, and result recording.
 - `post_processing`: post-run processing for completed scheduler-comparison artifacts.
 - `notebooks`: thesis discussion notebooks and notebook helper modules.
 - `docs`: supporting model notes.
@@ -48,12 +48,13 @@ flowchart TD
     Dispatch --> KMILP["k_milp"]
     RR --> Result["MultiUserScheduleResult"]
     KMILP --> Result
-    Result --> Console["EXPERIMENT_RUN / RESULT / TIMINGS"]
+    Result --> Recording["experiment_runner.result_recording"]
+    Recording --> Console["EXPERIMENT_RUN / RESULT / TIMINGS"]
 ```
 
 `experiment_runner` is the only official runtime entry point. It calls into the lower-level modules; the lower-level modules do not call back into it.
 
-The retained `experiment_runner.scheduler_comparison` submodule defines the historical campaign grid, point IDs, chunk grouping, and manifest columns used by the completed scheduler-comparison artifact. It is a campaign contract, not the main single-case runtime path.
+`experiment_runner.campaign_builder` defines campaign points, deterministic chunk grouping, and the lean pruning rules for larger sweeps. Public console and CSV recording for single cases and campaign chunks lives in `experiment_runner.result_recording`.
 
 ## Environment
 
@@ -112,6 +113,34 @@ Supported PA switch policies are:
 - `dual_switchable`
 - `hard_off`
 - `baseline_8w_only`
+
+## Running A Campaign Chunk
+
+Campaign chunks are explicit reviewer-facing runs over the cleaned campaign grid. The script does not launch worker processes itself; parallelism comes from running separate chunk indices locally or through HPC task scheduling.
+
+Dry-run one chunk and write manifest/result headers:
+
+```powershell
+python scripts\run_campaign_chunk.py --chunk-index 0 --chunk-count 32 --limit 2 --dry-run
+```
+
+Run a small chunk sample through the official experiment runner:
+
+```powershell
+python scripts\run_campaign_chunk.py --chunk-index 0 --chunk-count 32 --limit 1 --cores 1
+```
+
+The default output root is:
+
+```text
+outputs/campaign_chunks
+```
+
+Each chunk writes `manifest.csv` and `results.csv` through `experiment_runner.result_recording` under a chunk-specific folder such as:
+
+```text
+outputs/campaign_chunks/chunk_00_of_32
+```
 
 ## Candidate Table
 
@@ -236,6 +265,10 @@ python main.py --scheduler-mode k_milp --active-user-count 15 --load-factor 0.4 
 ```powershell
 $env:PYTHONPATH = "src"
 python -c "from experiment_runner import build_experiment_run_config, run_experiment_case; print('experiment runner imports ok')"
+```
+
+```powershell
+python scripts\run_campaign_chunk.py --chunk-index 0 --chunk-count 32 --limit 2 --dry-run
 ```
 
 ```powershell

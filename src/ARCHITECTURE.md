@@ -36,7 +36,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 
 ### `src/experiment_runner`
 
-- **Owns:** The official experiment execution workflow, CLI-adjacent run config resolution, finite-frame user assembly, candidate-table lookup, scheduler dispatch, compact result reporting, scheduler-comparison point IDs, run ordering, exact-scenario chunk grouping, and manifest contracts for generated campaign outputs.
+- **Owns:** The official experiment execution workflow, CLI-adjacent run config resolution, finite-frame user assembly, candidate-table lookup, scheduler dispatch, compact result reporting, campaign point IDs, run ordering, exact-scenario chunk grouping, certified campaign pruning, and manifest/result recording for generated campaign outputs.
 - **Consumes:** Shared defaults from `configs`, shared run contracts from `models`, demand generation from `user_generation`, trusted single-user batch artifacts from `candidate_table`, the shared scheduler dispatcher in `schedulers`, and stable source contracts such as shared PA policy names when needed for campaign definitions.
 - **Does not own:** User-table sanitization, PHY evaluation, scheduler internals, post-run analysis, thesis figure generation, notebook presentation helpers, raw HPC XML submissions, or completed ZIP extraction.
 
@@ -55,7 +55,7 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 5. `src/schedulers.round_robin` runs the deterministic rolling-quantum OFDMA baseline and returns the shared public scheduler result directly.
 6. `src/schedulers.k_milp` runs the final K-MILP backend. Its K1 compressed TDMA-plan HiGHS MILP and K2 restricted pattern-count MILP are internal implementation stages, not public scheduler modes.
 7. `src/user_generation` is an upstream finite-frame demand generator that can feed scheduler-ready user tables into the single-user and multi-user workflow.
-8. `src/experiment_runner` orchestrates one finite-frame case by composing `user_generation`, `candidate_table`, and `schedulers`; its `scheduler_comparison` submodule defines bounded thesis campaigns and the chunk/manifests they emit.
+8. `src/experiment_runner` orchestrates one finite-frame case by composing `user_generation`, `candidate_table`, and `schedulers`; its `campaign_builder` submodule defines bounded thesis campaigns and chunk/pruning decisions, while `result_recording` owns public console and CSV output.
 9. Top-level `post_processing` starts after experiments have produced stable artifacts; it rebuilds local analysis tables and thesis outputs without owning scheduler execution or living inside the model source tree.
 
 ## Boundary Checks
@@ -67,8 +67,8 @@ This note defines module ownership and stable boundaries inside `src`. Each pack
 - K1/K2 helper logic belongs inside `schedulers.k_milp`; it should not become separate public scheduler API.
 - If logic builds shared default configs, PA catalogs, or scheduler solver policy, it belongs in `configs`.
 - If logic builds finite-frame user populations from load, distance, and user-count inputs, it belongs in `user_generation`.
-- If logic orchestrates one finite-frame experiment run or defines scheduler-comparison campaign chunks, it belongs in `experiment_runner`.
+- If logic orchestrates one finite-frame experiment run, defines campaign chunks, or records public run tables, it belongs in `experiment_runner`.
 - If logic only formats or configures shared run logging, it belongs in `run_reporting.py`.
 - If logic reads completed thesis result artifacts and derives analysis tables, summaries, or figures, it belongs in the top-level `post_processing` package.
-- Scheduler-comparison campaign contracts belong in `experiment_runner`, not `post_processing`.
+- Campaign execution contracts belong in `experiment_runner`, not `post_processing`.
 - Shared config values and PA behavior belong in `configs`; shared models and derived radio physics belong in `models`.
