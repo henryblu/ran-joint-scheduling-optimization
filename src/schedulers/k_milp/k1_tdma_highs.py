@@ -22,7 +22,7 @@ from .problem import candidate_rows_by_user_pa
 
 
 TOL = 1e-9
-LOGGER = logging.getLogger("snapshot_run")
+LOGGER = logging.getLogger("experiment_runner")
 
 
 @dataclass(frozen=True)

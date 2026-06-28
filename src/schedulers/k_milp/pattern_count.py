@@ -22,7 +22,7 @@ from .problem import candidate_rows_by_user_pa
 
 
 TOL = 1e-9
-LOGGER = logging.getLogger("snapshot_run")
+LOGGER = logging.getLogger("experiment_runner")
 
 
 def build_and_solve_pattern_count_attempt(
@@ -458,7 +458,7 @@ def build_pattern_milp_options(
     time_limit_s: float | None = None,
 ) -> dict[str, bool | int | float]:
     options: dict[str, bool | int | float] = {
-        "disp": logging.getLogger("snapshot_run").isEnabledFor(logging.DEBUG),
+        "disp": logging.getLogger("experiment_runner").isEnabledFor(logging.DEBUG),
     }
     if time_limit_s is not None:
         options["time_limit"] = float(time_limit_s)

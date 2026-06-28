@@ -10,7 +10,7 @@ from run_reporting import build_console_message, current_run_scope
 
 
 TOL = 1e-9
-LOGGER = logging.getLogger("snapshot_run")
+LOGGER = logging.getLogger("experiment_runner")
 
 
 @dataclass(frozen=True)

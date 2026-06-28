@@ -19,7 +19,7 @@ from .models import MilpModelSize, MilpVariableIndex, OfdmaMilpProblem, PaCurveS
 from .problem import candidate_rows_by_user_pa
 
 
-LOGGER = py_logging.getLogger("snapshot_run")
+LOGGER = py_logging.getLogger("experiment_runner")
 
 
 def active_snapshot_index_from_scope() -> int | None:

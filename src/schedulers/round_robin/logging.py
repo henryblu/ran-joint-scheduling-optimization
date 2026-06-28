@@ -11,7 +11,7 @@ from schedulers.frame_utilization import frame_utilization_log_fields
 from .models import RoundRobinProblem
 
 
-LOGGER = py_logging.getLogger("snapshot_run")
+LOGGER = py_logging.getLogger("experiment_runner")
 
 
 def log_frame_utilization_summary(

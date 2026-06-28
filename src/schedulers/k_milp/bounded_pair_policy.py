@@ -30,7 +30,7 @@ from .pattern_count import (
 K2_CUTOFF_ABS_EPS_J = 1e-9
 K2_CUTOFF_REL_EPS = 1e-6
 TOL = 1e-9
-LOGGER = logging.getLogger("snapshot_run")
+LOGGER = logging.getLogger("experiment_runner")
 ADMISSION_DUAL_PATTERN_STRATEGY = "admission"
 SPLIT_TEMPLATE_DUAL_PATTERN_STRATEGY = "split_template"
 DEFAULT_DUAL_PATTERN_STRATEGY = ADMISSION_DUAL_PATTERN_STRATEGY

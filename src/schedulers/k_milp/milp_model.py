@@ -474,7 +474,7 @@ def add_product_constraints(
 
 def build_scipy_milp_options() -> dict[str, bool | int | float]:
     options: dict[str, bool | int | float] = {
-        "disp": logging.getLogger("snapshot_run").isEnabledFor(logging.DEBUG),
+        "disp": logging.getLogger("experiment_runner").isEnabledFor(logging.DEBUG),
     }
     if K_MILP_SOLVER_CONFIG.time_limit_s is not None:
         options["time_limit"] = float(K_MILP_SOLVER_CONFIG.time_limit_s)
