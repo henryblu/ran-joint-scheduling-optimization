@@ -9,7 +9,7 @@ from models import PASwitchPolicy, SchedulerMode
 from user_generation import UserGenerationConfig
 
 from .models import ExperimentRunConfig, ExperimentRunResult
-from .reporting import print_experiment_result
+from .result_recording import print_experiment_result
 from .runner import run_experiment_case
 
 

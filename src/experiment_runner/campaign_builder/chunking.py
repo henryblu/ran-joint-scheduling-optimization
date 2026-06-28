@@ -1,26 +1,24 @@
 from __future__ import annotations
 
-"""Stable ordering and exact-scenario chunking for scheduler-comparison campaigns."""
+"""Stable ordering and exact-scenario chunking for experiment campaigns."""
 
 from collections.abc import Iterable
 
-from .points import SchedulerComparisonPoint
+from .points import CampaignPoint
 
 
-def order_scheduler_comparison_points(
-    points: Iterable[SchedulerComparisonPoint],
-) -> tuple[SchedulerComparisonPoint, ...]:
+def order_campaign_points(points: Iterable[CampaignPoint]) -> tuple[CampaignPoint, ...]:
     """Return points ordered so exact-scenario load chains stay contiguous."""
 
-    return tuple(sorted(tuple(points), key=scheduler_comparison_run_order_key))
+    return tuple(sorted(tuple(points), key=campaign_run_order_key))
 
 
 def select_chunk(
-    points: Iterable[SchedulerComparisonPoint],
+    points: Iterable[CampaignPoint],
     *,
     chunk_index: int,
     chunk_count: int,
-) -> tuple[SchedulerComparisonPoint, ...]:
+) -> tuple[CampaignPoint, ...]:
     """Select one deterministic chunk without splitting exact-scenario load chains."""
 
     if int(chunk_count) <= 0:
@@ -29,7 +27,7 @@ def select_chunk(
         raise ValueError("chunk_index must satisfy 0 <= chunk_index < chunk_count.")
 
     selected = []
-    grouped_points = group_points_by_exact_scenario(order_scheduler_comparison_points(points))
+    grouped_points = group_points_by_exact_scenario(order_campaign_points(points))
     for group_index, group in enumerate(grouped_points):
         if int(group_index) % int(chunk_count) != int(chunk_index):
             continue
@@ -38,11 +36,11 @@ def select_chunk(
 
 
 def group_points_by_exact_scenario(
-    points: Iterable[SchedulerComparisonPoint],
-) -> tuple[tuple[SchedulerComparisonPoint, ...], ...]:
+    points: Iterable[CampaignPoint],
+) -> tuple[tuple[CampaignPoint, ...], ...]:
     """Group already-ordered points by scheduler, PA policy, users, and distance population."""
 
-    groups: list[list[SchedulerComparisonPoint]] = []
+    groups: list[list[CampaignPoint]] = []
     current_key: tuple[object, ...] | None = None
     for point in points:
         point_key = exact_scenario_key(point)
@@ -53,7 +51,7 @@ def group_points_by_exact_scenario(
     return tuple(tuple(group) for group in groups)
 
 
-def scheduler_comparison_run_order_key(point: SchedulerComparisonPoint) -> tuple[object, ...]:
+def campaign_run_order_key(point: CampaignPoint) -> tuple[object, ...]:
     return (
         str(point.scheduler_mode),
         str(point.switch_policy),
@@ -66,6 +64,15 @@ def scheduler_comparison_run_order_key(point: SchedulerComparisonPoint) -> tuple
 
 
 
-def exact_scenario_key(point: SchedulerComparisonPoint) -> tuple[object, ...]:
-    return scheduler_comparison_run_order_key(point)[:-1]
+def exact_scenario_key(point: CampaignPoint) -> tuple[object, ...]:
+    return campaign_run_order_key(point)[:-1]
+
+
+__all__ = [
+    "campaign_run_order_key",
+    "exact_scenario_key",
+    "group_points_by_exact_scenario",
+    "order_campaign_points",
+    "select_chunk",
+]
 
